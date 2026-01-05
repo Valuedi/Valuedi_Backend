@@ -1,3 +1,19 @@
 spring:
   application:
     name: valuedi-backend
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO}
+    show-sql: ${SHOW_SQL}
+
+
