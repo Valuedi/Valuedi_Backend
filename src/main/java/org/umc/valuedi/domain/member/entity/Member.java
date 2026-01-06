@@ -3,11 +3,12 @@ package org.umc.valuedi.domain.member.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.SQLRestriction;
+import org.umc.valuedi.domain.member.enums.Gender;
 import org.umc.valuedi.domain.member.enums.SignupType;
 import org.umc.valuedi.domain.member.enums.Status;
 import org.umc.valuedi.global.entity.BaseEntity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,20 +18,29 @@ import java.time.LocalDateTime;
 @Getter
 @Table(name = "member")
 @SQLDelete(sql = "UPDATE member SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
-@SQLRestriction("deleted_at IS NULL")
 public class Member extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "email", length = 320, unique = true)
+    @Column(name = "username", length = 50, unique = true, nullable = false)
+    private String username;
+
+    @Column(name = "email", length = 320)
     private String email;
 
-    @Column(name = "name", length = 50, nullable = false)
-    private String name;
+    @Column(name = "real_name", length = 50, nullable = false)
+    private String realName;
 
     @Column(name = "phone_number", length = 20, nullable = false)
     private String phoneNumber;
+
+    @Column(name = "birth", nullable = false)
+    private LocalDate birth;
+
+    @Column(name = "gender", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash;
