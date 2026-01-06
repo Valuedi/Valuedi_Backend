@@ -18,7 +18,7 @@ public class MemberController implements MemberControllerDocs {
 
     @Override
     @GetMapping("/auth/check-username")
-    public ApiResponse<Boolean> checkUsername(
+    public ApiResponse<Void> checkUsername(
             @RequestParam(name = "username")
             String username
     ) {

@@ -71,7 +71,7 @@ public interface MemberControllerDocs {
                     )
             )
     })
-    ApiResponse<Boolean> checkUsername(
+    ApiResponse<Void> checkUsername(
             @Parameter(description = "중복 확인할 아이디", example = "valuedi_123")
             @NotBlank(message = "아이디를 입력해주세요.")
             String username
