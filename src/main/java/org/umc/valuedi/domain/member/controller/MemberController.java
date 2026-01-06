@@ -13,13 +13,13 @@ import org.umc.valuedi.global.apiPayload.ApiResponse;
 @RestController
 @RequiredArgsConstructor
 @Validated
-public class MemberController {
+public class MemberController implements MemberControllerDocs {
     private final MemberService memberService;
 
+    @Override
     @GetMapping("/auth/check-username")
     public ApiResponse<Boolean> checkUsername(
             @RequestParam(name = "username")
-            @NotBlank(message = "아이디를 입력해주세요.")
             String username
     ) {
             memberService.checkUsernameDuplicate(username);
