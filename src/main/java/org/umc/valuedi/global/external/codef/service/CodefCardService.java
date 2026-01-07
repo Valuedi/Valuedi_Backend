@@ -42,10 +42,13 @@ public class CodefCardService {
         String url = "/v1/kr/card/p/account/approval-list";
 
         try {
+            HashMap<String, Object> requestParams = new HashMap<>(params);
+            requestParams.putIfAbsent("memberStoreInfoType", "1"); // 1: 가맹점 포함
+
             return codef.requestProduct(
                     url,
                     EasyCodefServiceType.DEMO,
-                    new HashMap<>(params)
+                    requestParams
             );
         } catch (Exception e) {
             return "{\"error\":\"승인내역 조회 실패\", \"message\":\"" + e.getMessage() + "\"}";
