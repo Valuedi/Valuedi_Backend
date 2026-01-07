@@ -12,11 +12,17 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
   jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQLDialect
+    show-sql: ${SHOW_SQL}
     hibernate:
       ddl-auto: ${DDL_AUTO}
-    show-sql: ${SHOW_SQL}
+    properties:
+      hibernate:
+        format_sql: true
 
 codef:
   client-id: ${CODEF_CLIENT_ID}
   client-secret: ${CODEF_CLIENT_SECRET}
   public-key: ${CODEF_PUBLIC_KEY}
+

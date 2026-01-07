@@ -50,6 +50,9 @@ dependencies {
 
 	// CODEF
 	implementation 'io.codef.api:easycodef-java:1.0.6'
+
+	// Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 }
 
 tasks.named('test') {
