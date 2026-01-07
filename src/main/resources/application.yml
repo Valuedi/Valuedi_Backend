@@ -5,15 +5,21 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PW}
-
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
   jpa:
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
-    show-sql: true
+    show-sql: ${SHOW_SQL}
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${DDL_AUTO}
     properties:
       hibernate:
         format_sql: true
+    
+
+
