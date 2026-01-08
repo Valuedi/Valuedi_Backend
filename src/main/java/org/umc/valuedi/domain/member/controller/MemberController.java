@@ -21,7 +21,7 @@ public class MemberController implements MemberControllerDocs {
             @RequestParam(name = "username")
             String username
     ) {
-            memberService.checkUsernameDuplicate(username);
+            memberService.checkUsernameDuplicate(username.trim());
             return ApiResponse.onSuccess(MemberSuccessCode.USERNAME_CHECK_OK, null);
     }
 }
