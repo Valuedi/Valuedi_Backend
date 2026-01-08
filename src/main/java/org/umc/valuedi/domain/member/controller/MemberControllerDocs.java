@@ -23,13 +23,13 @@ public interface MemberControllerDocs {
                             examples = @ExampleObject(
                                     name = "성공 예시",
                                     value = """
-                    {
-                      "isSuccess": true,
-                      "code": "MEMBER200_1",
-                      "message": "사용 가능한 아이디입니다.",
-                      "result": null
-                    }
-                    """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "MEMBER200_1",
+                                              "message": "사용 가능한 아이디입니다.",
+                                              "result": null
+                                            }
+                                    """
                             )
                     )
             ),
@@ -41,13 +41,13 @@ public interface MemberControllerDocs {
                             examples = @ExampleObject(
                                     name = "중복 에러 예시",
                                     value = """
-                    {
-                      "isSuccess": false,
-                      "code": "MEMBER409_1",
-                      "message": "이미 사용 중인 아이디입니다.",
-                      "result": null
-                    }
-                    """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "MEMBER409_1",
+                                              "message": "이미 사용 중인 아이디입니다.",
+                                              "result": null
+                                            }
+                                    """
                             )
                     )
             ),
@@ -59,14 +59,15 @@ public interface MemberControllerDocs {
                             examples = @ExampleObject(
                                     name = "유효성 검증 실패 예시",
                                     value = """
-                    {
-                      "isSuccess": false,
-                      "code": "VALID400_1",
-                      "message": "검증에 실패했습니다.",
-                      "result": {
-                        "username": "아이디를 입력해주세요."
-                      }
-                    """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "VALID400_1",
+                                              "message": "검증에 실패했습니다.",
+                                              "result": {
+                                                "username": "아이디를 입력해주세요."
+                                              }
+                                            }
+                                    """
                             )
                     )
             )
