@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.member.service;
+package org.umc.valuedi.domain.member.service.query;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -10,7 +10,7 @@ import org.umc.valuedi.domain.member.repository.MemberRepository;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class MemberService {
+public class MemberQueryService {
     private final MemberRepository memberRepository;
 
     public void checkUsernameDuplicate(String username) {
