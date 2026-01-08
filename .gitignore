@@ -36,6 +36,3 @@ out/
 ### VS Code ###
 .vscode/
 
-# macOS metadata
-.DS_Store
-**/.DS_Store
