@@ -25,3 +25,7 @@ codef:
   client-id: ${CODEF_CLIENT_ID}
   client-secret: ${CODEF_CLIENT_SECRET}
   public-key: ${CODEF_PUBLIC_KEY}
+
+fss:
+  api:
+    key: ${FSS_KEY}

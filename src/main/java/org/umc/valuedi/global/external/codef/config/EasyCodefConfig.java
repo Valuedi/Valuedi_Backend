@@ -1,4 +1,4 @@
-package org.umc.valuedi.global.config;
+package org.umc.valuedi.global.external.codef.config;
 
 import io.codef.api.EasyCodef;
 import org.springframework.beans.factory.annotation.Value;
