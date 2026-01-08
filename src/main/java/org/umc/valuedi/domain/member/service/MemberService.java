@@ -14,7 +14,9 @@ public class MemberService {
     private final MemberRepository memberRepository;
 
     public void checkUsernameDuplicate(String username) {
-        if(memberRepository.existsByUsername(username)) {
+        Integer exists = memberRepository.existsByUsernameIncludeDeleted(username);
+
+        if(exists != null && exists == 1) {
             throw new MemberException(MemberErrorCode.DUPLICATE_USERNAME);
         }
     }
