@@ -5,6 +5,7 @@ services:
     ports:
       - "3306:3306"
     environment:
+      # 최초 1회 초기화에만 사용 (볼륨 비어있을 때)
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}

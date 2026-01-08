@@ -11,12 +11,13 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SwaggerConfig {
+
     @Bean
     public OpenAPI swagger() {
-        Info info = new Info().
-                title("Valuedi API").
-                description("API documentation for Valuedi").
-                version("0.0.1");
+        Info info = new Info()
+                .title("Valuedi API")
+                .description("API documentation for Valuedi")
+                .version("0.0.1");
 
         String securityScheme = "JWT";
 
