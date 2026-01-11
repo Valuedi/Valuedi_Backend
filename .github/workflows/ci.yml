@@ -25,5 +25,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build & Test (Gradle)
-        run: ./gradlew clean build
+      # ✅ CI에서만 test 프로필로 실행
+      - name: Test with Spring profile (test)
+        run: ./gradlew clean test -Dspring.profiles.active=test
+
+      # (선택) 테스트 통과 후 빌드까지 하고 싶으면
+      - name: Build (skip tests)
+        run: ./gradlew bootJar -x test
