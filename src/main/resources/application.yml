@@ -14,9 +14,9 @@ spring:
   jpa:
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
-    show-sql: ${SHOW_SQL}
+    show-sql: ${SHOW_SQL:false}
     hibernate:
-      ddl-auto: ${DDL_AUTO}
+      ddl-auto: ${DDL_AUTO:none}
     properties:
       hibernate:
         format_sql: true
