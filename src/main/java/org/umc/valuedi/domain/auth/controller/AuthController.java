@@ -17,7 +17,7 @@ import java.io.IOException;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthController implements AuthControllerDocs {
 
     private final AuthCommandService authCommandService;
     private final KakaoProperties kakaoProperties;
