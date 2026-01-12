@@ -76,8 +76,8 @@ jobs:
             EOF
 
             # 2) IMAGE_REPO / IMAGE_TAG 강제 주입 (PROD_ENV에 없거나 달라도 덮어씀)
-            IMAGE_REPO="${{ needs.build-and-push.outputs.image_repo }}"
-            IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+            IMAGE_REPO="${{ secrets.DOCKER_USERNAME }}/valuedi-backend"
+            IMAGE_TAG="${{ github.sha }}"
 
             # IMAGE_REPO 업데이트/추가
             if grep -q '^IMAGE_REPO=' .env; then
