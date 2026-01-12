@@ -1,0 +1,101 @@
+name: CI/CD (main)
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: valuedi-prod-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_repo: ${{ steps.meta.outputs.image_repo }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.4.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set image meta
+        id: meta
+        run: |
+          echo "image_repo=${{ secrets.DOCKER_USERNAME }}/valuedi-backend" >> $GITHUB_OUTPUT
+          echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push (latest + sha)
+        uses: docker/build-push-action@v6.16.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ steps.meta.outputs.image_repo }}:latest
+            ${{ steps.meta.outputs.image_repo }}:${{ steps.meta.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Deploy via SSH (Blue/Green)
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          port: ${{ secrets.PROD_SERVER_PORT }}
+          username: ${{ secrets.PROD_SERVER_USERNAME }}
+          key: ${{ secrets.PROD_SERVER_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            APP_DIR="/home/ubuntu/valuedi/app"
+            cd "$APP_DIR"
+
+            # 1) PROD_ENV를 .env로 반영 (멀티라인 안전)
+            cat > .env << 'EOF'
+            ${{ secrets.PROD_ENV }}
+            EOF
+
+            # 2) IMAGE_REPO / IMAGE_TAG 강제 주입 (PROD_ENV에 없거나 달라도 덮어씀)
+            IMAGE_REPO="${{ needs.build-and-push.outputs.image_repo }}"
+            IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+
+            # IMAGE_REPO 업데이트/추가
+            if grep -q '^IMAGE_REPO=' .env; then
+              sed -i "s|^IMAGE_REPO=.*|IMAGE_REPO=${IMAGE_REPO}|" .env
+            else
+              echo "IMAGE_REPO=${IMAGE_REPO}" >> .env
+            fi
+
+            # IMAGE_TAG 업데이트/추가
+            if grep -q '^IMAGE_TAG=' .env; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env
+            else
+              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+            fi
+
+            # 3) 최신 이미지 pull 확인 + 배포
+            chmod +x deploy.sh scripts/healthcheck.sh scripts/switch_upstream.sh
+            ./deploy.sh
+
+            # 4) 사용하지 않는 이미지 정리(선택)
+            docker image prune -f
