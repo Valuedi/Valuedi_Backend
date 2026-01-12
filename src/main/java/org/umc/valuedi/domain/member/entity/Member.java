@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.umc.valuedi.domain.member.enums.Gender;
+import org.umc.valuedi.domain.member.enums.Role;
 import org.umc.valuedi.domain.member.enums.SignupType;
 import org.umc.valuedi.domain.member.enums.Status;
 import org.umc.valuedi.global.entity.BaseEntity;
@@ -43,6 +44,11 @@ public class Member extends BaseEntity {
     @Column(name = "gender", nullable = false)
     @Enumerated(EnumType.STRING)
     private Gender gender;
+
+    @Column(name = "role", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Role role = Role.ROLE_USER;
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash;

@@ -14,6 +14,8 @@ import org.umc.valuedi.domain.member.enums.SignupType;
 import org.umc.valuedi.domain.member.enums.Status;
 import org.umc.valuedi.domain.member.repository.MemberAuthProviderRepository;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
+import org.umc.valuedi.global.security.jwt.JwtUtil;
+import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -22,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 @Transactional
 public class AuthCommandService {
+    private final JwtUtil jwtUtil;
     private final KakaoService kakaoService;
     private final MemberRepository memberRepository;
     private final MemberAuthProviderRepository memberAuthProviderRepository;
@@ -34,9 +37,13 @@ public class AuthCommandService {
                 .map(MemberAuthProvider::getMember)
                 .orElseGet(() -> registerKakao(userInfo));
 
+        CustomUserDetails userDetails = new CustomUserDetails(member);
+        String accessToken = jwtUtil.createAccessToken(userDetails);
+        String refreshToken = jwtUtil.createRefreshToken(userDetails);
+
         return AuthResDTO.LoginResultDTO.builder()
-                .accessToken(null)
-                .refreshToken(null)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .memberId(member.getId())
                 .build();
     }

@@ -24,3 +24,10 @@ kakao:
     client-id: ${KAKAO_CLIENT_ID}
     redirect-uri: ${KAKAO_REDIRECT_URI}
     client-secret: ${KAKAO_CLIENT_SECRET}
+
+jwt:
+  token:
+    secretKey: ${JWT_TOKEN_SECRET_KEY}
+    expiration:
+      access: 3600000  # 1시간
+      refresh: 1209600000 # 14일

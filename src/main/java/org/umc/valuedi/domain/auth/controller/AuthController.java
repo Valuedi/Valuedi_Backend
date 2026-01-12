@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.umc.valuedi.domain.auth.config.KakaoProperties;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
+import org.umc.valuedi.domain.auth.exception.code.AuthSuccessCode;
 import org.umc.valuedi.domain.auth.service.command.AuthCommandService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
-import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
 
 import java.io.IOException;
 
@@ -32,6 +32,6 @@ public class AuthController {
             @RequestParam("code")
             String code
     ) {
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, authCommandService.loginKakao(code));
+        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, authCommandService.loginKakao(code));
     }
 }
