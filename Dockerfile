@@ -8,8 +8,6 @@ WORKDIR /workspace
 COPY gradlew .
 COPY gradle gradle
 COPY settings.gradle* build.gradle* gradle.properties* ./
-# 멀티모듈/버전카탈로그 사용 시
-COPY gradle/libs.versions.toml gradle/libs.versions.toml
 
 # 의존성 캐시 (소스 없이도 가능한 단계)
 RUN chmod +x gradlew \
