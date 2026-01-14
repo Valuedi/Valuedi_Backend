@@ -28,3 +28,6 @@ management:
   endpoint:
     health:
       show-details: never
+fss:
+  base-url: "https://finlife.fss.or.kr/finlifeapi"
+  auth-key: ${FSS_AUTH_KEY}
