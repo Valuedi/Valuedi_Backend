@@ -8,10 +8,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotBlank;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 
-@Tag(name = "Auth", description = "Auth 관련 API")
+@Tag(name = "Auth", description = "Auth 관련 API (로그인, 회원가입 등)")
 public interface AuthControllerDocs {
 
     @Operation(
@@ -37,7 +38,7 @@ public interface AuthControllerDocs {
                     )
             )
     })
-    public ApiResponse<String> kakaoLogin(HttpServletResponse response);
+    ApiResponse<String> kakaoLogin(HttpServletResponse response);
 
     @Operation(
             summary = "카카오 로그인 콜백 API",
@@ -84,7 +85,7 @@ public interface AuthControllerDocs {
                     )
             )
     })
-    public ApiResponse<AuthResDTO.LoginResultDTO> kakaoCallback(
+    ApiResponse<AuthResDTO.LoginResultDTO> kakaoCallback(
             @Parameter(description = "카카오에서 전달한 인가 코드")
             String code,
             @Parameter(description = "카카오 로그인 URL 생성 시 서버에서 생성한 state 값")
@@ -92,5 +93,70 @@ public interface AuthControllerDocs {
             @Parameter(description = "서버에서 보낸 쿠키에 저장된 state 값")
             String oauthState,
             HttpServletResponse response
+    );
+
+    @Operation(summary = "아이디 중복 확인 API", description = "사용자가 입력한 아이디의 중복 여부를 확인합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 사용 가능한 아이디",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "AUTH200_3",
+                                              "message": "사용 가능한 아이디입니다.",
+                                              "result": null
+                                            }
+                                    """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "에러 - 이미 사용 중인 아이디",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "중복 에러 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "AUTH409_1",
+                                              "message": "이미 사용 중인 아이디입니다.",
+                                              "result": null
+                                            }
+                                    """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "에러 - 유효성 검증 실패",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "유효성 검증 실패 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "VALID400_1",
+                                              "message": "검증에 실패했습니다.",
+                                              "result": {
+                                                "username": "아이디를 입력해주세요."
+                                              }
+                                            }
+                                    """
+                            )
+                    )
+            )
+    })
+    ApiResponse<Void> checkUsername(
+            @Parameter(description = "중복 확인할 아이디", example = "valuedi_123")
+            @NotBlank(message = "아이디를 입력해주세요.")
+            String username
     );
 }

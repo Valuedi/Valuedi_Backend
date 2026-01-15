@@ -10,7 +10,8 @@ import org.umc.valuedi.global.apiPayload.code.BaseSuccessCode;
 public enum AuthSuccessCode implements BaseSuccessCode {
 
     KAKAO_AUTH_URL_SUCCESS(HttpStatus.OK, "AUTH200_1", "카카오 로그인 URL이 성공적으로 생성되었습니다."),
-    LOGIN_OK(HttpStatus.OK, "AUTH200_2", "로그인에 성공했습니다.")
+    LOGIN_OK(HttpStatus.OK, "AUTH200_2", "로그인에 성공했습니다."),
+    USERNAME_AVAILABLE(HttpStatus.OK, "AUTH200_3", "사용 가능한 아이디입니다.")
     ;
 
     private final HttpStatus status;

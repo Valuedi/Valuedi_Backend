@@ -18,7 +18,9 @@ public enum AuthErrorCode implements BaseErrorCode {
     NOT_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH401_4", "엑세스 토큰이 아닙니다."),
 
     // State
-    INVALID_STATE(HttpStatus.UNAUTHORIZED, "AUTH401_5", "보안 인증 값(state)이 일치하지 않거나 만료되었습니다.")
+    INVALID_STATE(HttpStatus.UNAUTHORIZED, "AUTH401_5", "보안 인증 값(state)이 일치하지 않거나 만료되었습니다."),
+
+    DUPLICATE_USERNAME(HttpStatus.CONFLICT, "AUTH409_1", "이미 사용 중인 아이디입니다.")
     ;
 
     private final HttpStatus status;
