@@ -1,5 +1,6 @@
 package org.umc.valuedi.domain.asset.connection.dto.req;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -45,6 +46,7 @@ public class ConnectionReqDTO {
         @Schema(description = "로그인 타입", example = "1")
         private String loginType = "1";
 
+        @JsonIgnore
         public BusinessType getBusinessTypeEnum() {
             return BusinessType.valueOf(businessType);
         }

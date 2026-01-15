@@ -1,5 +1,6 @@
 package org.umc.valuedi.global.external.codef.dto.res;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -10,6 +11,7 @@ import lombok.ToString;
 @Getter
 @ToString(exclude = "data")
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CodefApiResponse<T> {
 
     private Result result;
@@ -18,6 +20,7 @@ public class CodefApiResponse<T> {
     @Getter
     @ToString
     @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Result {
         private String code;            // 응답 코드 (CF-00000)
         private String extraMessage;    // 추가 메시지
