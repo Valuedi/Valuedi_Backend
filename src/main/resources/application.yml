@@ -24,6 +24,8 @@ codef:
   client-id: ${CODEF_CLIENT_ID}
   client-secret: ${CODEF_CLIENT_SECRET}
   public-key: ${CODEF_PUBLIC_KEY}
+  api-url: ${CODEF_API_URL:https://development.codef.io}
+
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
   redirect-uri: ${KAKAO_REDIRECT_URI}
@@ -45,4 +47,4 @@ management:
       show-details: never
 fss:
   base-url: ${FSS_BASE_URL:https://finlife.fss.or.kr/finlifeapi}
-  auth-key: ${FSS_AUTH_KEY:01c389be80b937216b361708886c797b}
+  auth-key: ${FSS_AUTH_KEY}

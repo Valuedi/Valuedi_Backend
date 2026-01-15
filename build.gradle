@@ -24,6 +24,10 @@ repositories {
 	mavenCentral()
 }
 
+ext {
+	set('springCloudVersion', "2025.1.0") // 스프링 부트 버전에 맞춰 조절 필요
+}
+
 dependencies {
 	// Spring Boot Core
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -70,9 +74,9 @@ dependencies {
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.1.0"
-	}
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
 }
 
 tasks.named('test') {
