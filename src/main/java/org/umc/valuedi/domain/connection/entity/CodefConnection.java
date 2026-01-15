@@ -6,6 +6,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.umc.valuedi.domain.account.entity.BankAccount;
 import org.umc.valuedi.domain.card.entity.Card;
+import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.entity.BaseEntity;
 import org.umc.valuedi.global.external.codef.enums.ConnectionStatus;
@@ -39,6 +40,10 @@ public class CodefConnection extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private ConnectionStatus status = ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private BusinessType businessType;
 
     @Column(name = "last_synced_at")
     private LocalDateTime lastSyncedAt;
