@@ -9,6 +9,9 @@ import org.umc.valuedi.global.apiPayload.code.BaseErrorCode;
 @AllArgsConstructor
 public enum AuthErrorCode implements BaseErrorCode {
 
+    // Kakao
+    REQUIRED_INFO_MISSING(HttpStatus.BAD_REQUEST, "AUTH400_1", "필수 제공 정보(이름, 성별, 생일)가 누락되었습니다."),
+
     // Access Token & Refresh Token
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH401_2", "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH401_3", "만료된 토큰입니다."),
