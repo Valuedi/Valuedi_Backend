@@ -3,7 +3,7 @@ package org.umc.valuedi.domain.card.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.umc.valuedi.global.entity.BaseEntity;
-import org.umc.valuedi.global.external.codef.entity.CodefConnection;
+import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
 import java.time.LocalDateTime;
 

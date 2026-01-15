@@ -1,21 +1,21 @@
-package org.umc.valuedi.global.external.codef.entity;
+package org.umc.valuedi.domain.connection.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.umc.valuedi.domain.account.entity.BankAccount;
+import org.umc.valuedi.domain.bank.entity.BankAccount;
 import org.umc.valuedi.domain.card.entity.Card;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.entity.BaseEntity;
-import org.umc.valuedi.global.external.codef.enums.ConnectionStatus;
+import org.umc.valuedi.domain.connection.enums.ConnectionStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.umc.valuedi.global.external.codef.enums.ConnectionStatus.ACTIVE;
+import static org.umc.valuedi.domain.connection.enums.ConnectionStatus.ACTIVE;
 
 @Entity
 @Builder
@@ -42,7 +42,7 @@ public class CodefConnection extends BaseEntity {
     private ConnectionStatus status = ACTIVE;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column(name = "business_type",nullable = false, length = 10)
     private BusinessType businessType;
 
     @Column(name = "last_synced_at")
