@@ -45,7 +45,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String category = jwtUtil.getCategory(token);
 
             if(!category.equals("access")) {
-                throw new JwtException("엑세스 토큰이 아닙니다.");
+                securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.NOT_ACCESS_TOKEN);
+                return;
             }
 
             String memberId = jwtUtil.getMemberId(token);

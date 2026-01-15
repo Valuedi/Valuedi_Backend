@@ -75,7 +75,7 @@ public interface AuthControllerDocs {
                                     value = """
                                             {
                                               "isSuccess": false,
-                                              "code": "AUTH401_4",
+                                              "code": "AUTH401_5",
                                               "message": "보안 인증 값(state)이 일치하지 않거나 만료되었습니다.",
                                               "result": null
                                             }
