@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.domain.savings.converter.SavingsConverter;
 import org.umc.valuedi.domain.savings.dto.response.SavingsListResponse;
+import org.umc.valuedi.infra.fss.exception.FssException;
+import org.umc.valuedi.infra.fss.exception.code.FssErrorCode;
 import org.umc.valuedi.infra.fss.client.FssSavingsClient;
 import org.umc.valuedi.infra.fss.dto.response.FssSavingsResponse;
 
@@ -14,13 +16,17 @@ public class SavingsService {
     private final FssSavingsClient fssSavingsClient;
 
     public SavingsListResponse getSavingsList() {
-        return getSavingsList(1);
-    }
 
-    public SavingsListResponse getSavingsList(Integer pageNo) {
-        int page = (pageNo == null || pageNo < 1) ? 1 : pageNo;
+        FssSavingsResponse response = fssSavingsClient.fetchSavingsList(1);
 
-        FssSavingsResponse response = fssSavingsClient.fetchSavingsList(page);
+        if (response == null || response.result() == null) {
+            throw new FssException(FssErrorCode.EMPTY_RESPONSE);
+        }
+
+        String errCd = response.result().errCd();
+        if (!"000".equals(errCd)) {
+            throw new FssException(FssErrorCode.fromErrCd(errCd));
+        }
 
         return SavingsConverter.toSavingsListResponseDTO(response);
     }
