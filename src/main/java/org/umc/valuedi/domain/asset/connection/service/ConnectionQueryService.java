@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.asset.bank.dto.res.BankResDTO;
+import org.umc.valuedi.domain.asset.card.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.connection.converter.ConnectionConverter;
 import org.umc.valuedi.domain.asset.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.domain.asset.connection.entity.CodefConnection;
@@ -26,7 +28,7 @@ public class ConnectionQueryService {
     /**
      * 연동된 은행 목록 조회
      */
-    public List<ConnectionResDTO.BankConnection> getConnectedBanks(Long memberId) {
+    public List<BankResDTO.BankConnection> getConnectedBanks(Long memberId) {
         List<CodefConnection> connections =
                 connectionRepository.findByMemberIdAndBusinessType(
                         memberId,
@@ -41,7 +43,7 @@ public class ConnectionQueryService {
     /**
      * 연동된 카드 목록 조회
      */
-    public List<ConnectionResDTO.CardConnection> getConnectedCards(Long memberId) {
+    public List<CardResDTO.CardConnection> getConnectedCards(Long memberId) {
         // 카드사 연동 확인
         List<CodefConnection> cardConnections =
                 connectionRepository.findByMemberIdAndBusinessType(
@@ -53,9 +55,17 @@ public class ConnectionQueryService {
             return Collections.emptyList();
         }
 
-        // CODEF API로 실제 카드 목록 조회
         String connectedId = cardConnections.get(0).getConnectedId();
-        return codefCardService.getCardList(connectedId);
+
+        List<String> cardOrganizations = cardConnections.stream()
+                .map(CodefConnection::getOrganization)
+                .distinct()
+                .toList();
+
+        log.info("카드 목록 조회 시작 - memberId: {}, 연동 카드사 수: {}",
+                memberId, cardOrganizations.size());
+
+        return codefCardService.getCardList(connectedId, cardOrganizations);
     }
 
     /**

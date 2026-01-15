@@ -1,6 +1,7 @@
 package org.umc.valuedi.domain.asset.connection.converter;
 
 import org.springframework.stereotype.Component;
+import org.umc.valuedi.domain.asset.bank.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.domain.asset.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.asset.connection.enums.Organization;
@@ -11,8 +12,8 @@ public class ConnectionConverter {
     /**
      * CodefConnection -> BankConnectionDTO
      */
-    public ConnectionResDTO.BankConnection toBankConnectionDTO(CodefConnection connection) {
-        return ConnectionResDTO.BankConnection.builder()
+    public BankResDTO.BankConnection toBankConnectionDTO(CodefConnection connection) {
+        return BankResDTO.BankConnection.builder()
                 .id(connection.getId())
                 .organizationCode(connection.getOrganization())
                 .organizationName(Organization.getNameByCode(connection.getOrganization()))
