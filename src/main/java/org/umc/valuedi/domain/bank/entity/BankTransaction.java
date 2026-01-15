@@ -1,16 +1,16 @@
-package org.umc.valuedi.domain.account.entity;
+package org.umc.valuedi.domain.bank.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.umc.valuedi.domain.account.enums.TransactionDirection;
+import org.umc.valuedi.domain.bank.enums.TransactionDirection;
 import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import static org.umc.valuedi.domain.account.enums.TransactionDirection.IN;
-import static org.umc.valuedi.domain.account.enums.TransactionDirection.OUT;
+import static org.umc.valuedi.domain.bank.enums.TransactionDirection.IN;
+import static org.umc.valuedi.domain.bank.enums.TransactionDirection.OUT;
 
 @Entity
 @Builder

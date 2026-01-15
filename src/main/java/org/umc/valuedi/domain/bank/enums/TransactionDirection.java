@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.account.enums;
+package org.umc.valuedi.domain.bank.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
