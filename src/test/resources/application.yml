@@ -1,25 +1,25 @@
 spring:
+  application:
+    name: valuedi-backend
+
   datasource:
     driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:valuedi_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:valuedi
     username: sa
-    password:
-
+  # password:
+  data:
+    redis:
+      host: mock
+      port: 12345
   jpa:
     database: h2
     database-platform: org.hibernate.dialect.H2Dialect
-    show-sql: false
+    show-sql: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
 management:
   endpoints:
     web:
