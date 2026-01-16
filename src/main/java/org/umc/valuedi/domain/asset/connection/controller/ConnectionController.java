@@ -16,12 +16,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/codef")
 @RequiredArgsConstructor
-public class ConnectionController {
+public class ConnectionController implements ConnectionControllerDocs {
 
     private final ConnectionCommandService connectionCommandService;
     private final ConnectionQueryService connectionQueryService;
 
-    @Operation(summary = "금융사 계정 연동", description = "은행 또는 카드사 계정을 연동합니다.")
     @PostMapping("/connections")
     public ApiResponse<Void> connect(
             // @CurrentMember Long memberId,
@@ -32,7 +31,6 @@ public class ConnectionController {
         return ApiResponse.onSuccess(CodefSuccessCode.CODEF_CONNECTION_SUCCESS, null);
     }
 
-    @Operation(summary = "모든 연동 목록 조회", description = "연동된 모든 금융사(은행+카드) 목록을 조회합니다.")
     @GetMapping("/connections")
     public ApiResponse<List<ConnectionResDTO.Connection>> getAllConnections(
             // @CurrentMember Long memberId

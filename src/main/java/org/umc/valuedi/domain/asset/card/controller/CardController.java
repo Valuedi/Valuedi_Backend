@@ -15,11 +15,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/codef")
 @RequiredArgsConstructor
-public class CardController {
+public class CardController implements CardControllerDocs{
 
     private final ConnectionQueryService connectionQueryService;
 
-    @Operation(summary = "연동된 카드 목록 조회", description = "연동된 카드 목록을 조회합니다.")
     @GetMapping("/cards")
     public ApiResponse<List<CardResDTO.CardConnection>> getCards(
             // @CurrentMember Long memberId

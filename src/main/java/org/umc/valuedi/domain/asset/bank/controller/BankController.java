@@ -15,11 +15,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/codef")
 @RequiredArgsConstructor
-public class BankController {
+public class BankController implements BankControllerDocs {
 
     private final ConnectionQueryService connectionQueryService;
 
-    @Operation(summary = "연동된 은행 목록 조회", description = "연동된 은행 목록을 조회합니다.")
     @GetMapping("/banks/connections")
     public ApiResponse<List<BankResDTO.BankConnection>> getBanks(
             // @CurrentMember Long memberId
