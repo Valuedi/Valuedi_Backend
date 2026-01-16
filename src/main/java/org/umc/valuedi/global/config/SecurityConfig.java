@@ -9,11 +9,16 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.umc.valuedi.global.apiPayload.code.GeneralErrorCode;
 import org.umc.valuedi.global.security.handler.SecurityExceptionHandler;
 import org.umc.valuedi.global.security.jwt.JwtAuthFilter;
 import org.umc.valuedi.global.security.jwt.JwtUtil;
 import org.umc.valuedi.global.security.service.CustomUserDetailsService;
+
+import java.util.Arrays;
 
 @EnableWebSecurity
 @Configuration
@@ -61,6 +66,7 @@ public class SecurityConfig {
                             securityExceptionHandler.sendErrorResponse(response, GeneralErrorCode.FORBIDDEN);
                         })
                 )
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -73,5 +79,23 @@ public class SecurityConfig {
     @Bean
     public JwtAuthFilter jwtAuthFilter() {
         return new JwtAuthFilter(jwtUtil, securityExceptionHandler, customUserDetailsService);
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000"
+        ));
+
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
