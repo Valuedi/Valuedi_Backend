@@ -12,7 +12,6 @@ public class FinanceMbtiTypeInfo implements FinanceMbtiProvider {
     private final EnumMap<MbtiType, FinanceMbtiTypeInfoDto> map = new EnumMap<>(MbtiType.class);
 
     public FinanceMbtiTypeInfo() {
-        // TODO: 여기만 채우면 됨 (서비스 로직 손댈 필요 없음)
         put(
                 MbtiType.APGV,
                 "일단 계획은 다 있어~형",
