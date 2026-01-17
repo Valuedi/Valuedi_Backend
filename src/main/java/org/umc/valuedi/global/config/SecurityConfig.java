@@ -47,6 +47,13 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable);
+<<<<<<< HEAD
         return http.build();
     }
+=======
+
+        return http.build();
+    }
+
+>>>>>>> develop
 }
