@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.umc.valuedi.domain.mbti.enums.MbtiType;
+import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -13,9 +14,9 @@ import java.util.List;
 @Table(name = "member_mbti_test")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class MemberMbtiTest {
+public class MemberMbtiTest extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -54,10 +55,6 @@ public class MemberMbtiTest {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

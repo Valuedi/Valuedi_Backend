@@ -8,7 +8,7 @@ import org.umc.valuedi.domain.mbti.enums.MbtiType;
 @Table(name = "mbti_type")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 public class MbtiTypeInfo {
 

@@ -2,19 +2,11 @@ package org.umc.valuedi.domain.mbti.exception;
 
 import lombok.Getter;
 import org.umc.valuedi.domain.mbti.exception.code.MbtiErrorCode;
+import org.umc.valuedi.global.apiPayload.exception.GeneralException;
 
-@Getter
-public class MbtiException extends RuntimeException {
-
-    private final MbtiErrorCode errorCode;
+public class MbtiException extends GeneralException {
 
     public MbtiException(MbtiErrorCode errorCode) {
-        super(errorCode.getMessage());
-        this.errorCode = errorCode;
-    }
-
-    public MbtiException(MbtiErrorCode errorCode, String customMessage) {
-        super(customMessage);
-        this.errorCode = errorCode;
+        super(errorCode);
     }
 }

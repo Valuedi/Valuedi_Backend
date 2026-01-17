@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.mbti.validation;
+package org.umc.valuedi.domain.mbti.validator;
 
 import org.springframework.stereotype.Component;
 import org.umc.valuedi.domain.mbti.dto.FinanceMbtiTestRequestDto;

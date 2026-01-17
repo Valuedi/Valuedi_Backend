@@ -2,7 +2,7 @@ package org.umc.valuedi.domain.mbti.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 
@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 @Table(name = "member_mbti_response")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
-public class MemberMbtiResponse {
+public class MemberMbtiResponse extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +32,6 @@ public class MemberMbtiResponse {
      */
     @Column(name = "choice_value", nullable = false)
     private Integer choiceValue;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @PrePersist
     void validate() {

@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.mbti.dto.FinanceMbtiTypeInfoDto;
 import org.umc.valuedi.domain.mbti.entity.MbtiTypeInfo;
 import org.umc.valuedi.domain.mbti.enums.MbtiType;
+import org.umc.valuedi.domain.mbti.exception.MbtiException;
+import org.umc.valuedi.domain.mbti.exception.code.MbtiErrorCode;
 import org.umc.valuedi.domain.mbti.repository.MbtiTypeInfoRepository;
 
 import java.util.Arrays;
@@ -13,15 +15,15 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class FinanceMbtiTypeInfo implements FinanceMbtiProvider {
 
     private final MbtiTypeInfoRepository mbtiTypeInfoRepository;
 
     @Override
-    @Transactional(readOnly = true)
     public FinanceMbtiTypeInfoDto get(MbtiType type) {
         MbtiTypeInfo e = mbtiTypeInfoRepository.findByType(type)
-                .orElseThrow(() -> new IllegalStateException("Finance MBTI type info not found: " + type));
+                .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
 
         return toDto(e);
     }
