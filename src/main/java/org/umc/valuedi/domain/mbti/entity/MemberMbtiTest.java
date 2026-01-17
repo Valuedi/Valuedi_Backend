@@ -66,25 +66,10 @@ public class MemberMbtiTest {
     @Builder.Default
     private List<MemberMbtiResponse> responses = new ArrayList<>();
 
-    @PrePersist
-    void prePersist() {
-        if (isActive == null) isActive = true;
-        if (anxietyScore == null) anxietyScore = 0;
-        if (stabilityScore == null) stabilityScore = 0;
-        if (impulseScore == null) impulseScore = 0;
-        if (planningScore == null) planningScore = 0;
-        if (aggressiveScore == null) aggressiveScore = 0;
-        if (conservativeScore == null) conservativeScore = 0;
-        if (avoidanceScore == null) avoidanceScore = 0;
-        if (rationalScore == null) rationalScore = 0;
-    }
 
     public void addResponse(MemberMbtiResponse response) {
         this.responses.add(response);
         response.setTest(this);
     }
 
-    public void removeResponse(MemberMbtiResponse response) {
-        this.responses.remove(response);
-    }
 }
