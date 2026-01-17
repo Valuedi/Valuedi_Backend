@@ -60,7 +60,6 @@ public class FinanceMbtiService {
         // 점수 산출
         FinanceMbtiScoringService.ScoreResult score = scoringService.score(activeQuestions, answersByQid);
 
-        // 기존 대표 테스트 비활성화(대표는 1개만 유지)
         memberMbtiTestRepository.deactivateAllActiveTests(memberId);
 
         // 새 테스트 생성
@@ -75,7 +74,7 @@ public class FinanceMbtiService {
                 .conservativeScore(score.conservativeScore())
                 .avoidanceScore(score.avoidanceScore())
                 .rationalScore(score.rationalScore())
-                .isActive(true) // 대표 결과로 저장
+                .isActive(true)
                 .build();
 
         // 응답 저장(연관관계 세팅)
@@ -85,10 +84,10 @@ public class FinanceMbtiService {
 
             MemberMbtiResponse resp = MemberMbtiResponse.builder()
                     .question(q)
-                    .choiceValue((int) choiceVal.byteValue()) // Integer -> Byte
+                    .choiceValue((int) choiceVal.byteValue())
                     .build();
 
-            test.addResponse(resp); // cascade=ALL 이라 test 저장 시 response도 저장됨
+            test.addResponse(resp);
         }
 
         return memberMbtiTestRepository.save(test);

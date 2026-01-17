@@ -13,6 +13,6 @@ public record FinanceMbtiTestRequestDto(
 ) {
     public record Answer(
             @NotNull Long questionId,
-            @NotNull @Min(1) @Max(5) Byte choiceValue
+            @NotNull @Min(1) @Max(5) Integer choiceValue
     ) {}
 }

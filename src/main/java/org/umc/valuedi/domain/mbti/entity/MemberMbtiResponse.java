@@ -18,13 +18,11 @@ public class MemberMbtiResponse {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // test_id FK
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "test_id", nullable = false)
     @Setter(AccessLevel.PACKAGE)
     private MemberMbtiTest test;
 
-    // question_id FK
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "question_id", nullable = false)
     private MbtiQuestion question;

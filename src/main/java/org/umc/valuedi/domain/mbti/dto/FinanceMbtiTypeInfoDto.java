@@ -4,9 +4,10 @@ import org.umc.valuedi.domain.mbti.enums.MbtiType;
 import java.util.List;
 
 public record FinanceMbtiTypeInfoDto(
-        MbtiType type,
-        String title,              // MBTI
-        String shortDescription,    // 2줄 요약
-        List<String> cautions,      // 주의할 점 (리스트)
-        List<String> recommendedActions // 추천 행동/습관 (리스트)
+        MbtiType type,                 // 영문
+        String title,                  // 별명
+        String tagline,                // 1줄 설명
+        String detail,                 // 상세설명
+        List<String> cautions,         // 주의할 점
+        List<String> recommendedActions // 추천 행동
 ) {}

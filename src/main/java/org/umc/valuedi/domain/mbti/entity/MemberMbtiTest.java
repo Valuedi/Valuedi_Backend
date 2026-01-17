@@ -79,19 +79,6 @@ public class MemberMbtiTest {
         if (rationalScore == null) rationalScore = 0;
     }
 
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
-        this.isActive = false;
-    }
-
-    public void setAsRepresentative() {
-        this.isActive = true;
-    }
-
-    public void unsetRepresentative() {
-        this.isActive = false;
-    }
-
     public void addResponse(MemberMbtiResponse response) {
         this.responses.add(response);
         response.setTest(this);
