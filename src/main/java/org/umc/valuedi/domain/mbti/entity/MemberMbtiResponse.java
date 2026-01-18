@@ -33,10 +33,4 @@ public class MemberMbtiResponse extends BaseEntity {
     @Column(name = "choice_value", nullable = false)
     private Integer choiceValue;
 
-    @PrePersist
-    void validate() {
-        if (choiceValue == null || choiceValue < 1 || choiceValue > 5) {
-            throw new IllegalArgumentException("choice_value must be between 1 and 5");
-        }
-    }
 }

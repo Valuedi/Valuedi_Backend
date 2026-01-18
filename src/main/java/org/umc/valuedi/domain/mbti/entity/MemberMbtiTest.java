@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.umc.valuedi.domain.mbti.enums.MbtiType;
+import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDateTime;
@@ -22,8 +23,9 @@ public class MemberMbtiTest extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member member;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "result_type", nullable = false, length = 40)

@@ -3,6 +3,8 @@ package org.umc.valuedi.domain.mbti.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.umc.valuedi.domain.mbti.enums.MbtiQuestionCategory;
 import org.umc.valuedi.global.entity.BaseEntity;
@@ -11,6 +13,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "mbti_question")
+@SQLDelete(sql = "UPDATE mbti_question SET deleted_at = NOW(), is_active = 0 WHERE id = ?")
+@SQLRestriction("is_active = 1 and deleted_at is null")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -38,11 +42,6 @@ public class MbtiQuestion extends BaseEntity {
     @PrePersist
     void prePersist() {
         if (isActive == null) isActive = true;
-    }
-
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
-        this.isActive = false;
     }
 
     public void deactivate() {

@@ -24,7 +24,7 @@ public class FinanceMbtiQueryService {
     private final FinanceMbtiScoringService scoringService;
 
     public List<MbtiQuestion> getActiveQuestions() {
-        return mbtiQuestionRepository.findActiveQuestions();
+        return mbtiQuestionRepository.findAllByOrderByIdAsc();
     }
 
     public MemberMbtiTest getCurrentResult(Long memberId) {

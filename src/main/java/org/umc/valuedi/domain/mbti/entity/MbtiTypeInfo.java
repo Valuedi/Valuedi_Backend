@@ -14,7 +14,7 @@ public class MbtiTypeInfo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "result_type")
+    @Column(name = "id")
     private Long id;
 
     // 영문 MBTI

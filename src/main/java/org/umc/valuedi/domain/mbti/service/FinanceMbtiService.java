@@ -29,7 +29,7 @@ public class FinanceMbtiService {
     public MemberMbtiTest submitTest(FinanceMbtiTestRequestDto req) {
         Long memberId = req.memberId();
 
-        List<MbtiQuestion> activeQuestions = mbtiQuestionRepository.findActiveQuestions();
+        List<MbtiQuestion> activeQuestions = mbtiQuestionRepository.findAllByOrderByIdAsc();
 
         Map<Long, MbtiQuestion> activeQuestionMap = financeMbtiTestValidator.validateAndBuildQuestionMap(req, activeQuestions);
 
