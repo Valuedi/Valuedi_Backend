@@ -19,7 +19,7 @@ public class BankController implements BankControllerDocs {
 
     private final ConnectionQueryService connectionQueryService;
 
-    @GetMapping("/banks/connections")
+    @GetMapping("/banks")
     public ApiResponse<List<BankResDTO.BankConnection>> getBanks(
             // @CurrentMember Long memberId
     ) {
