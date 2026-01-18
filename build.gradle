@@ -52,8 +52,8 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.13'
 
-  // Spring Cloud OpenFeign
-  implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+  	// Spring Cloud OpenFeign
+  	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
 	// Security
 	implementation 'org.springframework.boot:spring-boot-starter-security'

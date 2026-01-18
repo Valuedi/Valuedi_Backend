@@ -20,6 +20,17 @@ spring:
     properties:
       hibernate:
         format_sql: true
+kakao:
+  client-id: dummy
+  redirect-uri: http://localhost:8080/auth/oauth/kakao/callback
+  client-secret: dummy
+
+jwt:
+  token:
+    secretKey: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmn # 더미 값
+    expiration:
+      access: 3600000
+      refresh: 1209600000
 management:
   endpoints:
     web:
@@ -28,3 +39,6 @@ management:
   endpoint:
     health:
       show-details: never
+fss:
+  base-url: https://finlife.fss.or.kr/finlifeapi
+  auth-key: dummy
