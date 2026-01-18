@@ -1,6 +1,5 @@
 package org.umc.valuedi.domain.auth.service.command;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -9,6 +8,8 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.auth.converter.AuthConverter;
 import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
@@ -84,6 +85,7 @@ public class AuthCommandService {
     }
 
     // 이메일 인증번호 발송
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendCode(String email) {
         String code = String.valueOf(sr.nextInt(900_000) + 100_000);
         String redisKey = "AUTH_CODE:" + email;
@@ -102,6 +104,7 @@ public class AuthCommandService {
     }
 
     // 이메일 인증번호 검증
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void verifyCode(String email, String code) {
         String redisKey = "AUTH_CODE:" + email;
         String savedCode = redisTemplate.opsForValue().get(redisKey);
