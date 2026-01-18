@@ -8,10 +8,13 @@ import org.umc.valuedi.domain.member.enums.Gender;
 import org.umc.valuedi.domain.member.enums.Role;
 import org.umc.valuedi.domain.member.enums.SignupType;
 import org.umc.valuedi.domain.member.enums.Status;
+import org.umc.valuedi.domain.terms.entity.MemberTerms;
 import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Builder
@@ -64,4 +67,8 @@ public class Member extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<MemberTerms> memberTermsList = new ArrayList<>();
 }
