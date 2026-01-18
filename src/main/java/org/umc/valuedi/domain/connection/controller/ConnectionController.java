@@ -13,14 +13,14 @@ import org.umc.valuedi.global.external.codef.exception.code.CodefSuccessCode;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/codef")
+@RequestMapping("/api/connections")
 @RequiredArgsConstructor
 public class ConnectionController implements ConnectionControllerDocs {
 
     private final ConnectionCommandService connectionCommandService;
     private final ConnectionQueryService connectionQueryService;
 
-    @PostMapping("/connections")
+    @PostMapping
     public ApiResponse<Void> connect(
             // @CurrentMember Long memberId,
             @RequestBody ConnectionReqDTO.Connect request
@@ -30,7 +30,7 @@ public class ConnectionController implements ConnectionControllerDocs {
         return ApiResponse.onSuccess(CodefSuccessCode.CODEF_CONNECTION_SUCCESS, null);
     }
 
-    @GetMapping("/connections")
+    @GetMapping
     public ApiResponse<List<ConnectionResDTO.Connection>> getAllConnections(
             // @CurrentMember Long memberId
     ) {

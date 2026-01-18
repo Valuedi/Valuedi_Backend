@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/codef/assets")
+@RequestMapping("/api/assets")
 public class AssetController implements AssetControllerDocs {
 
     private final ConnectionQueryService connectionQueryService;
