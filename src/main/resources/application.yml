@@ -21,13 +21,24 @@ spring:
       hibernate:
         format_sql: true
 kakao:
-    client-id: ${KAKAO_CLIENT_ID}
-    redirect-uri: ${KAKAO_REDIRECT_URI}
-    client-secret: ${KAKAO_CLIENT_SECRET}
+    client-id: ${KAKAO_CLIENT_ID:kakao_client_id}
+    redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:8080/auth/oauth/kakao/callback}
+    client-secret: ${KAKAO_CLIENT_SECRET:kakao_client_secret}
 
 jwt:
   token:
-    secretKey: ${JWT_TOKEN_SECRET_KEY}
+    secretKey: ${JWT_TOKEN_SECRET_KEY:abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmn} # 더미 키
     expiration:
       access: 3600000  # 1시간
       refresh: 1209600000 # 14일
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+fss:
+  base-url: ${FSS_BASE_URL:https://finlife.fss.or.kr/finlifeapi}
+  auth-key: ${FSS_AUTH_KEY:01c389be80b937216b361708886c797b}
