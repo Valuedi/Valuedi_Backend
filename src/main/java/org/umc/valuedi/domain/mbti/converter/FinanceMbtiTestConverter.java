@@ -6,6 +6,7 @@ import org.umc.valuedi.domain.mbti.entity.MbtiQuestion;
 import org.umc.valuedi.domain.mbti.entity.MemberMbtiResponse;
 import org.umc.valuedi.domain.mbti.entity.MemberMbtiTest;
 import org.umc.valuedi.domain.mbti.service.FinanceMbtiScoringService;
+import org.umc.valuedi.domain.member.entity.Member;
 
 import java.util.Map;
 
@@ -13,12 +14,13 @@ import java.util.Map;
 public class FinanceMbtiTestConverter {
 
     public MemberMbtiTest toEntity(
+            Member member,
             FinanceMbtiTestRequestDto req,
             FinanceMbtiScoringService.ScoreResult score,
             Map<Long, MbtiQuestion> questionMap
     ) {
         MemberMbtiTest test = MemberMbtiTest.builder()
-                .memberId(req.memberId())
+                .member(member)
                 .resultType(score.resultType())
                 .anxietyScore(score.anxietyScore())
                 .stabilityScore(score.stabilityScore())

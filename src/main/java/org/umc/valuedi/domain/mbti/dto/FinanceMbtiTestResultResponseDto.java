@@ -22,7 +22,7 @@ public record FinanceMbtiTestResultResponseDto(
     public static FinanceMbtiTestResultResponseDto from(MemberMbtiTest t) {
         return new FinanceMbtiTestResultResponseDto(
                 t.getId(),
-                t.getMemberId(),
+                t.getMember().getId(),
                 t.getResultType(),
                 t.getAnxietyScore(),
                 t.getStabilityScore(),

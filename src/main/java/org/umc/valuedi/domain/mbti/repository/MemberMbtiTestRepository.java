@@ -12,7 +12,7 @@ public interface MemberMbtiTestRepository extends JpaRepository<MemberMbtiTest, 
     @Query("""
         select t
         from MemberMbtiTest t
-        where t.memberId = :memberId
+        where t.member.id = :memberId
           and t.isActive = true
           and t.deletedAt is null
         order by t.createdAt desc
@@ -23,7 +23,7 @@ public interface MemberMbtiTestRepository extends JpaRepository<MemberMbtiTest, 
     @Query("""
         update MemberMbtiTest t
         set t.isActive = false
-        where t.memberId = :memberId
+        where t.member.id = :memberId
           and t.isActive = true
           and t.deletedAt is null
     """)
