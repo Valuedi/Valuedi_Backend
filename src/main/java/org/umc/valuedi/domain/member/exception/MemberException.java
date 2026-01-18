@@ -4,7 +4,5 @@ import org.umc.valuedi.global.apiPayload.code.BaseErrorCode;
 import org.umc.valuedi.global.apiPayload.exception.GeneralException;
 
 public class MemberException extends GeneralException {
-    public MemberException(BaseErrorCode code) {
-        super(code);
-    }
+    public MemberException(BaseErrorCode code) { super(code); }
 }

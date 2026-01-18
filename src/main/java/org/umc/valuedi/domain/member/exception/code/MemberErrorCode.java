@@ -9,7 +9,8 @@ import org.umc.valuedi.global.apiPayload.code.BaseErrorCode;
 @AllArgsConstructor
 public enum MemberErrorCode implements BaseErrorCode {
 
-    DUPLICATE_USERNAME(HttpStatus.CONFLICT, "MEMBER409_1", "이미 사용 중인 아이디입니다.")
+    MEMBER_SUSPENDED(HttpStatus.FORBIDDEN, "MEMBER403_1", "휴면 상태의 회원입니다."),
+    MEMBER_DELETED(HttpStatus.FORBIDDEN, "MEMBER403_2", "탈퇴한 회원입니다."),
     ;
 
     private final HttpStatus status;
