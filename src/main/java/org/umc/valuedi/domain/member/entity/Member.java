@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.umc.valuedi.domain.member.enums.Gender;
+import org.umc.valuedi.domain.member.enums.Role;
 import org.umc.valuedi.domain.member.enums.SignupType;
 import org.umc.valuedi.domain.member.enums.Status;
 import org.umc.valuedi.global.entity.BaseEntity;
@@ -25,7 +26,7 @@ public class Member extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "username", length = 50, unique = true, nullable = false)
+    @Column(name = "username", length = 50, unique = true)
     private String username;
 
     @Column(name = "email", length = 320)
@@ -34,7 +35,7 @@ public class Member extends BaseEntity {
     @Column(name = "real_name", length = 50, nullable = false)
     private String realName;
 
-    @Column(name = "phone_number", length = 20, nullable = false)
+    @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
     @Column(name = "birth", nullable = false)
@@ -43,6 +44,11 @@ public class Member extends BaseEntity {
     @Column(name = "gender", nullable = false)
     @Enumerated(EnumType.STRING)
     private Gender gender;
+
+    @Column(name = "role", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Role role = Role.ROLE_USER;
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash;

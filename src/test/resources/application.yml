@@ -1,25 +1,36 @@
 spring:
+  application:
+    name: valuedi-backend
+
   datasource:
     driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:valuedi_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:valuedi
     username: sa
-    password:
-
+  # password:
+  data:
+    redis:
+      host: mock
+      port: 12345
   jpa:
     database: h2
     database-platform: org.hibernate.dialect.H2Dialect
-    show-sql: false
+    show-sql: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
+kakao:
+  client-id: dummy
+  redirect-uri: http://localhost:8080/auth/oauth/kakao/callback
+  client-secret: dummy
 
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
+jwt:
+  token:
+    secretKey: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmn # 더미 값
+    expiration:
+      access: 3600000
+      refresh: 1209600000
 management:
   endpoints:
     web:
@@ -28,3 +39,6 @@ management:
   endpoint:
     health:
       show-details: never
+fss:
+  base-url: https://finlife.fss.or.kr/finlifeapi
+  auth-key: dummy
