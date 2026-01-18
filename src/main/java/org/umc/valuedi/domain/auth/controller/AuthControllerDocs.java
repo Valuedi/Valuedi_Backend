@@ -10,7 +10,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -202,7 +201,7 @@ public interface AuthControllerDocs {
                     )
             )
     })
-    ApiResponse<Void> sendEmail(AuthReqDTO.EmailSendDTO dto);
+    ApiResponse<Void> sendEmail(@Valid AuthReqDTO.EmailSendDTO dto);
 
     @Operation(summary = "이메일 인증번호 검증 API", description = "회원가입 시 사용자 이메일로 발송한 인증번호를 검증합니다.")
     @ApiResponses({
@@ -261,5 +260,5 @@ public interface AuthControllerDocs {
                     )
             )
     })
-    ApiResponse<Void> verifyEmail(AuthReqDTO.EmailVerifyDTO dto);
+    ApiResponse<Void> verifyEmail(@Valid AuthReqDTO.EmailVerifyDTO dto);
 }

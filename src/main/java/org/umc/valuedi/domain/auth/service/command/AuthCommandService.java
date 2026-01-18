@@ -86,7 +86,7 @@ public class AuthCommandService {
     // 이메일 인증번호 발송
     public void sendCode(String email) {
         String code = String.valueOf(sr.nextInt(900_000) + 100_000);
-        String redisKey = "AUTH_CODE" + email;
+        String redisKey = "AUTH_CODE:" + email;
         redisTemplate.opsForValue().set(redisKey, code, Duration.ofMinutes(3));
 
         try {

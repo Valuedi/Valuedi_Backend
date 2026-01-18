@@ -1,7 +1,6 @@
 package org.umc.valuedi.domain.auth.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -68,14 +67,14 @@ public class AuthController implements AuthControllerDocs {
 
     @Override
     @PostMapping("/email/send")
-    public ApiResponse<Void> sendEmail(@RequestBody @Valid AuthReqDTO.EmailSendDTO dto) {
+    public ApiResponse<Void> sendEmail(@RequestBody AuthReqDTO.EmailSendDTO dto) {
         authCommandService.sendCode(dto.email());
         return ApiResponse.onSuccess(AuthSuccessCode.EMAIL_SEND_SUCCESS, null);
     }
 
     @Override
     @PostMapping("/email/verify")
-    public ApiResponse<Void> verifyEmail(@RequestBody @Valid AuthReqDTO.EmailVerifyDTO dto) {
+    public ApiResponse<Void> verifyEmail(@RequestBody AuthReqDTO.EmailVerifyDTO dto) {
         authCommandService.verifyCode(dto.email(), dto.code());
         return ApiResponse.onSuccess(AuthSuccessCode.EMAIL_VERIFY_SUCCESS, null);
     }
