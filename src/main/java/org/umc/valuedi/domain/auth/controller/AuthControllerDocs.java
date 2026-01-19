@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 
@@ -159,4 +161,104 @@ public interface AuthControllerDocs {
             @NotBlank(message = "아이디를 입력해주세요.")
             String username
     );
+
+    @Operation(summary = "이메일 인증번호 발송 API", description = "회원가입 시 사용자가 입력한 이메일로 인증번호를 발송합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 인증번호 발송 요청",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "발송 요청 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "AUTH200_4",
+                                                      "message": "인증번호 발송 요청이 접수되었습니다.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "429",
+                    description = "에러 - 인증번호 발송 요청 과다",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "과다 요청 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": false,
+                                                      "code": "AUTH429_1",
+                                                      "message": "이미 인증번호가 발송되었습니다. 1분 후 다시 시도해 주세요.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            )
+    })
+    ApiResponse<Void> sendEmail(@Valid AuthReqDTO.EmailSendDTO dto);
+
+    @Operation(summary = "이메일 인증번호 검증 API", description = "회원가입 시 사용자 이메일로 발송한 인증번호를 검증합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 이메일 인증 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "이메일 인증 성공 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "AUTH200_5",
+                                                      "message": "이메일 인증에 성공했습니다.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "에러 - 인증번호 만료 또는 존재하지 않음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "인증번호 만료 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": false,
+                                                      "code": "AUTH404_1",
+                                                      "message": "인증번호가 만료되었거나 존재하지 않습니다.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "에러 - 인증번호 불일치",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "인증번호 불일치 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": false,
+                                                      "code": "AUTH400_2",
+                                                      "message": "인증번호가 일치하지 않습니다.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            )
+    })
+    ApiResponse<Void> verifyEmail(@Valid AuthReqDTO.EmailVerifyDTO dto);
 }

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.auth.config.KakaoProperties;
+import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.domain.auth.exception.AuthException;
 import org.umc.valuedi.domain.auth.exception.code.AuthErrorCode;
@@ -27,6 +28,7 @@ public class AuthController implements AuthControllerDocs {
     private final KakaoProperties kakaoProperties;
     private final CookieUtil cookieUtil;
 
+    @Override
     @GetMapping("/oauth/kakao/login")
     public ApiResponse<String> kakaoLogin(HttpServletResponse response) {
         String state = UUID.randomUUID().toString();
@@ -36,6 +38,7 @@ public class AuthController implements AuthControllerDocs {
         return ApiResponse.onSuccess(AuthSuccessCode.KAKAO_AUTH_URL_SUCCESS, loginUrl);
     }
 
+    @Override
     @GetMapping("/oauth/kakao/callback")
     public ApiResponse<AuthResDTO.LoginResultDTO> kakaoCallback(
             @RequestParam("code") String code,
@@ -60,5 +63,19 @@ public class AuthController implements AuthControllerDocs {
     ) {
         authQueryService.checkUsernameDuplicate(username.trim());
         return ApiResponse.onSuccess(AuthSuccessCode.USERNAME_AVAILABLE, null);
+    }
+
+    @Override
+    @PostMapping("/email/send")
+    public ApiResponse<Void> sendEmail(@RequestBody AuthReqDTO.EmailSendDTO dto) {
+        authCommandService.sendCode(dto.email());
+        return ApiResponse.onSuccess(AuthSuccessCode.EMAIL_SEND_SUCCESS, null);
+    }
+
+    @Override
+    @PostMapping("/email/verify")
+    public ApiResponse<Void> verifyEmail(@RequestBody AuthReqDTO.EmailVerifyDTO dto) {
+        authCommandService.verifyCode(dto.email(), dto.code());
+        return ApiResponse.onSuccess(AuthSuccessCode.EMAIL_VERIFY_SUCCESS, null);
     }
 }
