@@ -1,5 +1,6 @@
 package org.umc.valuedi.domain.asset.converter;
 
+import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
@@ -52,6 +53,15 @@ public class AssetConverter {
         return CardResDTO.CardListDTO.builder()
                 .cardList(infoList)
                 .totalCount(infoList.size())
+                .build();
+    }
+
+    // 자산 개수 요약 DTO 변환
+    public static AssetResDTO.AssetSummaryCountDTO toAssetSummaryCountDTO(long accountCount, long cardCount) {
+        return AssetResDTO.AssetSummaryCountDTO.builder()
+                .totalAccountCount(accountCount)
+                .totalCardCount(cardCount)
+                .totalAssetCount(accountCount + cardCount)
                 .build();
     }
 }

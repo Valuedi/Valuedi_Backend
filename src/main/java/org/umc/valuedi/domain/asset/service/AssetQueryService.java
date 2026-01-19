@@ -54,10 +54,6 @@ public class AssetQueryService {
         long accountCount = bankAccountRepository.countByMemberId(memberId);
         long cardCount = cardRepository.countByMemberId(memberId);
 
-        return AssetResDTO.AssetSummaryCountDTO.builder()
-                .totalAccountCount(accountCount)
-                .totalCardCount(cardCount)
-                .totalAssetCount(accountCount + cardCount)
-                .build();
+        return AssetConverter.toAssetSummaryCountDTO(accountCount, cardCount);
     }
 }
