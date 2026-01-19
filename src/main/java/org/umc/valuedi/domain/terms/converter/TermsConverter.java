@@ -1,6 +1,7 @@
 package org.umc.valuedi.domain.terms.converter;
 
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
+import org.umc.valuedi.domain.terms.entity.MemberTerms;
 import org.umc.valuedi.domain.terms.entity.Terms;
 
 import java.util.List;
@@ -17,6 +18,19 @@ public class TermsConverter {
                                 .title(terms.getTitle())
                                 .isRequired(terms.isRequired())
                                 .version(terms.getVersion())
+                                .build())
+                        .toList())
+                .build();
+    }
+
+    // entity -> 사용자가 동의한 약관 조회
+    public static TermsResponseDTO.GetMemberAgreements toGetMemberAgreementsDTO(List<MemberTerms> memberTermsList) {
+        return TermsResponseDTO.GetMemberAgreements.builder()
+                .agreements(memberTermsList.stream()
+                        .map(mt -> TermsResponseDTO.MemberAgreement.builder()
+                                .termsId(mt.getTerms().getId())
+                                .agreedVersion(mt.getAgreedVersion())
+                                .agreedAt(mt.getUpdatedAt())
                                 .build())
                         .toList())
                 .build();
