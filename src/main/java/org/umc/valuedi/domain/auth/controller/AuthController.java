@@ -90,4 +90,10 @@ public class AuthController implements AuthControllerDocs {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.onSuccess(AuthSuccessCode.SIGNUP_SUCCESS, authCommandService.registerLocal(dto)));
     }
+
+    @Override
+    @PostMapping("/login")
+    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(@RequestBody AuthReqDTO.LocalLoginDTO dto) {
+        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, authQueryService.loginLocal(dto));
+    }
 }

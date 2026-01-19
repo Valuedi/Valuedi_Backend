@@ -50,6 +50,10 @@ public class JwtUtil {
         return getClaims(token).getPayload().get("category", String.class);
     }
 
+    public long getRefreshTokenExpiration() {
+        return refreshExpiration.toMillis();
+    }
+
     private String createToken(CustomUserDetails user, Duration expiration, boolean includeAuthorities, String category) {
         Instant now = Instant.now();
         var builder = Jwts.builder()

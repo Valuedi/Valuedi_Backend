@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -325,4 +326,6 @@ public interface AuthControllerDocs {
     public ResponseEntity<ApiResponse<AuthResDTO.RegisterResDTO>> signUp(
             @Valid AuthReqDTO.RegisterReqDTO dto
     );
+
+    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(@Valid AuthReqDTO.LocalLoginDTO dto);
 }

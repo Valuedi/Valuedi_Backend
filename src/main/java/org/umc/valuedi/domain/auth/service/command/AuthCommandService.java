@@ -33,6 +33,7 @@ import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -67,6 +68,13 @@ public class AuthCommandService {
         CustomUserDetails userDetails = new CustomUserDetails(member);
         String accessToken = jwtUtil.createAccessToken(userDetails);
         String refreshToken = jwtUtil.createRefreshToken(userDetails);
+
+        redisTemplate.opsForValue().set(
+                "RT:" + member.getId(),
+                refreshToken,
+                jwtUtil.getRefreshTokenExpiration(),
+                TimeUnit.MILLISECONDS
+        );
 
         return AuthConverter.toLoginResultDTO(member, accessToken, refreshToken);
     }
