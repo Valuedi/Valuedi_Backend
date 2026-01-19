@@ -1,7 +1,10 @@
 package org.umc.valuedi.domain.auth.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.auth.config.KakaoProperties;
@@ -77,5 +80,15 @@ public class AuthController implements AuthControllerDocs {
     public ApiResponse<Void> verifyEmail(@RequestBody AuthReqDTO.EmailVerifyDTO dto) {
         authCommandService.verifyCode(dto.email(), dto.code());
         return ApiResponse.onSuccess(AuthSuccessCode.EMAIL_VERIFY_SUCCESS, null);
+    }
+
+    @Override
+    @PostMapping("/signup")
+    public ResponseEntity<ApiResponse<AuthResDTO.RegisterResDTO>> signUp(
+            @RequestBody AuthReqDTO.RegisterReqDTO dto
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.onSuccess(AuthSuccessCode.SIGNUP_SUCCESS, authCommandService.registerLocal(dto)));
     }
 }

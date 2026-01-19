@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.http.ResponseEntity;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -261,4 +262,8 @@ public interface AuthControllerDocs {
             )
     })
     ApiResponse<Void> verifyEmail(@Valid AuthReqDTO.EmailVerifyDTO dto);
+
+    public ResponseEntity<ApiResponse<AuthResDTO.RegisterResDTO>> signUp(
+            @Valid AuthReqDTO.RegisterReqDTO dto
+    );
 }
