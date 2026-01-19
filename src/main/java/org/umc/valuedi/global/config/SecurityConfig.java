@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.umc.valuedi.domain.member.enums.Role;
 import org.umc.valuedi.global.apiPayload.code.GeneralErrorCode;
 import org.umc.valuedi.global.security.handler.SecurityExceptionHandler;
 import org.umc.valuedi.global.security.jwt.JwtAuthFilter;
@@ -46,6 +47,7 @@ public class SecurityConfig {
             "/auth/signup",
             "/auth/email/**",
             "/auth/status",
+            "/api/**"
     };
 
     @Bean
@@ -53,6 +55,8 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(allowUris).permitAll()
+                        // 사용자 기능 추가되면 활성화
+//                        .requestMatchers("/api/trophies", "/api/members/me/trophies").hasAuthority(Role.ROLE_USER.name())
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
