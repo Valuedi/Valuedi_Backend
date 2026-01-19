@@ -72,11 +72,11 @@ public class AssetController implements AssetControllerDocs {
 
     @GetMapping("/banks/{bankCode}/accounts")
     public ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
-            @PathVariable String organization
+            @PathVariable String bankCode
             // @CurrentMember Long memberId
     ) {
         Long memberId = 1L;
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getBankAccountsByOrganization(memberId, organization));
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getBankAccountsByOrganization(memberId, bankCode));
     }
 
     @GetMapping("/summary")
