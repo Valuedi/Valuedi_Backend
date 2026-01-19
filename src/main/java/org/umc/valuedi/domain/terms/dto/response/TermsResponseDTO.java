@@ -2,6 +2,7 @@ package org.umc.valuedi.domain.terms.dto.response;
 
 import lombok.Builder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class TermsResponseDTO {
@@ -18,5 +19,17 @@ public class TermsResponseDTO {
             String title,
             boolean isRequired,
             String version
+    ) {}
+
+    @Builder
+    public record GetMemberAgreements(
+            List<MemberAgreement> agreements
+    ) {}
+
+    @Builder
+    public record MemberAgreement(
+            Long termsId,
+            String agreedVersion,
+            LocalDateTime agreedAt
     ) {}
 }
