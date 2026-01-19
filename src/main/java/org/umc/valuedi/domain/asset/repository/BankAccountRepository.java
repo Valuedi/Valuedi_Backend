@@ -9,10 +9,34 @@ import java.util.List;
 
 public interface BankAccountRepository extends JpaRepository<BankAccount, Long> {
 
-    // 계좌 목록 조회 (생성일 최신순)
+    /**
+     * 전체 활성 계좌 목록 조회 (최신순)
+     */
     @Query("SELECT ba FROM BankAccount ba " +
-            "JOIN FETCH ba.codefConnection " +
-            "WHERE ba.codefConnection.member.id = :memberId " +
+            "JOIN FETCH ba.codefConnection cc " +
+            "WHERE cc.member.id = :memberId " +
+            "AND ba.isActive = true " +
             "ORDER BY ba.createdAt DESC")
-    List<BankAccount> findAllByMemberIdWithConnectionOrderByCreatedAtDesc(@Param("memberId") Long memberId);
+    List<BankAccount> findAllByMemberId(@Param("memberId") Long memberId);
+
+    /**
+     * 특정 은행별 활성 계좌 목록 조회
+     */
+    @Query("SELECT ba FROM BankAccount ba " +
+            "JOIN FETCH ba.codefConnection cc " +
+            "WHERE cc.member.id = :memberId " +
+            "AND cc.organization = :organization " +
+            "AND ba.isActive = true")
+    List<BankAccount> findAllByMemberIdAndOrganization(
+            @Param("memberId") Long memberId,
+            @Param("organization") String organization
+    );
+
+    /**
+     * 총 활성 계좌 수 카운트
+     */
+    @Query("SELECT COUNT(ba) FROM BankAccount ba " +
+            "WHERE ba.codefConnection.member.id = :memberId " +
+            "AND ba.isActive = true")
+    long countByMemberId(@Param("memberId") Long memberId);
 }

@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.umc.valuedi.domain.connection.enums.ConnectionStatus;
 
 import java.time.LocalDateTime;
@@ -50,7 +49,7 @@ public class BankResDTO {
         private Long balanceAmount;
 
         @Schema(description = "기관코드", example = "0020")
-        private String organization; // 기관코드
+        private String organization;
 
         @Schema(description = "계좌 등록일시 (정렬 기준 확인용)", example = "2026-01-19T10:00:00")
         private LocalDateTime createdAt;
@@ -60,13 +59,13 @@ public class BankResDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "전체 계좌 목록")
+    @Schema(description = "계좌 목록")
     public static class BankAccountListDTO {
 
         @Schema(description = "계좌 정보 목록")
         private List<BankAccountInfo> accountList;
 
-        @Schema(description = "연동된 총 계좌 개수", example = "1")
+        @Schema(description = "총 계좌 개수", example = "1")
         private Integer totalCount;
     }
 }
