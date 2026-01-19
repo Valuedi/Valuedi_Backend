@@ -5,12 +5,13 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.umc.valuedi.domain.trophy.enums.TrophyType;
+import org.umc.valuedi.global.entity.BaseEntity;
 
 @Entity
 @Table(name = "trophy")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Trophy {
+public class Trophy extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
