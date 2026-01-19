@@ -29,7 +29,8 @@ public interface AuthControllerDocs {
                     content = @Content(
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
-                                    name = "생성된 URL에는 보안을 위한 state 파라미터가 추가되어 있습니다.",
+                                    name = "카카오 로그인 URL 생성 예시",
+                                    description = "생성된 URL에는 보안을 위한 state 파라미터가 추가되어 있습니다.",
                                     value = """
                         {
                           "isSuccess": true,
@@ -86,6 +87,37 @@ public interface AuthControllerDocs {
                                             }
                                     """
                             )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "에러 - 로그인 실패(휴면/탈퇴 회원)",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "휴면회원 로그인 예시",
+                                            value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "MEMBER403_1",
+                                              "message": "휴면 상태의 회원입니다.",
+                                              "result": null
+                                            }
+                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "탈퇴회원 로그인 예시",
+                                            value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "MEMBER403_2",
+                                              "message": "탈퇴한 회원입니다.",
+                                              "result": null
+                                            }
+                                    """
+                                    )
+                            }
                     )
             )
     })
@@ -327,5 +359,81 @@ public interface AuthControllerDocs {
             @Valid AuthReqDTO.RegisterReqDTO dto
     );
 
+    @Operation(
+            summary = "로컬 계정 로그인 API",
+            description = "로컬 계정으로 로그인을 시도합니다. 로그인이 완료되면 JWT를 발급합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 로그인 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "로그인 성공 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "AUTH200_2",
+                                              "message": "로그인에 성공했습니다.",
+                                              "result": {
+                                                "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                "memberId": 1
+                                              }
+                                            }
+                                    """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "에러 - 로그인 실패(계정정보 불일치)",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "계정정보 불일치 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "AUTH401_6",
+                                              "message": "아이디 또는 비밀번호가 일치하지 않습니다.",
+                                              "result": null
+                                            }
+                                    """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "에러 - 로그인 실패(휴면/탈퇴 회원)",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "휴면회원 로그인 예시",
+                                            value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "MEMBER403_1",
+                                              "message": "휴면 상태의 회원입니다.",
+                                              "result": null
+                                            }
+                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "탈퇴회원 로그인 예시",
+                                            value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "MEMBER403_2",
+                                              "message": "탈퇴한 회원입니다.",
+                                              "result": null
+                                            }
+                                    """
+                                    )
+                            }
+                    )
+            )
+    })
     public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(@Valid AuthReqDTO.LocalLoginDTO dto);
 }
