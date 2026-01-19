@@ -35,7 +35,7 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, cards);
     }
 
-    @GetMapping("/cardIssuers")
+    @GetMapping("/card-issuers")
     public ApiResponse<List<CardResDTO.CardIssuerConnection>> getCardIssuers(
             // @CurrentMember Long memberId
     ) {
@@ -70,7 +70,7 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllBankAccounts(memberId));
     }
 
-    @GetMapping("/banks/{organization}/accounts")
+    @GetMapping("/banks/{bankCode}/accounts")
     public ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
             @PathVariable String organization
             // @CurrentMember Long memberId
@@ -79,7 +79,7 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getBankAccountsByOrganization(memberId, organization));
     }
 
-    @GetMapping("/count")
+    @GetMapping("/summary")
     public ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount(
             // @CurrentMember Long memberId
     ) {
