@@ -1,6 +1,7 @@
 package org.umc.valuedi.domain.auth.service.command;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.auth.converter.AuthConverter;
+import org.umc.valuedi.domain.auth.dto.event.AuthMailEvent;
 import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.domain.auth.exception.AuthException;
@@ -38,9 +40,9 @@ import java.time.Duration;
 public class AuthCommandService {
     private final JwtUtil jwtUtil;
     private final KakaoService kakaoService;
-    private final JavaMailSender mailSender;
     private final StringRedisTemplate redisTemplate;
     private final MemberRepository memberRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final MemberAuthProviderRepository memberAuthProviderRepository;
     private static final SecureRandom sr = new SecureRandom();
 
@@ -91,16 +93,7 @@ public class AuthCommandService {
         String redisKey = "AUTH_CODE:" + email;
         redisTemplate.opsForValue().set(redisKey, code, Duration.ofMinutes(3));
 
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("[Valuedi] 회원가입 인증번호입니다.");
-            message.setText("인증번호는 [" + code + "] 입니다. 3분 이내에 입력해 주세요.");
-            mailSender.send(message);
-        } catch (MailException e) {
-            redisTemplate.delete(redisKey);
-            throw new AuthException(AuthErrorCode.MAIL_SEND_ERROR);
-        }
+        eventPublisher.publishEvent(new AuthMailEvent(email, code));
     }
 
     // 이메일 인증번호 검증

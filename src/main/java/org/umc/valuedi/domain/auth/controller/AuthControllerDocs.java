@@ -166,34 +166,16 @@ public interface AuthControllerDocs {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "성공 - 인증번호 발송",
+                    description = "성공 - 인증번호 발송 요청",
                     content = @Content(
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
-                                    name = "발송 성공 예시",
+                                    name = "발송 요청 예시",
                                     value = """
                                                     {
                                                       "isSuccess": true,
                                                       "code": "AUTH200_4",
-                                                      "message": "인증번호가 발송되었습니다.",
-                                                      "result": null
-                                                    }
-                                            """
-                            )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "503",
-                    description = "에러 - 메일 발송 실패",
-                    content = @Content(
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    name = "발송 실패 예시",
-                                    value = """
-                                                    {
-                                                      "isSuccess": false,
-                                                      "code": "AUTH503_1",
-                                                      "message": "메일 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+                                                      "message": "인증번호 발송 요청이 접수되었습니다.",
                                                       "result": null
                                                     }
                                             """
