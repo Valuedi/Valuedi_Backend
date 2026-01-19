@@ -2,10 +2,8 @@ package org.umc.valuedi.domain.terms.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
 import org.umc.valuedi.domain.terms.service.MemberTermsService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -25,4 +23,14 @@ public class MemberTermsController implements MemberTermsControllerDocs{
         TermsResponseDTO.GetMemberAgreements result = memberTermsService.getMemberAgreements(memberId);
         return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
     }
+
+    @PostMapping("/agree")
+    public ResponseEntity<ApiResponse<Void>> agreeTerms(
+            @RequestParam Long memberId,
+            @RequestBody TermsRequestDTO.AgreeTermsRequest dto
+    ) {
+        memberTermsService.saveAgreeTerms(memberId, dto);
+        return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, null));
+    }
+
 }

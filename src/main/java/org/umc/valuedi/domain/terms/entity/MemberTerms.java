@@ -64,4 +64,9 @@ public class MemberTerms extends BaseEntity {
         mt.setTerms(terms);
         return mt;
     }
+
+    public void updateAgreement(boolean isAgreed, String agreedVersion) {
+        this.isAgreed = isAgreed;
+        this.agreedVersion = agreedVersion;
+    }
 }

@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.umc.valuedi.domain.terms.entity.MemberTerms;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface MemberTermsRepository extends JpaRepository<MemberTerms, Long> {
 
@@ -27,4 +28,7 @@ public interface MemberTermsRepository extends JpaRepository<MemberTerms, Long> 
           AND mt.isAgreed = true
     """)
     List<MemberTerms> findAgreedByMemberIdWithTerms(@Param("memberId") Long memberId);
+
+    // 약관 동의 저장
+    Optional<MemberTerms> findByMemberIdAndTermsId(Long memberId, Long termsId);
 }
