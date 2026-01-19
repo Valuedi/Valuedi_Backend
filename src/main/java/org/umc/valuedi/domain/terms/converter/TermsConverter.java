@@ -1,5 +1,7 @@
 package org.umc.valuedi.domain.terms.converter;
 
+import org.umc.valuedi.domain.member.entity.Member;
+import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
 import org.umc.valuedi.domain.terms.entity.MemberTerms;
 import org.umc.valuedi.domain.terms.entity.Terms;
@@ -34,5 +36,15 @@ public class TermsConverter {
                                 .build())
                         .toList())
                 .build();
+    }
+
+    // DTO -> entity
+    public static MemberTerms toMemberTerms(Member member, Terms terms, boolean isAgreed, String agreedVersion) {
+        return MemberTerms.create(
+                member,
+                terms,
+                isAgreed,
+                agreedVersion
+        );
     }
 }
