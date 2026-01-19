@@ -1,6 +1,5 @@
 package org.umc.valuedi.domain.asset.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,7 +44,6 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, cardIssuers);
     }
 
-    @Operation(summary = "카드사별 카드 목록 조회", description = "특정 카드사에 연동된 카드 목록을 조회합니다.")
     @GetMapping("/cardIssuers/{issuerCode}/cards")
     public ApiResponse<CardResDTO.CardListDTO> getCardsByIssuer(
             @PathVariable String issuerCode
@@ -64,7 +62,6 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, banks);
     }
 
-    @Operation(summary = "전체 계좌 목록 조회", description = "등록 최신순으로 정렬된 모든 은행 계좌 목록을 조회합니다.")
     @GetMapping("/banks/accounts")
     public ApiResponse<BankResDTO.BankAccountListDTO> getAllBankAccounts(
             // @CurrentMember Long memberId
@@ -73,7 +70,6 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllBankAccounts(memberId));
     }
 
-    @Operation(summary = "은행별 계좌 목록 조회", description = "특정 은행에 연동된 계좌 목록을 조회합니다.")
     @GetMapping("/banks/{organization}/accounts")
     public ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
             @PathVariable String organization
@@ -83,7 +79,6 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getBankAccountsByOrganization(memberId, organization));
     }
 
-    @Operation(summary = "연동 자산 개수 조회", description = "홈화면용 자산(계좌/카드) 개수를 조회합니다.")
     @GetMapping("/count")
     public ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount(
             // @CurrentMember Long memberId
