@@ -3,6 +3,8 @@ package org.umc.valuedi.domain.trophy.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.member.entity.Member;
+import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.domain.trophy.dto.TrophyCalculationDto;
 import org.umc.valuedi.domain.trophy.converter.TrophyConverter;
 import org.umc.valuedi.domain.trophy.dto.response.TrophyMetaResponse;
@@ -11,6 +13,8 @@ import org.umc.valuedi.domain.trophy.entity.MemberTrophy;
 import org.umc.valuedi.domain.trophy.entity.MemberTrophySnapshot;
 import org.umc.valuedi.domain.trophy.entity.Trophy;
 import org.umc.valuedi.domain.trophy.enums.PeriodType;
+import org.umc.valuedi.domain.trophy.exception.TrophyException;
+import org.umc.valuedi.domain.trophy.exception.code.TrophyErrorCode;
 import org.umc.valuedi.domain.trophy.repository.MemberTrophyRepository;
 import org.umc.valuedi.domain.trophy.repository.MemberTrophySnapshotRepository;
 import org.umc.valuedi.domain.trophy.repository.TrophyAnalysisRepository;
@@ -28,6 +32,7 @@ public class TrophyService {
     private final MemberTrophyRepository memberTrophyRepository;
     private final MemberTrophySnapshotRepository snapshotRepository;
     private final TrophyAnalysisRepository analysisRepository;
+    private final MemberRepository memberRepository;
 
     /**
      * 트로피 달성 여부 계산 및 스냅샷 저장 (배치 또는 API에서 호출)
@@ -49,26 +54,33 @@ public class TrophyService {
 
     @Transactional
     protected void saveSnapshotAndAccumulate(Long memberId, Trophy trophy, PeriodType periodType, String periodKey, TrophyCalculationDto stats) {
-        // 1. 스냅샷 저장 (Upsert)
+
+        Member member = memberRepository.getReferenceById(memberId);
+        // 2. 스냅샷 저장 (Upsert)
         MemberTrophySnapshot snapshot = snapshotRepository.findByMemberIdAndTrophyAndPeriodTypeAndPeriodKey(
-                memberId, trophy, periodType, periodKey
-        ).orElseGet(() -> new MemberTrophySnapshot(memberId, trophy, periodType, periodKey, 0, "0"));
+                member, trophy, periodType, periodKey
+        ).orElseGet(() -> new MemberTrophySnapshot(member, trophy, periodType, periodKey, 0, "0"));
 
         // 메트릭 값 포맷팅 (예: 금액 콤마 등은 여기서 하거나 프론트에서 처리. 여기선 Raw 값 저장 추천)
         String metricValue = String.valueOf(stats.getTotalAmount());
         snapshot.updateSnapshot(1, metricValue); // 횟수는 로직에 따라 1 또는 N
         snapshotRepository.save(snapshot);
 
-        // 2. 누적 테이블 업데이트
-        MemberTrophy memberTrophy = memberTrophyRepository.findByMemberIdAndTrophy(memberId, trophy)
-                .orElseGet(() -> new MemberTrophy(memberId, trophy));
+        // 3. 누적 테이블 업데이트
+        MemberTrophy memberTrophy = memberTrophyRepository.findByMemberIdAndTrophy(member, trophy)
+                .orElseGet(() -> new MemberTrophy(member, trophy));
 
         memberTrophy.accumulate(1, LocalDateTime.now());
         memberTrophyRepository.save(memberTrophy);
     }
 
     public List<TrophyResponse> getMyTrophies(Long memberId, PeriodType periodType, String periodKey) {
-        List<MemberTrophySnapshot> snapshots = snapshotRepository.findAllByMemberIdAndPeriodTypeAndPeriodKey(memberId, periodType, periodKey);
+        // 1. 회원 검증 및 객체 조회 (필수)
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new TrophyException(TrophyErrorCode.MEMBER_NOT_FOUND));
+
+        // 2. Member 객체를 넘겨서 조회
+        List<MemberTrophySnapshot> snapshots = snapshotRepository.findAllByMemberIdAndPeriodTypeAndPeriodKey(member, periodType, periodKey);
 
         return TrophyConverter.toTrophyResponseList(snapshots);
     }

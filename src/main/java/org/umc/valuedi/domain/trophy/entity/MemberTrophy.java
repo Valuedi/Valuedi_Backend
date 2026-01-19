@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDateTime;
@@ -19,8 +20,9 @@ public class MemberTrophy extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member memberId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trophy_id", nullable = false)
@@ -32,7 +34,7 @@ public class MemberTrophy extends BaseEntity {
     @Column(name = "last_achieved_at")
     private LocalDateTime lastAchievedAt;
 
-    public MemberTrophy(Long memberId, Trophy trophy) {
+    public MemberTrophy(Member memberId, Trophy trophy) {
         this.memberId = memberId;
         this.trophy = trophy;
         this.trophyCount = 0;

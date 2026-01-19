@@ -3,6 +3,7 @@ package org.umc.valuedi.domain.trophy.repository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.trophy.dto.TrophyCalculationDto;
 
 import java.time.LocalDateTime;

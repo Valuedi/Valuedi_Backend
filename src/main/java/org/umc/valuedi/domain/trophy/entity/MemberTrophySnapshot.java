@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.trophy.enums.PeriodType;
 
 import java.time.LocalDateTime;
@@ -19,8 +20,9 @@ public class MemberTrophySnapshot { // BaseEntity 상속 여부는 정책에 따
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "member_id", nullable = false)
-    private Long memberId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id", nullable = false)
+    private Member memberId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trophy_id", nullable = false)
@@ -47,7 +49,7 @@ public class MemberTrophySnapshot { // BaseEntity 상속 여부는 정책에 따
         this.createdAt = LocalDateTime.now();
     }
 
-    public MemberTrophySnapshot(Long memberId, Trophy trophy, PeriodType periodType, String periodKey, int achievedCount, String metricValue) {
+    public MemberTrophySnapshot(Member memberId, Trophy trophy, PeriodType periodType, String periodKey, int achievedCount, String metricValue) {
         this.memberId = memberId;
         this.trophy = trophy;
         this.periodType = periodType;

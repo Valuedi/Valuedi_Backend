@@ -2,13 +2,13 @@ package org.umc.valuedi.domain.trophy.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.trophy.dto.response.TrophyMetaResponse;
 import org.umc.valuedi.domain.trophy.dto.response.TrophyResponse;
 import org.umc.valuedi.domain.trophy.enums.PeriodType;
 import org.umc.valuedi.domain.trophy.service.TrophyService;
-import org.umc.valuedi.global.security.principal.CustomUserDetails;
+import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
 
 import java.util.List;
 
@@ -20,13 +20,13 @@ public class TrophyController implements TrophyControllerDocs{
     private final TrophyService trophyService;
 
     @GetMapping("/trophies")
-    public ResponseEntity<List<TrophyMetaResponse>> getAllTrophies() {
+    public ApiResponse<List<TrophyMetaResponse>> getAllTrophies() {
         List<TrophyMetaResponse> response = trophyService.getAllTrophies();
-        return ResponseEntity.ok(response);
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 
     @GetMapping("/members/me/trophies")
-    public ResponseEntity<List<TrophyResponse>> getMyTrophies(
+    public ApiResponse<List<TrophyResponse>> getMyTrophies(
             @RequestParam(name = "periodType", defaultValue = "MONTHLY") PeriodType periodType,
             @RequestParam(name = "periodKey") String periodKey
 //            @AuthenticationPrincipal CustomUserDetails userDetails
@@ -35,6 +35,6 @@ public class TrophyController implements TrophyControllerDocs{
         Long memberId = 1L;
 
         List<TrophyResponse> response = trophyService.getMyTrophies(memberId, periodType, periodKey);
-        return ResponseEntity.ok(response);
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
 }
