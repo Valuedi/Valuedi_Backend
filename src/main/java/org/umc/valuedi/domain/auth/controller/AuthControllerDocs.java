@@ -263,6 +263,65 @@ public interface AuthControllerDocs {
     })
     ApiResponse<Void> verifyEmail(@Valid AuthReqDTO.EmailVerifyDTO dto);
 
+    @Operation(summary = "로컬 계정 회원가입 API", description = "회원가입을 통해 새로운 로컬 계정을 생성합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "성공 - 회원가입 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "회원가입 성공 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "AUTH201_1",
+                                                      "message": "회원가입이 성공적으로 완료되었습니다.",
+                                                      "result": {
+                                                        "memberId": 5
+                                                       }
+                                                    }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "에러 - 이메일 인증 미실시",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "이메일 인증 미실시 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": false,
+                                                      "code": "AUTH403_1",
+                                                      "message": "이메일 인증이 완료되지 않았습니다.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "에러 - 이미 사용 중인 아이디",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "아이디 중복 에러 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "AUTH409_1",
+                                              "message": "이미 사용 중인 아이디입니다.",
+                                              "result": null
+                                            }
+                                    """
+                            )
+                    )
+            )
+    })
     public ResponseEntity<ApiResponse<AuthResDTO.RegisterResDTO>> signUp(
             @Valid AuthReqDTO.RegisterReqDTO dto
     );
