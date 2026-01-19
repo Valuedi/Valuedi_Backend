@@ -41,6 +41,21 @@ public class ConnectionQueryService {
     }
 
     /**
+     * 연동된 카드사 목록 조회
+     */
+    public List<CardResDTO.CardIssuerConnection> getConnectedCardIssuers(Long memberId) {
+        List<CodefConnection> connections =
+                connectionRepository.findByMemberIdAndBusinessType(
+                        memberId,
+                        BusinessType.CD
+                );
+
+        return connections.stream()
+                .map(connectionConverter::toCardIssuerConnectionDTO)
+                .toList();
+    }
+
+    /**
      * 연동된 카드 목록 조회
      */
     public List<CardResDTO.CardConnection> getConnectedCards(Long memberId) {

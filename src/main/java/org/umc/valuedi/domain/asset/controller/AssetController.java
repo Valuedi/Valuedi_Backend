@@ -36,6 +36,25 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, cards);
     }
 
+    @GetMapping("/cardIssuers")
+    public ApiResponse<List<CardResDTO.CardIssuerConnection>> getCardIssuers(
+            // @CurrentMember Long memberId
+    ) {
+        Long memberId = 1L;
+        List<CardResDTO.CardIssuerConnection> cardIssuers = connectionQueryService.getConnectedCardIssuers(memberId);
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, cardIssuers);
+    }
+
+    @Operation(summary = "카드사별 카드 목록 조회", description = "특정 카드사에 연동된 카드 목록을 조회합니다.")
+    @GetMapping("/cardIssuers/{issuerCode}/cards")
+    public ApiResponse<CardResDTO.CardListDTO> getCardsByIssuer(
+            @PathVariable String issuerCode
+            // @CurrentMember Long memberId
+    ) {
+        Long memberId = 1L;
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getCardsByIssuer(memberId, issuerCode));
+    }
+
     @GetMapping("/banks")
     public ApiResponse<List<BankResDTO.BankConnection>> getBanks( // TODO: List 객체 래핑으로 변경
             // @CurrentMember Long memberId

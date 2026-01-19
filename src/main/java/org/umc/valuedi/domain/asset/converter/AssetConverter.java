@@ -1,7 +1,9 @@
 package org.umc.valuedi.domain.asset.converter;
 
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
+import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
+import org.umc.valuedi.domain.asset.entity.Card;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +28,29 @@ public class AssetConverter {
 
         return BankResDTO.BankAccountListDTO.builder()
                 .accountList(infoList)
+                .totalCount(infoList.size())
+                .build();
+    }
+
+    // Card 엔티티 -> CardInfo 변환
+    public static CardResDTO.CardInfo toCardInfo(Card card) {
+        return CardResDTO.CardInfo.builder()
+                .cardName(card.getCardName())
+                .cardNoMasked(card.getCardNoMasked())
+                .cardType(card.getCardType())
+                .organization(card.getCodefConnection().getOrganization())
+                .createdAt(card.getCreatedAt())
+                .build();
+    }
+
+    // Card 엔티티 리스트 -> CardListDTO 변환
+    public static CardResDTO.CardListDTO toCardListDTO(List<Card> cards) {
+        List<CardResDTO.CardInfo> infoList = cards.stream()
+                .map(AssetConverter::toCardInfo)
+                .collect(Collectors.toList());
+
+        return CardResDTO.CardListDTO.builder()
+                .cardList(infoList)
                 .totalCount(infoList.size())
                 .build();
     }
