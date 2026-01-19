@@ -46,6 +46,8 @@ public class SecurityConfig {
             "/auth/signup",
             "/auth/email/**",
             "/auth/status",
+
+            "/api/goals/**"
     };
 
     @Bean
