@@ -181,6 +181,24 @@ public interface AuthControllerDocs {
                                             """
                             )
                     )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "429",
+                    description = "에러 - 인증번호 발송 요청 과다",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "과다 요청 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": false,
+                                                      "code": "AUTH429_1",
+                                                      "message": "이미 인증번호가 발송되었습니다. 1분 후 다시 시도해 주세요.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
             )
     })
     ApiResponse<Void> sendEmail(@Valid AuthReqDTO.EmailSendDTO dto);

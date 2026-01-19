@@ -5,9 +5,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,10 +86,18 @@ public class AuthCommandService {
     // 이메일 인증번호 발송
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void sendCode(String email) {
-        String code = String.valueOf(sr.nextInt(900_000) + 100_000);
+        String cooldownKey = "MAIL_COOLDOWN:" + email;
         String redisKey = "AUTH_CODE:" + email;
-        redisTemplate.opsForValue().set(redisKey, code, Duration.ofMinutes(3));
 
+        Boolean isFirstRequest = redisTemplate.opsForValue()
+                .setIfAbsent(cooldownKey, "true", Duration.ofSeconds(60));
+
+        if (Boolean.FALSE.equals(isFirstRequest)) {
+            throw new AuthException(AuthErrorCode.EMAIL_ALREADY_SENT);
+        }
+
+        String code = String.valueOf(sr.nextInt(900_000) + 100_000);
+        redisTemplate.opsForValue().set(redisKey, code, Duration.ofMinutes(3));
         eventPublisher.publishEvent(new AuthMailEvent(email, code));
     }
 
