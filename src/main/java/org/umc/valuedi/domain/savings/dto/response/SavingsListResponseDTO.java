@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record SavingsListResponse(
+public record SavingsListResponseDTO(
         int totalCount,  // 총 상품건수
         int maxPageNo,  // 총 페이지 건수
         int nowPageNo,  // 현재 조회 페이지 번호

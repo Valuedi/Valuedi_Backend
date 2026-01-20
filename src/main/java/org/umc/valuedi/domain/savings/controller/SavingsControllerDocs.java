@@ -10,8 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.umc.valuedi.domain.savings.dto.response.SavingsDetailResponse;
-import org.umc.valuedi.domain.savings.dto.response.SavingsListResponse;
+import org.umc.valuedi.domain.savings.dto.response.SavingsDetailResponseDTO;
+import org.umc.valuedi.domain.savings.dto.response.SavingsListResponseDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 
 @Tag(name = "Savings", description = "적금 상품 API")
@@ -65,7 +65,7 @@ public interface SavingsControllerDocs {
                     )
             }
     )
-    ResponseEntity<ApiResponse<SavingsListResponse>> findSavingsList(
+    ResponseEntity<ApiResponse<SavingsListResponseDTO>> findSavingsList(
             @Parameter(description = "페이지 정보(page, size, sort)")
             @PageableDefault(size = 10, sort = "korCoNm") Pageable pageable
     );
@@ -144,7 +144,7 @@ public interface SavingsControllerDocs {
                     )
             }
     )
-    ResponseEntity<ApiResponse<SavingsDetailResponse>> findSavingsDetail(
+    ResponseEntity<ApiResponse<SavingsDetailResponseDTO>> findSavingsDetail(
             @Parameter(description = "금융상품 코드(fin_prdt_cd)")
             @PathVariable String finPrdtCd
     );

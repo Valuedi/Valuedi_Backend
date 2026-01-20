@@ -8,8 +8,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.savings.converter.SavingsConverter;
-import org.umc.valuedi.domain.savings.dto.response.SavingsDetailResponse;
-import org.umc.valuedi.domain.savings.dto.response.SavingsListResponse;
+import org.umc.valuedi.domain.savings.dto.response.SavingsDetailResponseDTO;
+import org.umc.valuedi.domain.savings.dto.response.SavingsListResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.exception.SavingsException;
 import org.umc.valuedi.domain.savings.exception.code.SavingsErrorCode;
@@ -23,7 +23,7 @@ public class SavingsService {
     private final SavingsRepository savingsRepository;
 
     // 적금 목록 조회
-    public SavingsListResponse getSavingsList(Pageable pageable) {
+    public SavingsListResponseDTO getSavingsList(Pageable pageable) {
         // Savings 페이지 조회
         Pageable fixed = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("korCoNm").ascending()
         );
@@ -34,7 +34,7 @@ public class SavingsService {
     }
 
     // 적금 상세 조회
-    public SavingsDetailResponse getSavingsDetail(String finPrdtCd) {
+    public SavingsDetailResponseDTO getSavingsDetail(String finPrdtCd) {
         // Savings 엔티티 조회
         Savings savings = savingsRepository.findByFinPrdtCd(finPrdtCd)
                 .orElseThrow(() -> new SavingsException(SavingsErrorCode.SAVINGS_NOT_FOUND));

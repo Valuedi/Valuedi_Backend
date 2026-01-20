@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.util.List;
 
 @Builder
-public record SavingsDetailResponse(
+public record SavingsDetailResponseDTO(
         SavingProductDetail product  // 상품
 ) {
     // 적금 상품 상세 조회

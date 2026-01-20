@@ -6,10 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.savings.converter.SavingsConverter;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.repository.SavingsRepository;
-import org.umc.valuedi.infra.fss.client.FssSavingsClient;
-import org.umc.valuedi.infra.fss.dto.response.FssSavingsResponse;
-import org.umc.valuedi.infra.fss.exception.FssException;
-import org.umc.valuedi.infra.fss.exception.code.FssErrorCode;
+import org.umc.valuedi.global.external.fss.client.FssSavingsClient;
+import org.umc.valuedi.global.external.fss.dto.response.FssSavingsResponse;
+import org.umc.valuedi.global.external.fss.exception.FssException;
+import org.umc.valuedi.global.external.fss.exception.code.FssErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.List;

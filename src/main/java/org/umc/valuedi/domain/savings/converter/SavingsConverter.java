@@ -1,10 +1,10 @@
 package org.umc.valuedi.domain.savings.converter;
 
-import org.umc.valuedi.domain.savings.dto.response.SavingsDetailResponse;
-import org.umc.valuedi.domain.savings.dto.response.SavingsListResponse;
+import org.umc.valuedi.domain.savings.dto.response.SavingsDetailResponseDTO;
+import org.umc.valuedi.domain.savings.dto.response.SavingsListResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.entity.SavingsOption;
-import org.umc.valuedi.infra.fss.dto.response.FssSavingsResponse;
+import org.umc.valuedi.global.external.fss.dto.response.FssSavingsResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -77,9 +77,9 @@ public class SavingsConverter {
     }
 
     // entity -> 목록 조회 응답 DTO
-    public static SavingsListResponse toSavingsListResponseDTO(List<Savings> savingsList, int totalCount, int nowPageNo, int maxPageNo) {
-        List<SavingsListResponse.RecommendedSavingProduct> products = savingsList.stream()
-                .map(s -> new SavingsListResponse.RecommendedSavingProduct(
+    public static SavingsListResponseDTO toSavingsListResponseDTO(List<Savings> savingsList, int totalCount, int nowPageNo, int maxPageNo) {
+        List<SavingsListResponseDTO.RecommendedSavingProduct> products = savingsList.stream()
+                .map(s -> new SavingsListResponseDTO.RecommendedSavingProduct(
                         s.getKorCoNm(),
                         s.getFinPrdtCd(),
                         s.getFinPrdtNm(),
@@ -88,7 +88,7 @@ public class SavingsConverter {
                 ))
                 .toList();
 
-        return SavingsListResponse.builder()
+        return SavingsListResponseDTO.builder()
                 .totalCount(totalCount)
                 .maxPageNo(maxPageNo)
                 .nowPageNo(nowPageNo)
@@ -97,9 +97,9 @@ public class SavingsConverter {
     }
 
     // entity -> 상세 조회 응답 DTO
-    public static SavingsDetailResponse toSavingsDetailResponseDTO(Savings savings) {
-        List<SavingsDetailResponse.Option> options = savings.getSavingsOptionList().stream()
-                .map(o -> new SavingsDetailResponse.Option(
+    public static SavingsDetailResponseDTO toSavingsDetailResponseDTO(Savings savings) {
+        List<SavingsDetailResponseDTO.Option> options = savings.getSavingsOptionList().stream()
+                .map(o -> new SavingsDetailResponseDTO.Option(
                         o.getIntrRateType(),
                         o.getIntrRateTypeNm(),
                         o.getRsrvType(),
@@ -110,7 +110,7 @@ public class SavingsConverter {
                 ))
                 .toList();
 
-        SavingsDetailResponse.SavingProductDetail product = new SavingsDetailResponse.SavingProductDetail(
+        SavingsDetailResponseDTO.SavingProductDetail product = new SavingsDetailResponseDTO.SavingProductDetail(
                 savings.getKorCoNm(),
                 savings.getFinPrdtCd(),
                 savings.getFinPrdtNm(),
@@ -124,7 +124,7 @@ public class SavingsConverter {
                 options
         );
 
-        return SavingsDetailResponse.builder()
+        return SavingsDetailResponseDTO.builder()
                 .product(product)
                 .build();
     }
