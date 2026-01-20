@@ -160,4 +160,34 @@ public class AuthCommandService {
             throw new GeneralException(GeneralErrorCode.INVALID_DATA_REQUEST);
         }
     }
+
+    // 로컬 로그인
+    public AuthResDTO.LoginResultDTO loginLocal(AuthReqDTO.LocalLoginDTO dto) {
+        Member member = memberRepository.findByUsername(dto.username())
+                .orElseThrow(() -> new AuthException(AuthErrorCode.LOGIN_FAILED));
+
+        if(!passwordEncoder.matches(dto.password(), member.getPasswordHash())) {
+            throw new AuthException(AuthErrorCode.LOGIN_FAILED);
+        }
+
+        // 휴면 계정이거나 탈퇴한 계정은 로그인 X
+        if(member.getStatus() == Status.SUSPENDED) {
+            throw new MemberException(MemberErrorCode.MEMBER_SUSPENDED);
+        } else if(member.getStatus() == Status.DELETED) {
+            throw new MemberException(MemberErrorCode.MEMBER_DELETED);
+        }
+
+        CustomUserDetails userDetails = new CustomUserDetails(member);
+        String accessToken = jwtUtil.createAccessToken(userDetails);
+        String refreshToken = jwtUtil.createRefreshToken(userDetails);
+
+        redisTemplate.opsForValue().set(
+                "RT:" + member.getId(),
+                refreshToken,
+                jwtUtil.getRefreshTokenExpiration(),
+                TimeUnit.MILLISECONDS
+        );
+
+        return AuthConverter.toLoginResultDTO(member, accessToken, refreshToken);
+    }
 }

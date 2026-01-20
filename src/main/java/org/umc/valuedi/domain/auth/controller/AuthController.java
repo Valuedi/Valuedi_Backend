@@ -94,6 +94,6 @@ public class AuthController implements AuthControllerDocs {
     @Override
     @PostMapping("/login")
     public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(@RequestBody AuthReqDTO.LocalLoginDTO dto) {
-        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, authQueryService.loginLocal(dto));
+        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, authCommandService.loginLocal(dto));
     }
 }
