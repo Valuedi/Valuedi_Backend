@@ -74,7 +74,7 @@ public class CodefAssetService {
         CodefApiResponse<Object> response = codefApiClient.getBankTransactions(requestBody);
 
         if (!response.isSuccess()) {
-            log.error("CODEF 계좌 거래 내역 조회 실패: {}", response.getResult().getMessage());
+            log.warn("CODEF 계좌 거래 내역 조회 끝");
             return List.of();
         }
 

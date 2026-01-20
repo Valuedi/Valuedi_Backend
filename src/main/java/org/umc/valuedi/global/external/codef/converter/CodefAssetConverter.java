@@ -74,17 +74,30 @@ public class CodefAssetConverter {
             LocalDate trDate = parseDate(item.getResAccountTrDate());
             LocalTime trTime = parseTime(item.getResAccountTrTime());
 
+            // 금액 파싱
+            long outAmount = parseAmount(item.getResAccountOut());
+            long inAmount = parseAmount(item.getResAccountIn());
+
+            // 방향(Direction) 결정 로직 추가
+            org.umc.valuedi.domain.asset.enums.TransactionDirection direction = null;
+            if (inAmount > 0) {
+                direction = org.umc.valuedi.domain.asset.enums.TransactionDirection.IN;
+            } else if (outAmount > 0) {
+                direction = org.umc.valuedi.domain.asset.enums.TransactionDirection.OUT;
+            }
+
             return BankTransaction.builder()
                     .trDate(trDate)
                     .trTime(trTime)
                     .trDatetime(LocalDateTime.of(trDate, trTime))
-                    .outAmount(parseAmount(item.getResAccountOut()))
-                    .inAmount(parseAmount(item.getResAccountIn()))
+                    .outAmount(outAmount)
+                    .inAmount(inAmount)
                     .afterBalance(parseAmount(item.getResAfterTranBalance()))
                     .desc1(item.getResAccountDesc1())
                     .desc2(item.getResAccountDesc2())
                     .desc3(item.getResAccountDesc3())
                     .desc4(item.getResAccountDesc4())
+                    .direction(direction)
                     .bankAccount(account)
                     .syncedAt(LocalDateTime.now())
                     .rawJson(objectMapper.writeValueAsString(item))
