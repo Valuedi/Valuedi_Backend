@@ -92,7 +92,7 @@ public class GoalService {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
-        goal.changeStatus(GoalStatus.CANCELED); // 아래 changeStatus 추가
+        goal.changeStatus(GoalStatus.CANCELED);
     }
 
     private void validateDateRange(java.time.LocalDate start, java.time.LocalDate end) {
