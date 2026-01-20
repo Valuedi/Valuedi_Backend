@@ -118,19 +118,8 @@ public class AssetSyncService {
             return;
         }
 
-        try {
-            bankTransactionRepository.saveAll(transactions);
-        } catch (DataIntegrityViolationException e) {
-            log.warn("거래내역 저장 중 중복 발생 - 개별 저장 시도 (Account: {})", account.getAccountDisplay());
-            for (BankTransaction transaction : transactions) {
-                try {
-                    bankTransactionRepository.save(transaction);
-                } catch (DataIntegrityViolationException ex) {
-                    // 중복 거래내역 무시
-                }
-            }
-        }
-        log.info("계좌 거래내역 동기화 완료 - {}건 저장", transactions.size());
+        bankTransactionRepository.bulkInsert(transactions);
+        log.info("계좌 거래내역 Bulk Insert 완료 - {}건", transactions.size());
     }
 
     /**
@@ -174,19 +163,8 @@ public class AssetSyncService {
 
         // 저장
         if (!matchedApprovals.isEmpty()) {
-            try {
-                cardApprovalRepository.saveAll(matchedApprovals);
-            } catch (DataIntegrityViolationException e) {
-                log.warn("승인내역 저장 중 중복 발생 - 개별 저장 시도");
-                for (CardApproval approval : matchedApprovals) {
-                    try {
-                        cardApprovalRepository.save(approval);
-                    } catch (DataIntegrityViolationException ex) {
-                        // 중복 승인내역 무시
-                    }
-                }
-            }
-            log.info("카드 승인내역 동기화 완료 - {}건 저장 (총 조회: {}건)", matchedApprovals.size(), approvals.size());
+            cardApprovalRepository.bulkInsert(matchedApprovals);
+            log.info("카드 승인내역 Bulk Insert 완료 - {}건 저장 (총 조회: {}건)", matchedApprovals.size(), approvals.size());
         }
     }
 
