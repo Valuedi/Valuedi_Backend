@@ -13,7 +13,6 @@ import org.umc.valuedi.domain.trophy.entity.Trophy;
 import org.umc.valuedi.domain.trophy.enums.PeriodType;
 import org.umc.valuedi.domain.trophy.exception.TrophyException;
 import org.umc.valuedi.domain.trophy.exception.code.TrophyErrorCode;
-import org.umc.valuedi.domain.trophy.repository.MemberTrophyRepository;
 import org.umc.valuedi.domain.trophy.repository.MemberTrophySnapshotRepository;
 import org.umc.valuedi.domain.trophy.repository.TrophyRepository;
 
@@ -40,7 +39,7 @@ public class TrophyQueryService {
         validatePeriodKey(periodKey);
 
         // 3. 조회
-        List<MemberTrophySnapshot> snapshots = snapshotRepository.findAllByMemberIdAndPeriodTypeAndPeriodKey(member, periodType, periodKey);
+        List<MemberTrophySnapshot> snapshots = snapshotRepository.findAllSnapshots( member, periodType, periodKey);
 
         return TrophyConverter.toTrophyResponseList(snapshots);
     }

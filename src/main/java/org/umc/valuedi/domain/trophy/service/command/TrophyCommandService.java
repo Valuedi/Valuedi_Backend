@@ -48,7 +48,7 @@ public class TrophyCommandService {
 
     private void saveSnapshotAndAccumulate(Member member, Trophy trophy, PeriodType periodType, String periodKey, TrophyCalculationDto stats) {
         // 1. 스냅샷 저장 (Upsert)
-        MemberTrophySnapshot snapshot = snapshotRepository.findByMemberIdAndTrophyAndPeriodTypeAndPeriodKey(
+        MemberTrophySnapshot snapshot = snapshotRepository.findSnapshot(
                 member, trophy, periodType, periodKey
         ).orElseGet(() -> new MemberTrophySnapshot(member, trophy, periodType, periodKey, 0, "0"));
 
@@ -57,7 +57,7 @@ public class TrophyCommandService {
         snapshotRepository.save(snapshot);
 
         // 2. 누적 테이블 업데이트
-        MemberTrophy memberTrophy = memberTrophyRepository.findByMemberIdAndTrophy(member, trophy)
+        MemberTrophy memberTrophy = memberTrophyRepository.findMemberTrophy(member, trophy)
                 .orElseGet(() -> new MemberTrophy(member, trophy));
 
         memberTrophy.accumulate(1, LocalDateTime.now());

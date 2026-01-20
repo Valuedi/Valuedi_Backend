@@ -22,7 +22,7 @@ public class MemberTrophy extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
-    private Member memberId;
+    private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trophy_id", nullable = false)
@@ -34,8 +34,8 @@ public class MemberTrophy extends BaseEntity {
     @Column(name = "last_achieved_at")
     private LocalDateTime lastAchievedAt;
 
-    public MemberTrophy(Member memberId, Trophy trophy) {
-        this.memberId = memberId;
+    public MemberTrophy(Member member, Trophy trophy) {
+        this.member = member;
         this.trophy = trophy;
         this.trophyCount = 0;
     }

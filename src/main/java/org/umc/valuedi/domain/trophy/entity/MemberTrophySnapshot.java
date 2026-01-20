@@ -22,7 +22,7 @@ public class MemberTrophySnapshot { // BaseEntity 상속 여부는 정책에 따
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
-    private Member memberId;
+    private Member member;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trophy_id", nullable = false)
@@ -49,8 +49,8 @@ public class MemberTrophySnapshot { // BaseEntity 상속 여부는 정책에 따
         this.createdAt = LocalDateTime.now();
     }
 
-    public MemberTrophySnapshot(Member memberId, Trophy trophy, PeriodType periodType, String periodKey, int achievedCount, String metricValue) {
-        this.memberId = memberId;
+    public MemberTrophySnapshot(Member member, Trophy trophy, PeriodType periodType, String periodKey, int achievedCount, String metricValue) {
+        this.member = this.member;
         this.trophy = trophy;
         this.periodType = periodType;
         this.periodKey = periodKey;
