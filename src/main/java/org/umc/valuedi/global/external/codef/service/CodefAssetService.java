@@ -69,15 +69,14 @@ public class CodefAssetService {
 
         if (!response.isSuccess()) {
             String msg = response.getResult().getMessage();
-            
-            if (msg.contains("일치하는 정보가 없습니다") || msg.contains("거래내역이 존재하지 않습니다")) {
-                log.warn("거래내역 조회 불가 계좌 (건너뜀) - 계좌명: {}, 메시지: {}", 
-                         account.getAccountName(), msg);
+
+            if (msg.contains("일치하는 정보가 없습니다") || msg.contains("존재하지 않습니다") || msg.contains("보유계좌")) {
+                // 경고 레벨로 낮춤 (정상적인 예외 상황)
+                log.warn("거래내역 조회 불가 계좌 (건너뜀) - 계좌명: {}, 메시지: {}", account.getAccountName(), msg);
             } else {
-                log.error("CODEF 계좌 거래 내역 조회 API 오류 - 계좌: {}, 에러: {}", 
-                          account.getAccountDisplay(), msg);
+                log.error("CODEF 계좌 거래 내역 조회 API 오류 - 계좌: {}, 에러: {}", account.getAccountDisplay(), msg);
             }
-            
+
             return List.of();
         }
 
