@@ -9,9 +9,12 @@ import org.umc.valuedi.domain.member.enums.Role;
 import org.umc.valuedi.domain.member.enums.SignupType;
 import org.umc.valuedi.domain.member.enums.Status;
 import org.umc.valuedi.global.entity.BaseEntity;
+import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Builder
@@ -64,4 +67,13 @@ public class Member extends BaseEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CodefConnection> codefConnectionList = new ArrayList<>();
+
+    public void addCodefConnection(CodefConnection connection) {
+        this.codefConnectionList.add(connection);
+        connection.assignMember(this);
+    }
 }
