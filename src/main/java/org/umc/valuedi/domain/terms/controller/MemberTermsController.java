@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
+import org.umc.valuedi.domain.terms.exception.code.TermsSuccessCode;
 import org.umc.valuedi.domain.terms.service.MemberTermsService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
@@ -29,7 +30,7 @@ public class MemberTermsController implements MemberTermsControllerDocs{
             @RequestBody TermsRequestDTO.AgreeTermsRequest dto
     ) {
         memberTermsService.saveAgreeTerms(memberId, dto);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, null);
+        return ApiResponse.onSuccess(TermsSuccessCode.TERMS_AGREE_SUCCESS, null);
     }
 
 }

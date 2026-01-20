@@ -28,8 +28,8 @@ public interface MemberTermsControllerDocs {
                                             value = """
                                             {
                                                 "isSuccess": true,
-                                                "code": "COMMON200",
-                                                "message": "요청이 성공적으로 처리되었습니다.",
+                                                "code": "TERMS200_1",
+                                                "message": "약관 동의가 저장되었습니다.",
                                                 "result": {
                                                     "agreements": [
                                                         {
