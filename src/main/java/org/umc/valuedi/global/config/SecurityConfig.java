@@ -48,6 +48,9 @@ public class SecurityConfig {
             "/auth/signup",
             "/auth/email/**",
             "/auth/status",
+
+            // Terms APIs
+            "/api/terms",
     };
 
     @Bean

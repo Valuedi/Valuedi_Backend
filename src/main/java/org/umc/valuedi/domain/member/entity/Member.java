@@ -5,8 +5,9 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.umc.valuedi.domain.member.enums.*;
+import org.umc.valuedi.domain.terms.entity.MemberTerms;
 import org.umc.valuedi.global.entity.BaseEntity;
-import org.umc.valuedi.domain.asset.connection.entity.CodefConnection;
+import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,6 +67,10 @@ public class Member extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Builder.Default
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<MemberTerms> memberTermsList = new ArrayList<>();
+  
     @Builder.Default
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CodefConnection> codefConnectionList = new ArrayList<>();
