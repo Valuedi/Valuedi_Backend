@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.fss.config;
+package org.umc.valuedi.global.external.fss.config;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.genai.exception.code;
+package org.umc.valuedi.global.external.genai.exception.code;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.fss.exception;
+package org.umc.valuedi.global.external.fss.exception;
 
 import org.umc.valuedi.global.apiPayload.code.BaseErrorCode;
 import org.umc.valuedi.global.apiPayload.exception.GeneralException;

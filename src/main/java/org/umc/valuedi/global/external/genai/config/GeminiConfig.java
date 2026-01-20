@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.genai.config;
+package org.umc.valuedi.global.external.genai.config;
 
 import com.google.genai.Client;
 import lombok.RequiredArgsConstructor;

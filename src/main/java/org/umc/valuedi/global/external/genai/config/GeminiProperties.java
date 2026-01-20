@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.genai.config;
+package org.umc.valuedi.global.external.genai.config;
 
 import lombok.Getter;
 import lombok.Setter;

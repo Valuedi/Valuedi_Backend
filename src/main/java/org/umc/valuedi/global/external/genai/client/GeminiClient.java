@@ -1,12 +1,12 @@
-package org.umc.valuedi.infra.genai.client;
+package org.umc.valuedi.global.external.genai.client;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.umc.valuedi.infra.genai.config.GeminiProperties;
-import org.umc.valuedi.infra.genai.exception.GeminiException;
-import org.umc.valuedi.infra.genai.exception.code.GeminiErrorCode;
+import org.umc.valuedi.global.external.genai.config.GeminiProperties;
+import org.umc.valuedi.global.external.genai.exception.GeminiException;
+import org.umc.valuedi.global.external.genai.exception.code.GeminiErrorCode;
 
 @Component
 @RequiredArgsConstructor

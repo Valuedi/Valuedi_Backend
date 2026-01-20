@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.fss.exception.code;
+package org.umc.valuedi.global.external.fss.exception.code;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.genai.exception;
+package org.umc.valuedi.global.external.genai.exception;
 
 import org.umc.valuedi.global.apiPayload.code.BaseErrorCode;
 import org.umc.valuedi.global.apiPayload.exception.GeneralException;

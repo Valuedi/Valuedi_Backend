@@ -1,10 +1,10 @@
-package org.umc.valuedi.infra.fss.client;
+package org.umc.valuedi.global.external.fss.client;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.umc.valuedi.infra.fss.config.FssProperties;
-import org.umc.valuedi.infra.fss.dto.response.FssSavingsResponse;
+import org.umc.valuedi.global.external.fss.config.FssProperties;
+import org.umc.valuedi.global.external.fss.dto.response.FssSavingsResponse;
 
 @Component
 @RequiredArgsConstructor
