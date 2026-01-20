@@ -100,11 +100,6 @@ tasks.named('test') {
 // generated/querydsl 폴더 생성 & 삽입
 def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
 
-// 소스 세트에 생성 경로 추가 (구체적인 경로 지정)
-sourceSets {
-	main.java.srcDirs += [ querydslDir ]
-}
-
 // 컴파일 시 생성 경로 지정
 tasks.withType(JavaCompile).configureEach {
 	options.generatedSourceOutputDirectory.set(querydslDir)
