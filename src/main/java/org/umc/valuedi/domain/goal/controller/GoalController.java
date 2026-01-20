@@ -12,6 +12,7 @@ import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.exception.code.GoalSuccessCode;
 import org.umc.valuedi.domain.goal.service.GoalService;
+import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 
 @RestController
@@ -20,6 +21,7 @@ import org.umc.valuedi.global.apiPayload.ApiResponse;
 public class GoalController implements GoalControllerDocs{
 
     private final GoalService goalService;
+    private final GoalQueryService goalQueryService;
 
     // 목표 추가
     @PostMapping
@@ -40,7 +42,7 @@ public class GoalController implements GoalControllerDocs{
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_LIST_FETCHED,
-                goalService.getGoals(memberId, status)
+                goalQueryService.getGoals(memberId, status)
         );
     }
 
@@ -51,7 +53,7 @@ public class GoalController implements GoalControllerDocs{
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_DETAIL_FETCHED,
-                goalService.getGoalDetail(goalId)
+                goalQueryService.getGoalDetail(goalId)
         );
     }
 
@@ -87,7 +89,7 @@ public class GoalController implements GoalControllerDocs{
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_ACTIVE_COUNT_FETCHED,
-                goalService.getActiveGoalCount(memberId)
+                goalQueryService.getActiveGoalCount(memberId)
         );
     }
 }

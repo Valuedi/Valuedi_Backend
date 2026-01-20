@@ -6,19 +6,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.entity.Goal;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
-import org.umc.valuedi.domain.goal.exception.code.GoalErrorCode;
 import org.umc.valuedi.domain.goal.exception.GoalException;
+import org.umc.valuedi.domain.goal.exception.code.GoalErrorCode;
 import org.umc.valuedi.domain.goal.repository.GoalRepository;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +22,6 @@ public class GoalService {
 
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
-    private final GoalAchievementRateService achievementRateService;
 
     // 목표 생성
     public GoalCreateResponseDto createGoal(GoalCreateRequestDto req) {
@@ -42,61 +36,11 @@ public class GoalService {
         return new GoalCreateResponseDto(saved.getId());
     }
 
-    // 목표 전체 조회 (진행중/완료)
-    @Transactional(readOnly = true)
-    public GoalListResponseDto getGoals(Long memberId, GoalStatus status) {
-        if (!memberRepository.existsById(memberId)) {
-            throw new GoalException(GoalErrorCode.MEMBER_NOT_FOUND);
-        }
-
-        List<Goal> goals = goalRepository.findAllByMember_IdAndStatus(memberId, status);
-
-        int savedAmount = 0; // 계좌 연동 후 수정!
-
-        var dtos = goals.stream()
-                .map(g -> GoalConverter.toSummaryDto(
-                        g,
-                        savedAmount,
-                        achievementRateService.calculateRate(savedAmount, g.getTargetAmount())
-                ))
-                .toList();
-
-        return new GoalListResponseDto(dtos);
-    }
-
-
-    // 목표 상세 조회
-    @Transactional(readOnly = true)
-    public GoalDetailResponseDto getGoalDetail(Long goalId) {
-        Goal goal = goalRepository.findById(goalId)
-                .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
-
-        int savedAmount = 0; // TODO
-        int rate = achievementRateService.calculateRate(savedAmount, goal.getTargetAmount());
-
-        return GoalConverter.toDetailDto(goal, savedAmount, rate);
-    }
-
-    // 진행 중인 목표 개수 조회
-    @Transactional(readOnly = true)
-    public GoalActiveCountResponseDto getActiveGoalCount(Long memberId) {
-
-        if (!memberRepository.existsById(memberId)) {
-            throw new GoalException(GoalErrorCode.GOAL_NOT_FOUND);
-        }
-
-        long count = goalRepository.countByMember_IdAndStatus(memberId, GoalStatus.ACTIVE);
-
-        return new GoalActiveCountResponseDto((int) count);
-    }
-
-
     // 목표 수정
     public void updateGoal(Long goalId, GoalUpdateRequestDto req) {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
-        // 날짜 수정 들어오면 검증
         if (req.startDate() != null || req.endDate() != null) {
             validateDateRange(
                     req.startDate() != null ? req.startDate() : goal.getStartDate(),
@@ -107,7 +51,7 @@ public class GoalService {
         GoalConverter.applyPatch(goal, req);
     }
 
-    //목표 삭제
+    // 목표 삭제
     public void deleteGoal(Long goalId) {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
@@ -115,6 +59,7 @@ public class GoalService {
         goal.changeStatus(GoalStatus.CANCELED);
     }
 
+    // 날짜 검증
     private void validateDateRange(java.time.LocalDate start, java.time.LocalDate end) {
         if (start.isAfter(end)) {
             throw new GoalException(GoalErrorCode.INVALID_DATE_RANGE);
