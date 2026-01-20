@@ -4,10 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.umc.valuedi.domain.member.enums.Gender;
-import org.umc.valuedi.domain.member.enums.Role;
-import org.umc.valuedi.domain.member.enums.SignupType;
-import org.umc.valuedi.domain.member.enums.Status;
+import org.umc.valuedi.domain.member.enums.*;
 import org.umc.valuedi.domain.terms.entity.MemberTerms;
 import org.umc.valuedi.global.entity.BaseEntity;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
@@ -39,9 +36,6 @@ public class Member extends BaseEntity {
     @Column(name = "real_name", length = 50, nullable = false)
     private String realName;
 
-    @Column(name = "phone_number", length = 20)
-    private String phoneNumber;
-
     @Column(name = "birth", nullable = false)
     private LocalDate birth;
 
@@ -65,6 +59,10 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private Status status = Status.ACTIVE;
+
+    @Column(name = "withdrawal_reason")
+    @Enumerated(EnumType.STRING)
+    private WithdrawalReason withdrawalReason;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;

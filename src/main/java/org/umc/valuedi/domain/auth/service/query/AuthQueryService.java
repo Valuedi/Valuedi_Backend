@@ -13,6 +13,7 @@ import org.umc.valuedi.domain.member.repository.MemberRepository;
 public class AuthQueryService {
     private final MemberRepository memberRepository;
 
+    // 아이디 중복 확인
     public void checkUsernameDuplicate(String username) {
         if(memberRepository.existsByUsernameIncludeDeleted(username)) {
             throw new AuthException(AuthErrorCode.DUPLICATE_USERNAME);
