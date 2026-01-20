@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
+import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
@@ -34,7 +35,7 @@ public interface GoalControllerDocs {
 
     @Operation(
             summary = "목표 목록 조회 API",
-            description = "memberId와 status(ACTIVE/COMPLETE/CANCELED)에 해당하는 목표 목록을 조회합니다."
+            description = "사용자의 전체 목표 목록을 조회합니다."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -93,5 +94,19 @@ public interface GoalControllerDocs {
     org.umc.valuedi.global.apiPayload.ApiResponse<Void> deleteGoal(
             @Parameter(description = "목표 ID", example = "10", required = true)
             Long goalId
+    );
+
+    @Operation(
+            summary = "진행 중인 목표 개수 조회 API",
+            description = "사용자의 현재 진행 중(ACTIVE) 목표의 개수를 반환합니다."
+    )
+    @io.swagger.v3.oas.annotations.responses.ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "회원이 존재하지 않음"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    org.umc.valuedi.global.apiPayload.ApiResponse<GoalActiveCountResponseDto> getActiveGoalCount(
+            @Parameter(description = "회원 ID", example = "1", required = true)
+            @RequestParam Long memberId
     );
 }

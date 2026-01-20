@@ -11,4 +11,5 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     List<Goal> findAllByMember_Id( Long memberId);
 
     List<Goal> findAllByMember_IdAndStatus(Long memberId, GoalStatus status);
+    long countByMember_IdAndStatus(Long memberId, GoalStatus status);
 }
