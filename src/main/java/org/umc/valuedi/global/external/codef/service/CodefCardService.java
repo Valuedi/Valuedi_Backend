@@ -3,7 +3,7 @@ package org.umc.valuedi.global.external.codef.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.umc.valuedi.domain.asset.card.dto.res.CardResDTO;
+import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.global.external.codef.dto.res.CodefApiResponse;
 

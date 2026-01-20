@@ -10,7 +10,7 @@ import org.umc.valuedi.domain.member.enums.SignupType;
 import org.umc.valuedi.domain.member.enums.Status;
 import org.umc.valuedi.domain.terms.entity.MemberTerms;
 import org.umc.valuedi.global.entity.BaseEntity;
-import org.umc.valuedi.domain.asset.connection.entity.CodefConnection;
+import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
