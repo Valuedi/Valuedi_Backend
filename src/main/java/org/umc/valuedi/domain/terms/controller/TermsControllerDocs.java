@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 
@@ -44,5 +43,5 @@ public interface TermsControllerDocs {
                     )
             }
     )
-    ResponseEntity<ApiResponse<TermsResponseDTO.GetTermsList>> findTermsList();
+    ApiResponse<TermsResponseDTO.GetTermsList> findTermsList();
 }

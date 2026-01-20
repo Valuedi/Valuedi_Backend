@@ -1,11 +1,9 @@
 package org.umc.valuedi.domain.terms.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
@@ -58,9 +56,8 @@ public interface MemberTermsControllerDocs {
                     )
             }
     )
-    ResponseEntity<ApiResponse<TermsResponseDTO.GetMemberAgreements>> findMemberAgreements(
-            @Parameter(description = "사용자 ID", required = true, example = "1")
-            @RequestParam("memberId") Long memberId
+    ApiResponse<TermsResponseDTO.GetMemberAgreements> findMemberAgreements(
+            @RequestParam Long memberId
     );
 
     @Operation(
@@ -129,7 +126,7 @@ public interface MemberTermsControllerDocs {
                     )
             }
     )
-    ResponseEntity<ApiResponse<Void>> agreeTerms(
+    ApiResponse<Void> agreeTerms(
             @RequestParam Long memberId,
             @RequestBody TermsRequestDTO.AgreeTermsRequest dto
     );

@@ -1,7 +1,6 @@
 package org.umc.valuedi.domain.terms.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,8 +17,8 @@ public class TermsController implements TermsControllerDocs {
     private final TermsService termsService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<TermsResponseDTO.GetTermsList>> findTermsList() {
+    public ApiResponse<TermsResponseDTO.GetTermsList> findTermsList() {
         TermsResponseDTO.GetTermsList result = termsService.getTermsList();
-        return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
 }
