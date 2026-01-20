@@ -30,5 +30,15 @@ public interface MemberTermsRepository extends JpaRepository<MemberTerms, Long> 
     List<MemberTerms> findAgreedByMemberIdWithTerms(@Param("memberId") Long memberId);
 
     // 약관 동의 저장
-    Optional<MemberTerms> findByMemberIdAndTermsId(Long memberId, Long termsId);
+    @Query("""
+    SELECT mt
+    FROM MemberTerms mt
+    JOIN FETCH mt.terms t
+    WHERE mt.member.id = :memberId
+      AND t.id IN :termsIds
+    """)
+    List<MemberTerms> findAllByMemberIdAndTermsIdInWithTerms(
+            @Param("memberId") Long memberId,
+            @Param("termsIds") List<Long> termsIds
+    );
 }

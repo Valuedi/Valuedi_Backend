@@ -18,6 +18,9 @@ import org.umc.valuedi.domain.terms.repository.MemberTermsRepository;
 import org.umc.valuedi.domain.terms.repository.TermsRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,18 +47,44 @@ public class MemberTermsService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        for (TermsRequestDTO.Agreement agreement : dto.agreements()) {
-            Terms terms = termsRepository.findById(agreement.termsId())
-                    .orElseThrow(() -> new TermsException(TermsErrorCode.TERMS_NOT_FOUND));
+        // 요청 agreements에서 termsId만 추출
+        List<Long> termsIds = dto.agreements().stream()
+                .map(TermsRequestDTO.Agreement::termsId)
+                .distinct()
+                .toList();
 
-            MemberTerms memberTerms = memberTermsRepository.findByMemberIdAndTermsId(memberId, agreement.termsId())
-                    .orElse(null);
+        if (termsIds.isEmpty()) {
+            throw new TermsException(TermsErrorCode.TERMS_NOT_FOUND);
+        }
+
+        // Terms를 리스트로 조회
+        List<Terms> termsList = termsRepository.findAllById(termsIds);
+
+        Map<Long, Terms> termsMap = termsList.stream()
+                .collect(Collectors.toMap(t -> t.getId(), Function.identity()));
+
+        // MemberTerms를 리스트로 조회
+        List<MemberTerms> memberTermsList = memberTermsRepository.findAllByMemberIdAndTermsIdInWithTerms(memberId, termsIds);
+
+        Map<Long, MemberTerms> memberTermsMap = memberTermsList.stream()
+                .collect(Collectors.toMap(mt -> mt.getTerms().getId(), Function.identity()));
+
+        for (TermsRequestDTO.Agreement agreement : dto.agreements()) {
+            Long termsId = agreement.termsId();
+            Terms terms = termsMap.get(termsId);
+
+            if (terms == null) {
+                throw new TermsException(TermsErrorCode.TERMS_NOT_FOUND);
+            }
 
             String agreedVersion = terms.getVersion();
+            MemberTerms memberTerms = memberTermsMap.get(termsId);
 
             if (memberTerms == null) {
                 MemberTerms newMemberTerms = TermsConverter.toMemberTerms(member, terms, agreement.isAgreed(), agreedVersion);
                 memberTermsRepository.save(newMemberTerms);
+
+                memberTermsMap.put(termsId, newMemberTerms);
             } else {
                 memberTerms.updateAgreement(agreement.isAgreed(), agreedVersion);
             }
