@@ -54,6 +54,6 @@ public interface CodefApiClient {
     /**
      * [카드] 카드 승인내역 조회
      */
-    @PostMapping("/v1/kr/card/p/approval/approval-list")
+    @PostMapping("/v1/kr/card/p/account/approval-list")
     CodefApiResponse<Object> getCardApprovals(@RequestBody Map<String, Object> requestBody);
 }
