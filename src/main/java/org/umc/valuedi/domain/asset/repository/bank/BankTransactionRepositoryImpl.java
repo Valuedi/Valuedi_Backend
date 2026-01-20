@@ -23,8 +23,8 @@ public class BankTransactionRepositoryImpl implements BankTransactionRepositoryC
 
         String sql = "INSERT IGNORE INTO bank_transaction " +
                 "(bank_account_id, tr_date, tr_time, tr_datetime, out_amount, in_amount, after_balance, " +
-                "desc1, desc2, desc3, desc4, direction, created_at, updated_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                "desc1, desc2, desc3, desc4, direction, raw_json, synced_at, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
@@ -37,7 +37,7 @@ public class BankTransactionRepositoryImpl implements BankTransactionRepositoryC
                 if (tx.getTrDatetime() != null) {
                     ps.setTimestamp(4, Timestamp.valueOf(tx.getTrDatetime()));
                 } else {
-                    ps.setTimestamp(4, null);
+                    ps.setNull(4, java.sql.Types.TIMESTAMP);
                 }
 
                 ps.setLong(5, tx.getOutAmount());
@@ -50,6 +50,14 @@ public class BankTransactionRepositoryImpl implements BankTransactionRepositoryC
 
                 String directionName = (tx.getDirection() != null) ? tx.getDirection().name() : null;
                 ps.setString(12, directionName);
+
+                ps.setString(13, tx.getRawJson());
+                
+                if (tx.getSyncedAt() != null) {
+                    ps.setTimestamp(14, Timestamp.valueOf(tx.getSyncedAt()));
+                } else {
+                    ps.setNull(14, java.sql.Types.TIMESTAMP);
+                }
             }
 
             @Override

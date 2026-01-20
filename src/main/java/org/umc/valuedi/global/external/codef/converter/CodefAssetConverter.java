@@ -11,6 +11,7 @@ import org.umc.valuedi.domain.asset.entity.CardApproval;
 import org.umc.valuedi.domain.asset.enums.CancelStatus;
 import org.umc.valuedi.domain.asset.enums.HomeForeignType;
 import org.umc.valuedi.domain.asset.enums.PaymentType;
+import org.umc.valuedi.domain.asset.enums.TransactionDirection;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 
@@ -42,7 +43,7 @@ public class CodefAssetConverter {
             return BankAccount.builder()
                     .accountName(item.getResAccountName())
                     .accountDisplay(item.getResAccountDisplay())
-                    .accountNoHash(UUID.randomUUID().toString())
+                    .accountNoHash(UUID.nameUUIDFromBytes(item.getResAccount().getBytes()).toString())
                     .accountDepositCode(item.getResAccountDeposit() != null ? item.getResAccountDeposit() : "UNKNOWN")
                     .balanceAmount(parseAmount(item.getResAccountBalance()))
                     .currency(item.getResAccountCurrency() != null ? item.getResAccountCurrency() : "KRW")
@@ -69,18 +70,24 @@ public class CodefAssetConverter {
         try {
             LocalDate trDate = parseDate(item.getResAccountTrDate());
             LocalTime trTime = parseTime(item.getResAccountTrTime());
+            LocalDateTime trDatetime = LocalDateTime.of(trDate, trTime);
+
+            Long inAmount = parseAmount(item.getResAccountIn());
+            Long outAmount = parseAmount(item.getResAccountOut());
+            TransactionDirection direction = inAmount > 0 ? TransactionDirection.IN : TransactionDirection.OUT;
 
             return BankTransaction.builder()
                     .trDate(trDate)
                     .trTime(trTime)
-                    .trDatetime(LocalDateTime.of(trDate, trTime))
-                    .outAmount(parseAmount(item.getResAccountOut()))
-                    .inAmount(parseAmount(item.getResAccountIn()))
+                    .trDatetime(trDatetime)
+                    .outAmount(outAmount)
+                    .inAmount(inAmount)
                     .afterBalance(parseAmount(item.getResAfterTranBalance()))
                     .desc1(item.getResAccountDesc1())
                     .desc2(item.getResAccountDesc2())
                     .desc3(item.getResAccountDesc3())
                     .desc4(item.getResAccountDesc4())
+                    .direction(direction)
                     .bankAccount(account)
                     .syncedAt(LocalDateTime.now())
                     .rawJson(objectMapper.writeValueAsString(item))
