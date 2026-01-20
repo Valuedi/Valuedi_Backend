@@ -68,13 +68,23 @@ public class CodefAssetService {
         LocalDate now = LocalDate.now();
         requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("orderBy", "0"); // 최신순
-        requestBody.put("inquiryType", "1"); // 전체
+        requestBody.put("orderBy", "0");
+        requestBody.put("inquiryType", "1");
 
         CodefApiResponse<Object> response = codefApiClient.getBankTransactions(requestBody);
 
         if (!response.isSuccess()) {
-            log.warn("CODEF 계좌 거래 내역 조회 끝");
+            String msg = response.getResult().getMessage();
+            
+            // 실패해도 괜찮은 경우(조회 불가 계좌)는 WARN 로그, 그 외는 ERROR 로그
+            if (msg.contains("일치하는 정보가 없습니다") || msg.contains("거래내역이 존재하지 않습니다")) {
+                log.warn("거래내역 조회 불가 계좌 (건너뜀) - 계좌명: {}, 메시지: {}", 
+                         account.getAccountName(), msg);
+            } else {
+                log.error("CODEF 계좌 거래 내역 조회 API 오류 - 계좌: {}, 에러: {}", 
+                          account.getAccountDisplay(), msg);
+            }
+            
             return List.of();
         }
 
@@ -99,7 +109,7 @@ public class CodefAssetService {
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
 
-         Object responseData = response.getData();
+        Object responseData = response.getData();
         List<CodefCardDTO.Card> cardList = new ArrayList<>();
         
         if (responseData instanceof Map) {
