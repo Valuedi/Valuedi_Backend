@@ -27,12 +27,11 @@ public class AssetController implements AssetControllerDocs {
 
 
     @GetMapping("/cards")
-    public ApiResponse<List<CardResDTO.CardConnection>> getCards(
+    public ApiResponse<CardResDTO.CardListDTO> getCards(
             // @CurrentMember Long memberId
     ) {
         Long memberId = 1L; // 임시
-        List<CardResDTO.CardConnection> cards = connectionQueryService.getConnectedCards(memberId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, cards);
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllCards(memberId));
     }
 
     @GetMapping("/cardIssuers")

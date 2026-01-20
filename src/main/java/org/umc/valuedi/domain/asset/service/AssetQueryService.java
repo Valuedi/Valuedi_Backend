@@ -40,6 +40,15 @@ public class AssetQueryService {
     }
 
     /**
+     * 연동된 전체 카드 목록 조회
+     */
+    public CardResDTO.CardListDTO getAllCards(Long memberId) {
+        List<Card> cards =
+                cardRepository.findAllByMemberId(memberId);
+        return AssetConverter.toCardListDTO(cards);
+    }
+
+    /**
      * 카드사별 연동된 카드 목록 조회
      */
     public CardResDTO.CardListDTO getCardsByIssuer(Long memberId, String issuerCode) {
