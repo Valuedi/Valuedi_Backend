@@ -20,6 +20,28 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 5678
+    username: test@gmail.com
+    password: testpassword
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        connetiontimeout: 5000
+        time: 5000
+        writetimeout: 5000
+
+codef:
+  client-id: test-codef-client-id
+  client-secret: test-codef-client-secret
+  public-key: test-codef-public-key
+  api-url: https://development.codef.io
+
 kakao:
   client-id: dummy
   redirect-uri: http://localhost:8080/auth/oauth/kakao/callback
@@ -31,6 +53,7 @@ jwt:
     expiration:
       access: 3600000
       refresh: 1209600000
+
 management:
   endpoints:
     web:
@@ -42,3 +65,9 @@ management:
 fss:
   base-url: https://finlife.fss.or.kr/finlifeapi
   auth-key: dummy
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  querydsl:
+    enabled: false # 테스트 환경에서 QueryDSL 충돌 방지
