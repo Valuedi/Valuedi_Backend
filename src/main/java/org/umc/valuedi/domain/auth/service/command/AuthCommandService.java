@@ -151,7 +151,6 @@ public class AuthCommandService {
             Member newMember = AuthConverter.toGeneralMember(dto, encodedPassword);
 
             Member savedMember = memberRepository.save(newMember);
-            redisTemplate.delete(verifiedKey);
 
             return AuthConverter.toRegisterResDTO(savedMember);
         } catch (DataAccessResourceFailureException e) {
