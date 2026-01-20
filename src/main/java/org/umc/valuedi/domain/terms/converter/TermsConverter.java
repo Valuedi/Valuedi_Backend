@@ -19,7 +19,6 @@ public class TermsConverter {
                                 .code(terms.getCode())
                                 .title(terms.getTitle())
                                 .isRequired(terms.isRequired())
-                                .version(terms.getVersion())
                                 .build())
                         .toList())
                 .build();

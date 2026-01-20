@@ -17,8 +17,7 @@ public class TermsResponseDTO {
             Long termsId,
             String code,
             String title,
-            boolean isRequired,
-            String version
+            boolean isRequired
     ) {}
 
     @Builder
