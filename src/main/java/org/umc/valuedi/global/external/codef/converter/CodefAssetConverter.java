@@ -1,6 +1,5 @@
 package org.umc.valuedi.global.external.codef.converter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +12,7 @@ import org.umc.valuedi.domain.asset.enums.CancelStatus;
 import org.umc.valuedi.domain.asset.enums.HomeForeignType;
 import org.umc.valuedi.domain.asset.enums.PaymentType;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
-import org.umc.valuedi.global.external.codef.dto.res.CodefBankAccountDTO;
-import org.umc.valuedi.global.external.codef.dto.res.CodefBankTransactionDTO;
-import org.umc.valuedi.global.external.codef.dto.res.CodefCardDTO;
-import org.umc.valuedi.global.external.codef.dto.res.CodefCardApprovalDTO;
+import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,19 +30,19 @@ public class CodefAssetConverter {
 
     private final ObjectMapper objectMapper;
 
-    public List<BankAccount> toBankAccountList(List<CodefBankAccountDTO.Account> data, CodefConnection connection) {
+    public List<BankAccount> toBankAccountList(List<CodefAssetResDTO.BankAccount> data, CodefConnection connection) {
         return data.stream()
                 .map(item -> toBankAccount(item, connection))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private BankAccount toBankAccount(CodefBankAccountDTO.Account item, CodefConnection connection) {
+    private BankAccount toBankAccount(CodefAssetResDTO.BankAccount item, CodefConnection connection) {
         try {
             return BankAccount.builder()
                     .accountName(item.getResAccountName())
                     .accountDisplay(item.getResAccountDisplay())
-                    .accountNoHash(UUID.randomUUID().toString()) // 임시 해시값
+                    .accountNoHash(UUID.randomUUID().toString())
                     .accountDepositCode(item.getResAccountDeposit() != null ? item.getResAccountDeposit() : "UNKNOWN")
                     .balanceAmount(parseAmount(item.getResAccountBalance()))
                     .currency(item.getResAccountCurrency() != null ? item.getResAccountCurrency() : "KRW")
@@ -62,42 +58,29 @@ public class CodefAssetConverter {
         }
     }
 
-    public List<BankTransaction> toBankTransactionList(List<CodefBankTransactionDTO.Transaction> data, BankAccount account) {
+    public List<BankTransaction> toBankTransactionList(List<CodefAssetResDTO.BankTransaction> data, BankAccount account) {
         return data.stream()
                 .map(item -> toBankTransaction(item, account))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private BankTransaction toBankTransaction(CodefBankTransactionDTO.Transaction item, BankAccount account) {
+    private BankTransaction toBankTransaction(CodefAssetResDTO.BankTransaction item, BankAccount account) {
         try {
             LocalDate trDate = parseDate(item.getResAccountTrDate());
             LocalTime trTime = parseTime(item.getResAccountTrTime());
-
-            // 금액 파싱
-            long outAmount = parseAmount(item.getResAccountOut());
-            long inAmount = parseAmount(item.getResAccountIn());
-
-            // 방향(Direction) 결정 로직 추가
-            org.umc.valuedi.domain.asset.enums.TransactionDirection direction = null;
-            if (inAmount > 0) {
-                direction = org.umc.valuedi.domain.asset.enums.TransactionDirection.IN;
-            } else if (outAmount > 0) {
-                direction = org.umc.valuedi.domain.asset.enums.TransactionDirection.OUT;
-            }
 
             return BankTransaction.builder()
                     .trDate(trDate)
                     .trTime(trTime)
                     .trDatetime(LocalDateTime.of(trDate, trTime))
-                    .outAmount(outAmount)
-                    .inAmount(inAmount)
+                    .outAmount(parseAmount(item.getResAccountOut()))
+                    .inAmount(parseAmount(item.getResAccountIn()))
                     .afterBalance(parseAmount(item.getResAfterTranBalance()))
                     .desc1(item.getResAccountDesc1())
                     .desc2(item.getResAccountDesc2())
                     .desc3(item.getResAccountDesc3())
                     .desc4(item.getResAccountDesc4())
-                    .direction(direction)
                     .bankAccount(account)
                     .syncedAt(LocalDateTime.now())
                     .rawJson(objectMapper.writeValueAsString(item))
@@ -108,14 +91,14 @@ public class CodefAssetConverter {
         }
     }
 
-    public List<Card> toCardList(List<CodefCardDTO.Card> data, CodefConnection connection) {
+    public List<Card> toCardList(List<CodefAssetResDTO.Card> data, CodefConnection connection) {
         return data.stream()
                 .map(item -> toCard(item, connection))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private Card toCard(CodefCardDTO.Card item, CodefConnection connection) {
+    private Card toCard(CodefAssetResDTO.Card item, CodefConnection connection) {
         try {
             return Card.builder()
                     .cardName(item.getResCardName())
@@ -131,14 +114,14 @@ public class CodefAssetConverter {
         }
     }
 
-    public List<CardApproval> toCardApprovalList(List<CodefCardApprovalDTO.Approval> data) {
+    public List<CardApproval> toCardApprovalList(List<CodefAssetResDTO.CardApproval> data) {
         return data.stream()
                 .map(this::toCardApproval)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private CardApproval toCardApproval(CodefCardApprovalDTO.Approval item) {
+    private CardApproval toCardApproval(CodefAssetResDTO.CardApproval item) {
         try {
             LocalDate usedDate = parseDate(item.getResUsedDate());
             LocalTime usedTime = parseTime(item.getResUsedTime());
@@ -161,7 +144,6 @@ public class CodefAssetConverter {
                     .merchantNo(item.getResMemberStoreNo())
                     .commStartDate(parseDate(item.getCommStartDate()).atStartOfDay())
                     .commEndDate(parseDate(item.getCommEndDate()).atStartOfDay())
-                    // Card는 AssetSyncService에서 매칭 후 설정
                     .syncedAt(LocalDateTime.now())
                     .rawJson(objectMapper.writeValueAsString(item))
                     .build();
@@ -171,7 +153,6 @@ public class CodefAssetConverter {
         }
     }
 
-    // Helper Methods
     private Long parseAmount(String amount) {
         if (amount == null || amount.isEmpty()) return 0L;
         try {

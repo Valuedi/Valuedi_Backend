@@ -4,7 +4,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.umc.valuedi.global.external.codef.config.CodefFeignConfig;
-import org.umc.valuedi.global.external.codef.dto.res.CodefApiResponse;
+import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 
 import java.util.Map;
 

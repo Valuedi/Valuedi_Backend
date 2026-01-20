@@ -1,6 +1,5 @@
 package org.umc.valuedi.global.external.codef.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,8 @@ import org.umc.valuedi.domain.asset.entity.CardApproval;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.global.external.codef.converter.CodefAssetConverter;
-import org.umc.valuedi.global.external.codef.dto.res.*;
+import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
+import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 
@@ -33,9 +33,6 @@ public class CodefAssetService {
     private final CodefAssetConverter codefAssetConverter;
     private final ObjectMapper objectMapper;
 
-    /**
-     * 보유 계좌 목록 조회
-     */
     public List<BankAccount> getBankAccounts(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
 
@@ -46,8 +43,8 @@ public class CodefAssetService {
             throw new CodefException(CodefErrorCode.CODEF_API_BANK_ACCOUNT_LIST_FAILED);
         }
 
-        CodefBankAccountDTO.ListResponse listResponse = objectMapper.convertValue(response.getData(), CodefBankAccountDTO.ListResponse.class);
-        List<CodefBankAccountDTO.Account> allAccounts = new ArrayList<>();
+        CodefAssetResDTO.BankAccountList listResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankAccountList.class);
+        List<CodefAssetResDTO.BankAccount> allAccounts = new ArrayList<>();
 
         if (listResponse.getResDepositTrust() != null) allAccounts.addAll(listResponse.getResDepositTrust());
         if (listResponse.getResForeignCurrency() != null) allAccounts.addAll(listResponse.getResForeignCurrency());
@@ -58,9 +55,6 @@ public class CodefAssetService {
         return codefAssetConverter.toBankAccountList(allAccounts, connection);
     }
 
-    /**
-     * 계좌 거래 내역 조회 (3개월)
-     */
     public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
         requestBody.put("account", account.getAccountDisplay());
@@ -76,7 +70,6 @@ public class CodefAssetService {
         if (!response.isSuccess()) {
             String msg = response.getResult().getMessage();
             
-            // 실패해도 괜찮은 경우(조회 불가 계좌)는 WARN 로그, 그 외는 ERROR 로그
             if (msg.contains("일치하는 정보가 없습니다") || msg.contains("거래내역이 존재하지 않습니다")) {
                 log.warn("거래내역 조회 불가 계좌 (건너뜀) - 계좌명: {}, 메시지: {}", 
                          account.getAccountName(), msg);
@@ -88,7 +81,7 @@ public class CodefAssetService {
             return List.of();
         }
 
-        CodefBankTransactionDTO.Response transactionResponse = objectMapper.convertValue(response.getData(), CodefBankTransactionDTO.Response.class);
+        CodefAssetResDTO.BankTransactionList transactionResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankTransactionList.class);
         if (transactionResponse.getResTrHistoryList() == null) {
             return List.of();
         }
@@ -96,9 +89,6 @@ public class CodefAssetService {
         return codefAssetConverter.toBankTransactionList(transactionResponse.getResTrHistoryList(), account);
     }
 
-    /**
-     * 보유 카드 목록 조회
-     */
     public List<Card> getCards(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
 
@@ -110,13 +100,13 @@ public class CodefAssetService {
         }
 
         Object responseData = response.getData();
-        List<CodefCardDTO.Card> cardList = new ArrayList<>();
+        List<CodefAssetResDTO.Card> cardList = new ArrayList<>();
         
         if (responseData instanceof Map) {
-            CodefCardDTO.Card card = objectMapper.convertValue(responseData, CodefCardDTO.Card.class);
+            CodefAssetResDTO.Card card = objectMapper.convertValue(responseData, CodefAssetResDTO.Card.class);
             cardList.add(card);
         } else if (responseData instanceof List) {
-             List<CodefCardDTO.Card> cards = objectMapper.convertValue(responseData, new TypeReference<List<CodefCardDTO.Card>>() {});
+             List<CodefAssetResDTO.Card> cards = objectMapper.convertValue(responseData, new TypeReference<List<CodefAssetResDTO.Card>>() {});
              cardList.addAll(cards);
         } else {
             log.error("CODEF 보유 카드 목록 응답 형식이 예상과 다릅니다. Data: {}", responseData);
@@ -126,10 +116,6 @@ public class CodefAssetService {
         return codefAssetConverter.toCardList(cardList, connection);
     }
 
-    /**
-     * 카드 승인 내역 조회 (3개월)
-     * Postman 성공 요청과 동일한 키만 사용하도록 수정
-     */
     public List<CardApproval> getCardApprovals(CodefConnection connection) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("connectedId", connection.getConnectedId());
@@ -140,7 +126,6 @@ public class CodefAssetService {
         requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
-        requestBody.put("memberStoreInfoType", "1");
 
         CodefApiResponse<Object> response = codefApiClient.getCardApprovals(requestBody);
 
@@ -149,9 +134,9 @@ public class CodefAssetService {
             return List.of();
         }
 
-        List<CodefCardApprovalDTO.Approval> approvalList;
+        List<CodefAssetResDTO.CardApproval> approvalList;
         if (response.getData() instanceof List) {
-             approvalList = objectMapper.convertValue(response.getData(), new TypeReference<List<CodefCardApprovalDTO.Approval>>() {});
+             approvalList = objectMapper.convertValue(response.getData(), new TypeReference<List<CodefAssetResDTO.CardApproval>>() {});
         } else {
              return List.of();
         }
@@ -159,9 +144,6 @@ public class CodefAssetService {
         return codefAssetConverter.toCardApprovalList(approvalList);
     }
 
-    /**
-     * CODEF 자산 조회용 공통 요청 바디 생성
-     */
     private Map<String, Object> createAssetRequestBody(CodefConnection connection) {
         Map<String, Object> body = new HashMap<>();
         body.put("connectedId", connection.getConnectedId());

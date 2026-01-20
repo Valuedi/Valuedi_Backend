@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.repository;
+package org.umc.valuedi.domain.asset.repository.bank;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;

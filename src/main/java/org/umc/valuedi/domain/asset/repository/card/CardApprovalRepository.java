@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.repository;
+package org.umc.valuedi.domain.asset.repository.card;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
