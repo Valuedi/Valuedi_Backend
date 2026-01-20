@@ -24,8 +24,8 @@ public class CardApprovalRepositoryImpl implements CardApprovalRepositoryCustom 
         String sql = "INSERT IGNORE INTO card_approval " +
                 "(card_id, used_date, used_time, used_datetime, used_amount, payment_type, installment_month, " +
                 "approval_no, home_foreign_type, currency, cancel_yn, cancel_amount, merchant_corp_no, " +
-                "merchant_name, merchant_type, merchant_no, created_at, updated_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                "merchant_name, merchant_type, merchant_no, comm_start_date, comm_end_date, raw_json, synced_at, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
@@ -51,6 +51,26 @@ public class CardApprovalRepositoryImpl implements CardApprovalRepositoryCustom 
                 ps.setString(14, approval.getMerchantName());
                 ps.setString(15, approval.getMerchantType());
                 ps.setString(16, approval.getMerchantNo());
+
+                if (approval.getCommStartDate() != null) {
+                    ps.setTimestamp(17, Timestamp.valueOf(approval.getCommStartDate())); // comm_start_date
+                } else {
+                    ps.setNull(17, java.sql.Types.TIMESTAMP);
+                }
+
+                if (approval.getCommEndDate() != null) {
+                    ps.setTimestamp(18, Timestamp.valueOf(approval.getCommEndDate())); // comm_end_date
+                } else {
+                    ps.setNull(18, java.sql.Types.TIMESTAMP);
+                }
+                
+                ps.setString(19, approval.getRawJson());
+
+                if (approval.getSyncedAt() != null) {
+                    ps.setTimestamp(20, Timestamp.valueOf(approval.getSyncedAt())); // synced_at
+                } else {
+                    ps.setNull(20, java.sql.Types.TIMESTAMP);
+                }
             }
 
             @Override

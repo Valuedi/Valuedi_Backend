@@ -125,6 +125,7 @@ public class CodefAssetService {
         requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
+        requestBody.put("memberStoreInfoType", "1"); // 가맹점 상세 정보 조회 옵션
 
         CodefApiResponse<Object> response = codefApiClient.getCardApprovals(requestBody);
 
