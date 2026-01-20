@@ -1,0 +1,103 @@
+name: CI/CD (develop)
+
+on:
+  push:
+    branches: [ "develop" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: valuedi-dev-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_repo: ${{ steps.meta.outputs.image_repo }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.4.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set image meta
+        id: meta
+        run: |
+          echo "image_repo=${{ secrets.DOCKER_USERNAME }}/valuedi-backend" >> $GITHUB_OUTPUT
+          echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push (ARM64)
+        uses: docker/build-push-action@v6.16.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/arm64  # 라즈베리 파이용
+          tags: |
+            ${{ steps.meta.outputs.image_repo }}:dev-latest
+            ${{ steps.meta.outputs.image_repo }}:${{ steps.meta.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Deploy via SSH (Blue/Green)
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.DEV_SERVER_HOST }}      # 개발 서버 IP
+          port: ${{ secrets.DEV_SERVER_PORT }}      # 개발 서버 SSH 포트
+          username: ${{ secrets.DEV_SERVER_USERNAME }} # 개발 서버 유저 (예: pi)
+          key: ${{ secrets.DEV_SERVER_KEY }}        # 개발 서버 SSH Key
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            APP_DIR="/home/${{ secrets.DEV_SERVER_USERNAME }}/valuedi/app" # 라즈베리 파이 경로
+            cd "$APP_DIR"
+
+            # 1) DEV_ENV를 .env로 반영
+            cat > .env << 'EOF'
+            ${{ secrets.DEV_ENV }}
+            EOF
+
+            # 2) IMAGE_REPO / IMAGE_TAG 주입
+            IMAGE_REPO="${{ secrets.DOCKER_USERNAME }}/valuedi-backend"
+            IMAGE_TAG="${{ github.sha }}"
+
+            if grep -q '^IMAGE_REPO=' .env; then
+              sed -i "s|^IMAGE_REPO=.*|IMAGE_REPO=${IMAGE_REPO}|" .env
+            else
+              echo "IMAGE_REPO=${IMAGE_REPO}" >> .env
+            fi
+
+            if grep -q '^IMAGE_TAG=' .env; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env
+            else
+              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+            fi
+
+            # 3) 배포 스크립트 실행
+            # (스크립트 파일들이 실행 권한이 있는지 확인)
+            chmod +x deploy.sh scripts/healthcheck.sh scripts/switch_upstream.sh
+            ./deploy.sh
+
+            # 4) 정리
+            docker image prune -f
