@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.umc.valuedi.domain.asset.enums.CancelStatus;
 import org.umc.valuedi.domain.asset.enums.HomeForeignType;
@@ -16,6 +17,7 @@ import java.time.LocalTime;
 
 @Entity
 @Builder
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Table(
@@ -99,4 +101,8 @@ public class CardApproval extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "card_id", nullable = false)
     private Card card;
+
+    public void assignCard(Card card) {
+        this.card = card;
+    }
 }
