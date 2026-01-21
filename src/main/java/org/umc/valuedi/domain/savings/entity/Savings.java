@@ -75,6 +75,10 @@ public class Savings {
     @Builder.Default
     private List<SavingsOption> savingsOptionList = new ArrayList<>();
 
+    @OneToMany(mappedBy = "savings", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Recommendation> recommendationList = new ArrayList<>();
+
     public void replaceOptions(List<SavingsOption> newOptions) {
         this.savingsOptionList.clear();
         if (newOptions == null) return;

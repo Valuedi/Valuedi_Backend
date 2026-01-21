@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -48,6 +50,10 @@ public class SavingsOption {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fin_prdt_cd", referencedColumnName = "fin_prdt_cd", nullable = false)
     private Savings savings;
+
+    @OneToMany(mappedBy = "savingsOption", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Recommendation> recommendationList = new ArrayList<>();
 
     void setSavings(Savings savings) {
         this.savings = savings;
