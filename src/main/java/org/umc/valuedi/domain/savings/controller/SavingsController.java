@@ -8,8 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.umc.valuedi.domain.savings.dto.response.SavingsDetailResponseDTO;
-import org.umc.valuedi.domain.savings.dto.response.SavingsListResponseDTO;
+import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.service.SavingsService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
@@ -22,18 +21,18 @@ public class SavingsController implements SavingsControllerDocs {
     private final SavingsService savingsService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<SavingsListResponseDTO>> findSavingsList(
+    public ResponseEntity<ApiResponse<SavingsResponseDTO.SavingsListResponse>> findSavingsList(
             @PageableDefault(size = 10, sort = "korCoNm") Pageable pageable
     ) {
-        SavingsListResponseDTO result = savingsService.getSavingsList(pageable);
+        SavingsResponseDTO.SavingsListResponse result = savingsService.getSavingsList(pageable);
         return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
     }
 
     @GetMapping("/{finPrdtCd}")
-    public ResponseEntity<ApiResponse<SavingsDetailResponseDTO>> findSavingsDetail(
+    public ResponseEntity<ApiResponse<SavingsResponseDTO.SavingsDetailResponse>> findSavingsDetail(
             @PathVariable String finPrdtCd
     ) {
-        SavingsDetailResponseDTO result = savingsService.getSavingsDetail(finPrdtCd);
+        SavingsResponseDTO.SavingsDetailResponse result = savingsService.getSavingsDetail(finPrdtCd);
         return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
     }
 }
