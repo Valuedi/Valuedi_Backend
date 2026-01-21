@@ -87,7 +87,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<List<CardResDTO.CardConnection>> getCards();
+    ApiResponse<CardResDTO.CardListDTO> getCards();
 
     @Operation(summary = "연동된 카드사 목록 조회 API", description = "현재 사용자가 연동한 카드사 리스트를 조회합니다.")
     @ApiResponses({

@@ -53,8 +53,7 @@ dependencies {
 	testRuntimeOnly 'com.h2database:h2'
 
 	// Swagger
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.13'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1'
 
 	// CODEF
 	implementation 'io.codef.api:easycodef-java:1.0.6'
@@ -72,6 +71,13 @@ dependencies {
 	implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
 	implementation 'org.springframework.boot:spring-boot-configuration-processor'
 
+	// QueryDSL : OpenFeign
+	implementation "io.github.openfeign.querydsl:querydsl-jpa:7.0"
+	implementation "io.github.openfeign.querydsl:querydsl-core:7.0"
+	annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:7.0:jpa"
+	annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+
 	// mail
 	implementation'org.springframework.boot:spring-boot-starter-mail'
 
@@ -88,4 +94,18 @@ dependencyManagement {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// QueryDSL 관련 설정
+// generated/querydsl 폴더 생성 & 삽입
+def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
+
+// 컴파일 시 생성 경로 지정
+tasks.withType(JavaCompile).configureEach {
+	options.generatedSourceOutputDirectory.set(querydslDir)
+}
+
+// clean 태스크에 생성 폴더 삭제 로직 추가
+clean.doLast {
+	file(querydslDir).deleteDir()
 }

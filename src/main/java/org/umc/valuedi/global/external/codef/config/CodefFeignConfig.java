@@ -19,7 +19,7 @@ public class CodefFeignConfig {
     }
 
     @Bean
-    public Decoder codefDecoder(CodefResponseDecoder decoder) {
-        return decoder;
+    public Decoder codefDecoder() {
+        return new CodefResponseDecoder();
     }
 }

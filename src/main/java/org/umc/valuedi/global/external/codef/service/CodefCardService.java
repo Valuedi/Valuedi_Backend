@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
-import org.umc.valuedi.global.external.codef.dto.res.CodefApiResponse;
+import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 
 import java.util.*;
 

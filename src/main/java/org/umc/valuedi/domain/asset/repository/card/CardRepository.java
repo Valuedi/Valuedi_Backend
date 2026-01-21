@@ -1,9 +1,10 @@
-package org.umc.valuedi.domain.asset.repository;
+package org.umc.valuedi.domain.asset.repository.card;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.umc.valuedi.domain.asset.entity.Card;
+import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
 import java.util.List;
 
@@ -21,4 +22,14 @@ public interface CardRepository extends JpaRepository<Card, Long> {
             "AND cc.organization = :organization " +
             "AND c.isActive = true")
     List<Card> findAllByMemberIdAndOrganization(@Param("memberId") Long memberId, @Param("organization") String organization);
+
+    List<Card> findByCodefConnection(CodefConnection codefConnection);
+
+    // 전체 카드 목록 조회 (최신순)
+    @Query("SELECT c FROM Card c " +
+            "JOIN FETCH c.codefConnection cc " +
+            "WHERE cc.member.id = :memberId " +
+            "AND c.isActive = true " +
+            "ORDER BY c.createdAt DESC")
+    List<Card> findAllByMemberId(@Param("memberId") Long memberId);
 }

@@ -7,11 +7,14 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.umc.valuedi.domain.member.enums.Role;
 import org.umc.valuedi.global.apiPayload.code.GeneralErrorCode;
 import org.umc.valuedi.global.security.handler.SecurityExceptionHandler;
 import org.umc.valuedi.global.security.jwt.JwtAuthFilter;
@@ -47,7 +50,8 @@ public class SecurityConfig {
             "/auth/email/**",
             "/auth/status",
 
-            "/api/goals/**"
+            // Terms APIs
+            "/api/terms",
     };
 
     @Bean
@@ -55,6 +59,8 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(allowUris).permitAll()
+                        // 사용자 기능 추가되면 활성화
+//                        .requestMatchers("/api/trophies", "/api/members/me/trophies").hasAuthority(Role.ROLE_USER.name())
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
@@ -99,5 +105,10 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }

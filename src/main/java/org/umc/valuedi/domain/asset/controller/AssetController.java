@@ -27,15 +27,14 @@ public class AssetController implements AssetControllerDocs {
 
 
     @GetMapping("/cards")
-    public ApiResponse<List<CardResDTO.CardConnection>> getCards(
+    public ApiResponse<CardResDTO.CardListDTO> getCards(
             // @CurrentMember Long memberId
     ) {
         Long memberId = 1L; // 임시
-        List<CardResDTO.CardConnection> cards = connectionQueryService.getConnectedCards(memberId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, cards);
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllCards(memberId));
     }
 
-    @GetMapping("/card-issuers")
+    @GetMapping("/cardIssuers")
     public ApiResponse<List<CardResDTO.CardIssuerConnection>> getCardIssuers(
             // @CurrentMember Long memberId
     ) {
@@ -62,7 +61,7 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, banks);
     }
 
-    @GetMapping("/banks/accounts")
+    @GetMapping("/accounts")
     public ApiResponse<BankResDTO.BankAccountListDTO> getAllBankAccounts(
             // @CurrentMember Long memberId
     ) {

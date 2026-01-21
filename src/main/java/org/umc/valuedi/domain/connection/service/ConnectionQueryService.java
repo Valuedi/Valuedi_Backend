@@ -22,7 +22,6 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ConnectionQueryService {
     private final CodefConnectionRepository connectionRepository;
-    private final CodefCardService codefCardService;
     private final ConnectionConverter connectionConverter;
 
     /**
@@ -53,34 +52,6 @@ public class ConnectionQueryService {
         return connections.stream()
                 .map(connectionConverter::toCardIssuerConnectionDTO)
                 .toList();
-    }
-
-    /**
-     * 연동된 카드 목록 조회
-     */
-    public List<CardResDTO.CardConnection> getConnectedCards(Long memberId) {
-        // 카드사 연동 확인
-        List<CodefConnection> cardConnections =
-                connectionRepository.findByMemberIdAndBusinessType(
-                        memberId,
-                        BusinessType.CD
-                );
-
-        if (cardConnections.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        String connectedId = cardConnections.get(0).getConnectedId();
-
-        List<String> cardOrganizations = cardConnections.stream()
-                .map(CodefConnection::getOrganization)
-                .distinct()
-                .toList();
-
-        log.info("카드 목록 조회 시작 - memberId: {}, 연동 카드사 수: {}",
-                memberId, cardOrganizations.size());
-
-        return codefCardService.getCardList(connectedId, cardOrganizations);
     }
 
     /**
