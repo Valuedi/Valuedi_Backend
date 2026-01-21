@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -63,7 +63,6 @@ public interface AuthControllerDocs {
                                               "message": "로그인에 성공했습니다.",
                                               "result": {
                                                 "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
                                                 "memberId": 1
                                               }
                                             }
@@ -377,7 +376,6 @@ public interface AuthControllerDocs {
                                               "message": "로그인에 성공했습니다.",
                                               "result": {
                                                 "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
                                                 "memberId": 1
                                               }
                                             }
@@ -435,5 +433,13 @@ public interface AuthControllerDocs {
                     )
             )
     })
-    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(@Valid AuthReqDTO.LocalLoginDTO dto);
+    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(
+            @Valid AuthReqDTO.LocalLoginDTO dto,
+            HttpServletResponse response
+    );
+
+    public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
+            String refreshToken,
+            HttpServletResponse response
+    );
 }

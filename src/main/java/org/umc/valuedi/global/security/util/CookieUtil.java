@@ -8,11 +8,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class CookieUtil {
 
-    public void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
+    public void addCookie(HttpServletResponse response, String name, String value, int maxAge, String path) {
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(true)
-                .path("/")
+                .path(path)
                 .maxAge(maxAge)
                 .sameSite("Lax")
                 .build();
@@ -20,10 +20,10 @@ public class CookieUtil {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
-    public void deleteCookie(HttpServletResponse response, String name) {
+    public void deleteCookie(HttpServletResponse response, String name, String path) {
         ResponseCookie cookie = ResponseCookie.from(name, null)
                 .maxAge(0)
-                .path("/")
+                .path(path)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

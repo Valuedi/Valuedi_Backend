@@ -15,6 +15,7 @@ import org.umc.valuedi.domain.auth.exception.code.AuthSuccessCode;
 import org.umc.valuedi.domain.auth.service.command.AuthCommandService;
 import org.umc.valuedi.domain.auth.service.query.AuthQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.jwt.JwtUtil;
 import org.umc.valuedi.global.security.util.CookieUtil;
 
 import java.util.UUID;
@@ -29,12 +30,13 @@ public class AuthController implements AuthControllerDocs {
     private final AuthQueryService authQueryService;
     private final KakaoProperties kakaoProperties;
     private final CookieUtil cookieUtil;
+    private final JwtUtil jwtUtil;
 
     @Override
     @GetMapping("/oauth/kakao/login")
     public ApiResponse<String> kakaoLogin(HttpServletResponse response) {
         String state = UUID.randomUUID().toString();
-        cookieUtil.addCookie(response, "oauth_state", state, 600);
+        cookieUtil.addCookie(response, "oauth_state", state, 600, "/auth/oauth/kakao/callback");
         String loginUrl = kakaoProperties.getKakaoAuthUrl(state);
 
         return ApiResponse.onSuccess(AuthSuccessCode.KAKAO_AUTH_URL_SUCCESS, loginUrl);
@@ -48,13 +50,24 @@ public class AuthController implements AuthControllerDocs {
             @CookieValue(name = "oauth_state", required = false) String oauthState,
             HttpServletResponse response
     ) {
-        cookieUtil.deleteCookie(response, "oauth_state");
+        cookieUtil.deleteCookie(response, "oauth_state", "/auth/oauth/kakao/callback");
 
         if (oauthState == null || !oauthState.equals(state)) {
             throw new AuthException(AuthErrorCode.INVALID_STATE);
         }
 
-        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, authCommandService.loginKakao(code));
+        AuthResDTO.LoginResultDTO result = authCommandService.loginKakao(code);
+
+        // 리프레시 토큰은 쿠키에 저장
+        cookieUtil.addCookie(
+                response,
+                "refreshToken",
+                result.refreshToken(),
+                (int) jwtUtil.getRefreshTokenExpiration() / 1000,
+                "/auth/token/refresh"
+        );
+
+        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, result);
     }
 
     @Override
@@ -93,7 +106,41 @@ public class AuthController implements AuthControllerDocs {
 
     @Override
     @PostMapping("/login")
-    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(@RequestBody AuthReqDTO.LocalLoginDTO dto) {
-        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, authCommandService.loginLocal(dto));
+    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(
+            @RequestBody AuthReqDTO.LocalLoginDTO dto,
+            HttpServletResponse response
+    ) {
+
+        AuthResDTO.LoginResultDTO result = authCommandService.loginLocal(dto);
+
+        // 리프레시 토큰은 쿠키에 저장
+        cookieUtil.addCookie(
+                response,
+                "refreshToken",
+                result.refreshToken(),
+                (int) jwtUtil.getRefreshTokenExpiration() / 1000,
+                "/auth/token/refresh"
+        );
+        return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, result);
+    }
+
+    @Override
+    @PostMapping("/token/refresh")
+    public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
+            @CookieValue(name = "refreshToken") String refreshToken,
+            HttpServletResponse response
+    ) {
+        AuthResDTO.LoginResultDTO result = authCommandService.tokenReissue(refreshToken);
+
+        // 리프레시 토큰은 쿠키에 저장
+        cookieUtil.addCookie(
+                response,
+                "refreshToken",
+                result.refreshToken(),
+                (int) jwtUtil.getRefreshTokenExpiration() / 1000,
+                "/auth/token/refresh"
+        );
+
+        return ApiResponse.onSuccess(AuthSuccessCode.TOKEN_REISSUE_SUCCESS, result);
     }
 }

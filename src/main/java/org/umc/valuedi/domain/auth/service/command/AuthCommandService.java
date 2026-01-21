@@ -1,5 +1,7 @@
 package org.umc.valuedi.domain.auth.service.command;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -188,5 +190,44 @@ public class AuthCommandService {
         );
 
         return AuthConverter.toLoginResultDTO(member, accessToken, refreshToken);
+    }
+
+    // 엑세스/리프레시 토큰 재발급
+    public AuthResDTO.LoginResultDTO tokenReissue(String refreshToken) {
+        // 리프레시 토큰이 맞는지 확인. 아닐 경우와 토큰 자체가 유효하지 않을 경우 예외 발생
+        try {
+            if(!jwtUtil.getCategory(refreshToken).equals("refresh")) {
+                throw new AuthException(AuthErrorCode.NOT_REFRESH_TOKEN);
+            }
+        } catch(ExpiredJwtException e) {
+            throw new AuthException(AuthErrorCode.EXPIRED_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN);
+        }
+
+        Long memberId = Long.valueOf(jwtUtil.getMemberId(refreshToken));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+        String redisKey = "RT:" + member.getId();
+        String savedRefreshToken = redisTemplate.opsForValue().get(redisKey);
+
+        // Redis에 저장된 토큰인지 확인
+        if(savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN);
+        }
+
+        CustomUserDetails userDetails = new CustomUserDetails(member);
+        String newAccessToken = jwtUtil.createAccessToken(userDetails);
+        String newRefreshToken = jwtUtil.createRefreshToken(userDetails);
+
+        redisTemplate.opsForValue().set(
+                redisKey,
+                newRefreshToken,
+                jwtUtil.getRefreshTokenExpiration(),
+                TimeUnit.MILLISECONDS
+        );
+
+        return AuthConverter.toLoginResultDTO(member, newAccessToken, newRefreshToken);
     }
 }
