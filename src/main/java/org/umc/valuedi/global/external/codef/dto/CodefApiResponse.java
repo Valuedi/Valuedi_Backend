@@ -1,4 +1,4 @@
-package org.umc.valuedi.global.external.codef.dto.res;
+package org.umc.valuedi.global.external.codef.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;

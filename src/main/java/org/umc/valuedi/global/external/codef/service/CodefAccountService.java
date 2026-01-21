@@ -2,8 +2,10 @@ package org.umc.valuedi.global.external.codef.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
@@ -11,7 +13,7 @@ import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
-import org.umc.valuedi.global.external.codef.dto.res.CodefApiResponse;
+import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
@@ -27,6 +29,7 @@ public class CodefAccountService {
     private final CodefApiClient codefApiClient;
     private final CodefEncryptUtil encryptUtil;
     private final MemberRepository memberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 금융사 계정 연동 메인 로직
@@ -110,6 +113,9 @@ public class CodefAccountService {
                     .build();
             member.addCodefConnection(connection);
             log.info("기관 [{}] 연동 정보 저장 완료", organization);
+
+            // 이벤트 발행
+            eventPublisher.publishEvent(new ConnectionSuccessEvent(connection));
         }
     }
 

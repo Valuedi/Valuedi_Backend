@@ -1,5 +1,6 @@
 package org.umc.valuedi.domain.asset.converter;
 
+import org.springframework.stereotype.Component;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
@@ -9,6 +10,7 @@ import org.umc.valuedi.domain.asset.entity.Card;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Component
 public class AssetConverter {
 
     // 개별 BankAccount 엔티티 -> BankAccountInfo 변환

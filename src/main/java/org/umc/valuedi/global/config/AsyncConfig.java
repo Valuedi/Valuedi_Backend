@@ -22,4 +22,15 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    @Bean(name = "assetSyncExecutor")
+    public Executor assetSyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5); // 동시에 처리할 연동 작업 수
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(20);
+        executor.setThreadNamePrefix("AssetSync-");
+        executor.initialize();
+        return executor;
+    }
 }

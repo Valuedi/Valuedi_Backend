@@ -20,8 +20,10 @@ public enum CodefErrorCode implements BaseErrorCode {
     CODEF_DUPLICATE_ORGANIZATION(HttpStatus.CONFLICT, "CODEF409_1", "이미 연동된 금융사입니다. 기존 연동을 먼저 해제해주세요."),
     CODEF_INVALID_CREDENTIALS(HttpStatus.BAD_REQUEST, "CODEF400_4", "금융사 로그인 정보가 올바르지 않습니다. 아이디와 비밀번호를 확인해주세요."),
 
-    CODEF_ORGANIZATION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "CODEF503_1", "금융사 시스템 점검 중입니다. 잠시 후 다시 시도해주세요.")
+    CODEF_ORGANIZATION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "CODEF503_1", "금융사 시스템 점검 중입니다. 잠시 후 다시 시도해주세요."),
 
+    CODEF_API_BANK_ACCOUNT_LIST_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CODEF500_4", "보유 계좌 목록 조회에 실패했습니다."),
+    CODEF_API_CARD_LIST_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CODEF500_5", "보유 카드 목록 조회에 실패했습니다.")
     ;
 
     private final HttpStatus status;
