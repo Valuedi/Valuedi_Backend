@@ -62,3 +62,6 @@ management:
 fss:
   base-url: ${FSS_BASE_URL:https://finlife.fss.or.kr/finlifeapi}
   auth-key: ${FSS_AUTH_KEY}
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
