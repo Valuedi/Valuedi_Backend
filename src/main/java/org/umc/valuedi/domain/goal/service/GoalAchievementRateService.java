@@ -8,7 +8,7 @@ public class GoalAchievementRateService {
     /**
      * @return 0~100 (정수)
      */
-    public int calculateRate(int savedAmount, int targetAmount) {
+    public int calculateRate(Long savedAmount, Long targetAmount) {
         if (targetAmount <= 0) return 0;
         if (savedAmount <= 0) return 0;
 

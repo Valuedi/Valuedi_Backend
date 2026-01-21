@@ -2,6 +2,8 @@ package org.umc.valuedi.domain.goal.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
@@ -11,7 +13,7 @@ import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.exception.code.GoalSuccessCode;
-import org.umc.valuedi.domain.goal.service.GoalService;
+import org.umc.valuedi.domain.goal.service.command.GoalCommandService;
 import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 
@@ -20,11 +22,12 @@ import org.umc.valuedi.global.apiPayload.ApiResponse;
 @RequestMapping("/api/goals")
 public class GoalController implements GoalControllerDocs{
 
-    private final GoalService goalService;
+    private final GoalCommandService goalService;
     private final GoalQueryService goalQueryService;
 
     // 목표 추가
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<GoalCreateResponseDto> createGoal(
             @RequestBody @Valid GoalCreateRequestDto req
     ) {

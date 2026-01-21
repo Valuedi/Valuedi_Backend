@@ -2,12 +2,11 @@ package org.umc.valuedi.domain.goal.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.member.entity.Member;
+import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,7 +18,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @SQLRestriction("deleted_at IS NULL")
-public class Goal {
+@SQLDelete(sql = "UPDATE goal SET deleted_at = NOW() WHERE id = ?")
+public class Goal extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,28 +42,20 @@ public class Goal {
     private LocalDate endDate;
 
     @Column(name = "target_amount", nullable = false)
-    private Integer targetAmount;
+    private Long targetAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private GoalStatus status;
 
-    @Column(name = "is_completed", nullable = false)
-    private Boolean isCompleted;
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
 
     @Column(name = "color", nullable = true, length = 20)
     private String color;
 
     @Column(name = "icon", nullable = true)
     private Integer icon;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
@@ -80,14 +72,25 @@ public class Goal {
         this.endDate = endDate;
     }
 
-    public void changeTargetAmount(Integer targetAmount) {
+    public void changeTargetAmount(Long targetAmount) {
         this.targetAmount = targetAmount;
     }
 
-    public void changeStatus(GoalStatus status) {
-        this.status = status;
-        if (status == GoalStatus.COMPLETE) this.isCompleted = true;
-        if (status == GoalStatus.ACTIVE || status == GoalStatus.CANCELED) this.isCompleted = false;
+    public void Activate() {
+        this.status = GoalStatus.ACTIVE;
+        this.completedAt = null;
+    }
+
+    // 실패 종료
+    public void Complete() {
+        this.status = GoalStatus.COMPLETE;
+        this.completedAt = LocalDateTime.now();
+    }
+
+    // 취소 종료
+    public void Fail() {
+        this.status = GoalStatus.FAILED;
+        this.completedAt = LocalDateTime.now();
     }
 
 }

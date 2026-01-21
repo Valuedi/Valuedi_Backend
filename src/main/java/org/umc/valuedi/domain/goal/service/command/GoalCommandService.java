@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.goal.service;
+package org.umc.valuedi.domain.goal.service.command;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,12 +13,14 @@ import org.umc.valuedi.domain.goal.exception.GoalException;
 import org.umc.valuedi.domain.goal.exception.code.GoalErrorCode;
 import org.umc.valuedi.domain.goal.repository.GoalRepository;
 import org.umc.valuedi.domain.member.entity.Member;
+import org.umc.valuedi.domain.member.exception.MemberException;
+import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class GoalService {
+public class GoalCommandService {
 
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
@@ -26,7 +28,7 @@ public class GoalService {
     // 목표 생성
     public GoalCreateResponseDto createGoal(GoalCreateRequestDto req) {
         Member member = memberRepository.findById(req.memberId())
-                .orElseThrow(() -> new GoalException(GoalErrorCode.MEMBER_NOT_FOUND));
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         validateDateRange(req.startDate(), req.endDate());
 
@@ -40,6 +42,9 @@ public class GoalService {
     public void updateGoal(Long goalId, GoalUpdateRequestDto req) {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
+
+        // 취소 or 완료 된 목표는 수정 불가
+        if (goal.getStatus() != GoalStatus.ACTIVE) throw new GoalException(GoalErrorCode.GOAL_NOT_EDITABLE);
 
         if (req.startDate() != null || req.endDate() != null) {
             validateDateRange(
@@ -56,7 +61,7 @@ public class GoalService {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
-        goal.changeStatus(GoalStatus.CANCELED);
+        goalRepository.delete(goal);
     }
 
     // 날짜 검증

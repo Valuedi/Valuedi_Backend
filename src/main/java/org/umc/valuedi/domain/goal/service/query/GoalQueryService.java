@@ -13,6 +13,8 @@ import org.umc.valuedi.domain.goal.exception.GoalException;
 import org.umc.valuedi.domain.goal.exception.code.GoalErrorCode;
 import org.umc.valuedi.domain.goal.repository.GoalRepository;
 import org.umc.valuedi.domain.goal.service.GoalAchievementRateService;
+import org.umc.valuedi.domain.member.exception.MemberException;
+import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 
 import java.util.List;
@@ -29,12 +31,20 @@ public class GoalQueryService {
     // 목표 전체 목록 조회
     public GoalListResponseDto getGoals(Long memberId, GoalStatus status) {
         if (!memberRepository.existsById(memberId)) {
-            throw new GoalException(GoalErrorCode.MEMBER_NOT_FOUND);
+            throw new MemberException(MemberErrorCode.MEMBER_NOT_FOUND);
         }
 
-        List<Goal> goals = goalRepository.findAllByMember_IdAndStatus(memberId, status);
+        // ACTIVE면 ACTIVE만 / COMPLETE면 COMPLETE+FAILED(지난 목표) / FAILED면 FAILED만
+        List<Goal> goals = switch (status) {
+            case ACTIVE -> goalRepository.findAllByMember_IdAndStatus(memberId, GoalStatus.ACTIVE);
+            case COMPLETE -> goalRepository.findAllByMember_IdAndStatusIn(
+                    memberId,
+                    List.of(GoalStatus.COMPLETE, GoalStatus.FAILED)
+            );
+            case FAILED -> goalRepository.findAllByMember_IdAndStatus(memberId, GoalStatus.FAILED);
+        };
 
-        int savedAmount = 0; // 계좌 연동 후 수정
+        long savedAmount = 0; // 계좌 연동 후 수정
 
         var dtos = goals.stream()
                 .map(g -> GoalConverter.toSummaryDto(
@@ -52,7 +62,7 @@ public class GoalQueryService {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
-        int savedAmount = 0; // 계좌 연동 후 수정
+        long savedAmount = 0; // 계좌 연동 후 수정
         int rate = achievementRateService.calculateRate(savedAmount, goal.getTargetAmount());
 
         return GoalConverter.toDetailDto(goal, savedAmount, rate);
@@ -61,7 +71,7 @@ public class GoalQueryService {
     // 목표 개수 조회
     public GoalActiveCountResponseDto getActiveGoalCount(Long memberId) {
         if (!memberRepository.existsById(memberId)) {
-            throw new GoalException(GoalErrorCode.MEMBER_NOT_FOUND);
+            throw new MemberException(MemberErrorCode.MEMBER_NOT_FOUND);
         }
 
         long count = goalRepository.countByMember_IdAndStatus(memberId, GoalStatus.ACTIVE);

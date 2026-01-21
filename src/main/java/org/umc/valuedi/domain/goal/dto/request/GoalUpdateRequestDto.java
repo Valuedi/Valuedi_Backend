@@ -2,6 +2,8 @@ package org.umc.valuedi.domain.goal.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -10,6 +12,8 @@ import java.time.LocalDate;
 public record GoalUpdateRequestDto(
 
         @Schema(description = "목표 이름(최대 12자)", example = "유럽 여행 자금")
+        @NotNull
+        @NotBlank(message = "title은 공백일 수 없으며 필수입니다.")
         @Size(max = 12)
         String title,
 
@@ -21,6 +25,6 @@ public record GoalUpdateRequestDto(
 
         @Schema(description = "목표 금액(원 단위, 1 이상)", example = "3500000", minimum = "1")
         @Min(1)
-        Integer targetAmount
+        @Min(value = 1, message = "targetAmount는 1 이상이어야 합니다.") Long targetAmount
 
 ) {}

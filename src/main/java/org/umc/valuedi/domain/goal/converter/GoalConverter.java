@@ -24,7 +24,7 @@ public class GoalConverter {
                 .endDate(req.endDate())
                 .targetAmount(req.targetAmount())
                 .status(GoalStatus.ACTIVE)
-                .isCompleted(false)
+                .completedAt(null)
                 .color(null)
                 .icon(null)
                 .build();
@@ -48,11 +48,11 @@ public class GoalConverter {
 
     public static GoalListResponseDto.GoalSummaryDto toSummaryDto(
             Goal goal,
-            int savedAmount,
+            Long savedAmount,
             int achievementRate
     ) {
-        int remainingAmount = Math.max(goal.getTargetAmount() - savedAmount, 0);
-        long remainingDays = calcRemainingDays(goal.getEndDate());
+        Long remainingAmount = Math.max(goal.getTargetAmount() - savedAmount, 0);
+        Long remainingDays = calcRemainingDays(goal.getEndDate());
 
         return new GoalListResponseDto.GoalSummaryDto(
                 goal.getId(),
@@ -60,13 +60,14 @@ public class GoalConverter {
                 remainingAmount,
                 remainingDays,
                 achievementRate,
-                null // 계좌 연동 되면 채우기
+                null, // 계좌 연동 되면 채우기
+                goal.getStatus()
         );
     }
 
     public static GoalDetailResponseDto toDetailDto(
             Goal goal,
-            int savedAmount,
+            Long savedAmount,
             int achievementRate
     ) {
         long remainingDays = calcRemainingDays(goal.getEndDate());
@@ -78,7 +79,8 @@ public class GoalConverter {
                 goal.getTargetAmount(),
                 remainingDays,
                 achievementRate,
-                null // 계좌 연동 되면 채우기
+                null, // 계좌 연동 되면 채우기
+                goal.getStatus()
         );
     }
 
