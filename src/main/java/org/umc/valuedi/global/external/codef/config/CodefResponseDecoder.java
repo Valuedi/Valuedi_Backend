@@ -4,15 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import feign.Response;
 import feign.codec.Decoder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
-
-@Component
 public class CodefResponseDecoder implements Decoder {
 
     private final ObjectMapper objectMapper;
