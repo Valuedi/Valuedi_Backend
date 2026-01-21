@@ -11,7 +11,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -47,7 +46,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "카카오 로그인 콜백 API",
-            description = "카카오로부터 인가 코드를 받아 로그인을 완료하고 JWT를 발급합니다.  \n기존에 카카오로 로그인한 적 없는 경우, 회원가입 처리 후 JWT를 발급합니다.")
+            description = "카카오로부터 인가 코드를 받아 로그인을 완료하고 JWT를 발급합니다.  \n기존에 카카오로 로그인한 적 없는 경우, 회원가입 처리 후 JWT를 발급합니다.  \n리프레시 토큰은 쿠키에 저장됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -360,7 +359,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "로컬 계정 로그인 API",
-            description = "로컬 계정으로 로그인을 시도합니다. 로그인이 완료되면 JWT를 발급합니다.")
+            description = "로컬 계정으로 로그인을 시도합니다. 로그인이 완료되면 JWT를 발급합니다.  \n리프레시 토큰은 쿠키에 저장됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -438,7 +437,34 @@ public interface AuthControllerDocs {
             HttpServletResponse response
     );
 
+    @Operation(
+            summary = "토큰 재발급 API",
+            description = "쿠키에 저장된 리프레시 토큰으로 새로운 엑세스 토큰과 리프레시 토큰을 발급합니다.  \n새로 발급된 리프레시 토큰 역시 쿠키에 저장됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 토큰 재발급 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "토큰 재발급 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "AUTH200_6",
+                                                      "message": "토큰 재발급에 성공했습니다.",
+                                                      "result": {
+                                                        "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                        "memberId": 1
+                                                      }
+                                                    }
+                                            """
+                            )
+                    )
+            )
+    })
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
+            @Parameter(description = "쿠키에 저장된 리프레시 토큰 값")
             String refreshToken,
             HttpServletResponse response
     );
