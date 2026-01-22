@@ -28,8 +28,8 @@ public interface MemberTermsControllerDocs {
                                             value = """
                                             {
                                                 "isSuccess": true,
-                                                "code": "TERMS200_1",
-                                                "message": "약관 동의가 저장되었습니다.",
+                                                "code": "COMMON200",
+                                                "message": "요청이 성공적으로 처리되었습니다.",
                                                 "result": {
                                                     "agreements": [
                                                         {
@@ -66,8 +66,8 @@ public interface MemberTermsControllerDocs {
                     "이미 존재하는 (memberId, termsId) 조합은 업데이트되며(재동의/철회), 존재하지 않으면 신규 생성됩니다.",
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "COMMON200",
-                            description = "요청이 성공적으로 처리되었습니다.",
+                            responseCode = "TERMS200_1",
+                            description = "약관 동의가 저장되었습니다.",
                             content = @Content(
                                     mediaType = "application/json",
                                     examples = @ExampleObject(
@@ -76,8 +76,8 @@ public interface MemberTermsControllerDocs {
                                             value = """
                                             {
                                               "isSuccess": true,
-                                              "code": "COMMON200",
-                                              "message": "요청이 성공적으로 처리되었습니다.",
+                                              "code": "TERMS200_1",
+                                              "message": "약관 동의가 저장되었습니다.",
                                               "result": null
                                             }
                                             """
