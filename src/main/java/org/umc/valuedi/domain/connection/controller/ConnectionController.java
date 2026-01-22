@@ -26,7 +26,7 @@ public class ConnectionController implements ConnectionControllerDocs {
     ) {
         Long memberId = 1L; // 임시
         connectionCommandService.connect(memberId, request);
-        return ApiResponse.onSuccess(CodefSuccessCode.CODEF_CONNECTION_SUCCESS, null);
+        return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_SUCCESS, null);
     }
 
     @GetMapping
@@ -35,7 +35,7 @@ public class ConnectionController implements ConnectionControllerDocs {
     ) {
         Long memberId = 1L; // 임시
         List<ConnectionResDTO.Connection> connections = connectionQueryService.getAllConnections(memberId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, connections);
+        return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_LIST_FETCH_SUCCESS, connections);
     }
 
     @DeleteMapping("/{connectionId}")
