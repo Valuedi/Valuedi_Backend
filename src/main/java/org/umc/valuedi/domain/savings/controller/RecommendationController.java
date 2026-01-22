@@ -27,7 +27,7 @@ public class RecommendationController {
 
     // 최신 추천 15개 조회
     @GetMapping
-    public ApiResponse<SavingsResponseDTO.RecommendResponse> latest15(
+    public ApiResponse<SavingsResponseDTO.SavingsListResponse> latest15(
             @RequestParam Long memberId
     ) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendation(memberId));
@@ -35,7 +35,7 @@ public class RecommendationController {
 
     // 최신 추천 Top3 조회
     @GetMapping("/top3")
-    public ApiResponse<SavingsResponseDTO.RecommendResponse> latestTop3(
+    public ApiResponse<SavingsResponseDTO.SavingsListResponse> latestTop3(
             @RequestParam Long memberId
     ) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendationTop3(memberId));

@@ -208,7 +208,7 @@ public class RecommendationService {
 
     // 추천 상품 15개 조회
     @Transactional(readOnly = true)
-    public SavingsResponseDTO.RecommendResponse getRecommendation(Long memberId) {
+    public SavingsResponseDTO.SavingsListResponse getRecommendation(Long memberId) {
         Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND))
                 .getId();
@@ -216,26 +216,31 @@ public class RecommendationService {
         Pageable pageable = PageRequest.of(0, RECOMMEND_COUNT);
         List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
-        List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
-                .map(r -> new SavingsResponseDTO.RecommendedProduct(
-                        r.getSavings().getKorCoNm(),
-                        r.getSavings().getFinPrdtCd(),
-                        r.getSavings().getFinPrdtNm(),
-                        r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvType(),
-                        r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvTypeNm(),
-                        r.getScore()
-                ))
+        List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
+                .map(r -> {
+                    Savings s = r.getSavings();
+                    SavingsOption so = r.getSavingsOption();
+                    return new SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct(
+                            s.getKorCoNm(),
+                            s.getFinPrdtCd(),
+                            s.getFinPrdtNm(),
+                            so == null ? null : so.getRsrvType(),
+                            so == null ? null : so.getRsrvTypeNm()
+                    );
+                })
                 .toList();
 
-        return SavingsResponseDTO.RecommendResponse.builder()
+        return SavingsResponseDTO.SavingsListResponse.builder()
+                .totalCount(products.size())
+                .nowPageNo(1)
+                .maxPageNo(1)
                 .products(products)
-                .rationale(null)
                 .build();
     }
 
     // 추천 상품 Top3 조회
     @Transactional(readOnly = true)
-    public SavingsResponseDTO.RecommendResponse getRecommendationTop3(Long memberId) {
+    public SavingsResponseDTO.SavingsListResponse getRecommendationTop3(Long memberId) {
         Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND))
                 .getId();
@@ -243,20 +248,25 @@ public class RecommendationService {
         Pageable pageable = PageRequest.of(0, TOP3_COUNT);
         List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
-        List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
-                .map(r -> new SavingsResponseDTO.RecommendedProduct(
-                        r.getSavings().getKorCoNm(),
-                        r.getSavings().getFinPrdtCd(),
-                        r.getSavings().getFinPrdtNm(),
-                        r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvType(),
-                        r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvTypeNm(),
-                        r.getScore()
-                ))
+        List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
+                .map(r -> {
+                    Savings s = r.getSavings();
+                    SavingsOption so = r.getSavingsOption();
+                    return new SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct(
+                            s.getKorCoNm(),
+                            s.getFinPrdtCd(),
+                            s.getFinPrdtNm(),
+                            so == null ? null : so.getRsrvType(),
+                            so == null ? null : so.getRsrvTypeNm()
+                    );
+                })
                 .toList();
 
-        return SavingsResponseDTO.RecommendResponse.builder()
+        return SavingsResponseDTO.SavingsListResponse.builder()
+                .totalCount(products.size())
+                .nowPageNo(1)
+                .maxPageNo(1)
                 .products(products)
-                .rationale(null)
                 .build();
     }
 
