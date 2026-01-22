@@ -65,6 +65,31 @@ public class CodefAccountService {
     }
 
     /**
+     * 금융사 연동 해제 (Codef 계정 삭제)
+     */
+    public void deleteAccount(String connectedId, String organization, BusinessType businessType) {
+        Map<String, Object> accountMap = new HashMap<>();
+        accountMap.put("organization", organization);
+        accountMap.put("businessType", businessType);
+        accountMap.put("countryCode", "KR");
+        accountMap.put("clientType", "P");
+        accountMap.put("loginType", "1");
+
+        List<Map<String, Object>> accountList = new ArrayList<>();
+        accountList.add(accountMap);
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("connectedId", connectedId);
+        requestBody.put("accountList", accountList);
+
+        CodefApiResponse<Object> response = codefApiClient.deleteAccount(requestBody);
+
+        if (!response.isSuccess()) {
+            throw new CodefException(CodefErrorCode.CODEF_API_DELETE_FAILED);
+        }
+    }
+
+    /**
      * 최초 등록 처리
      */
     private String handleFirstCreation(Map<String, Object> requestBody) {

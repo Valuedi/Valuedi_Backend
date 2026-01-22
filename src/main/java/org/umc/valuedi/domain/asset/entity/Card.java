@@ -2,6 +2,8 @@ package org.umc.valuedi.domain.asset.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.umc.valuedi.global.entity.BaseEntity;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
@@ -21,6 +23,8 @@ import java.time.LocalDateTime;
                 )
         }
 )
+@SQLDelete(sql = "UPDATE card SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLRestriction("is_active = true")
 public class Card extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,5 +55,9 @@ public class Card extends BaseEntity {
 
     public void assignConnection(CodefConnection connection) {
         this.codefConnection = connection;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
     }
 }

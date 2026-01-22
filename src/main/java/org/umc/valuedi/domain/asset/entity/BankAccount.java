@@ -2,6 +2,8 @@ package org.umc.valuedi.domain.asset.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 import org.umc.valuedi.domain.asset.enums.AccountGroup;
 import org.umc.valuedi.global.entity.BaseEntity;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
@@ -15,6 +17,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
 @Table(name = "bank_account")
+@SQLDelete(sql = "UPDATE bank_account SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+@SQLRestriction("is_active = true")
 public class BankAccount extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -83,5 +87,9 @@ public class BankAccount extends BaseEntity {
 
     public void assignConnection(CodefConnection connection) {
         this.codefConnection = connection;
+    }
+
+    public void deactivate() {
+        this.isActive = false;
     }
 }
