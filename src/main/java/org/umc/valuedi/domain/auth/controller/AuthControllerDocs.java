@@ -440,7 +440,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "토큰 재발급 API",
-            description = "쿠키에 저장된 리프레시 토큰으로 새로운 엑세스 토큰과 리프레시 토큰을 발급합니다.  \n새로 발급된 리프레시 토큰 역시 쿠키에 저장됩니다.")
+            description = "쿠키에 저장된 리프레시 토큰으로 새로운 엑세스 토큰과 리프레시 토큰을 발급합니다.  \n요청 헤더에 만료되지 않은 엑세스 토큰이 있다면 이를 무효화하며, 새로 발급된 리프레시 토큰은 쿠키에 저장됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -465,6 +465,8 @@ public interface AuthControllerDocs {
             )
     })
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
+            @Parameter(hidden = true)
+            String accessToken,
             @Parameter(hidden = true)
             String refreshToken,
             HttpServletResponse response

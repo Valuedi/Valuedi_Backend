@@ -127,10 +127,11 @@ public class AuthController implements AuthControllerDocs {
     @Override
     @PostMapping("/token/refresh")
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
+            @RequestHeader(value = "Authorization", required = false) String accessToken,
             @CookieValue(name = "refreshToken") String refreshToken,
             HttpServletResponse response
     ) {
-        AuthResDTO.LoginResultDTO result = authCommandService.tokenReissue(refreshToken);
+        AuthResDTO.LoginResultDTO result = authCommandService.tokenReissue(accessToken, refreshToken);
 
         // 리프레시 토큰은 쿠키에 저장
         cookieUtil.addCookie(

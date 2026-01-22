@@ -193,7 +193,7 @@ public class AuthCommandService {
     }
 
     // 엑세스/리프레시 토큰 재발급
-    public AuthResDTO.LoginResultDTO tokenReissue(String refreshToken) {
+    public AuthResDTO.LoginResultDTO tokenReissue(String accessToken, String refreshToken) {
         // 리프레시 토큰이 맞는지 확인. 아닐 경우와 토큰 자체가 유효하지 않을 경우 예외 발생
         try {
             if(!jwtUtil.getCategory(refreshToken).equals("refresh")) {
@@ -203,6 +203,24 @@ public class AuthCommandService {
             throw new AuthException(AuthErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
             throw new AuthException(AuthErrorCode.INVALID_TOKEN);
+        }
+
+        // 기존 엑세스 토큰이 만료되지 않았다면 무효화
+        if(accessToken != null && accessToken.startsWith("Bearer ")) {
+            accessToken = accessToken.replace("Bearer ", "");
+
+            long expiration = jwtUtil.getExpiration(accessToken);
+            long diff = expiration - System.currentTimeMillis();
+
+            // 0보다 작거나 같으면 이미 만료된 토큰
+            if(diff > 0) {
+                redisTemplate.opsForValue().set(
+                        "BL:" + accessToken,
+                        "reissue_waste",
+                        diff,
+                        TimeUnit.MILLISECONDS
+                );
+            }
         }
 
         Long memberId = Long.valueOf(jwtUtil.getMemberId(refreshToken));
