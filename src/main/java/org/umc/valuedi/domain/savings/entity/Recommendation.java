@@ -30,6 +30,9 @@ public class Recommendation {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Column(name = "member_mbti_test_id", nullable = false)
+    private Long memberMbtiTestId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;

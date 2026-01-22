@@ -68,6 +68,30 @@ public class RecommendationService {
         MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(request.memberId())
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
 
+        Long memberMbtiTestId = memberMbtiTest.getId();
+
+        boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(request.memberId(), memberMbtiTestId);
+        if (exists) {
+            PageRequest pageable = PageRequest.of(0, RECOMMEND_COUNT);
+            List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(request.memberId(), memberMbtiTestId, pageable);
+
+            List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
+                    .map(r -> new SavingsResponseDTO.RecommendedProduct(
+                            r.getSavings().getKorCoNm(),
+                            r.getSavings().getFinPrdtCd(),
+                            r.getSavings().getFinPrdtNm(),
+                            r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvType(),
+                            r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvTypeNm(),
+                            r.getScore()
+                    ))
+                    .toList();
+
+            return SavingsResponseDTO.RecommendResponse.builder()
+                    .products(products)
+                    .rationale(null)
+                    .build();
+        }
+
         MbtiType mbtiType = memberMbtiTest.getResultType();
         FinanceMbtiTypeInfoDto financeMbtiTypeInfo = financeMbtiProvider.get(mbtiType);
 
@@ -142,6 +166,7 @@ public class RecommendationService {
                     .member(member)
                     .savings(savings)
                     .savingsOption(savingsOption)
+                    .memberMbtiTestId(memberMbtiTest.getId())
                     .score(score)
                     .createdAt(now)
                     .expiresAt(null)
@@ -184,8 +209,12 @@ public class RecommendationService {
     // 추천 상품 15개 조회
     @Transactional(readOnly = true)
     public SavingsResponseDTO.RecommendResponse getRecommendation(Long memberId) {
+        Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
+                .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND))
+                .getId();
+
         Pageable pageable = PageRequest.of(0, RECOMMEND_COUNT);
-        List<Recommendation> recs = recommendationRepository.findLatestByMember(memberId, pageable);
+        List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
         List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
                 .map(r -> new SavingsResponseDTO.RecommendedProduct(
@@ -206,9 +235,13 @@ public class RecommendationService {
 
     // 추천 상품 Top3 조회
     @Transactional(readOnly = true)
-    public SavingsResponseDTO.RecommendResponse getRecommedationTop3(Long memberId) {
+    public SavingsResponseDTO.RecommendResponse getRecommendationTop3(Long memberId) {
+        Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
+                .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND))
+                .getId();
+
         Pageable pageable = PageRequest.of(0, TOP3_COUNT);
-        List<Recommendation> recs = recommendationRepository.findLatestByMember(memberId, pageable);
+        List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
         List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
                 .map(r -> new SavingsResponseDTO.RecommendedProduct(

@@ -38,6 +38,6 @@ public class RecommendationController {
     public ApiResponse<SavingsResponseDTO.RecommendResponse> latestTop3(
             @RequestParam Long memberId
     ) {
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommedationTop3(memberId));
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendationTop3(memberId));
     }
 }
