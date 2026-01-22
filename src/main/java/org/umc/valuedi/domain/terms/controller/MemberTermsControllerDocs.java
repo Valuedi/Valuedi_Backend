@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 @Tag(name = "Terms", description = "약관 조회 API")
 public interface MemberTermsControllerDocs {
@@ -126,7 +127,7 @@ public interface MemberTermsControllerDocs {
             }
     )
     ApiResponse<Void> agreeTerms(
-            Long memberId,
+            CustomUserDetails userDetails,
             @Valid TermsRequestDTO.AgreeTermsRequest dto
     );
 }
