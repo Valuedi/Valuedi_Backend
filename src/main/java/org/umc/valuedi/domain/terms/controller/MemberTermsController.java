@@ -29,7 +29,7 @@ public class MemberTermsController implements MemberTermsControllerDocs{
             @RequestParam Long memberId,
             @RequestBody TermsRequestDTO.AgreeTermsRequest dto
     ) {
-        memberTermsService.saveAgreeTerms(memberId, dto);
+        memberTermsService.updateMemberTerms(memberId, dto.agreements());
         return ApiResponse.onSuccess(TermsSuccessCode.TERMS_AGREE_SUCCESS, null);
     }
 

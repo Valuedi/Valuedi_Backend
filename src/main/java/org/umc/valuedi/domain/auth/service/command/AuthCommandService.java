@@ -28,6 +28,7 @@ import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberAuthProviderRepository;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
+import org.umc.valuedi.domain.terms.service.MemberTermsService;
 import org.umc.valuedi.global.apiPayload.code.GeneralErrorCode;
 import org.umc.valuedi.global.apiPayload.exception.GeneralException;
 import org.umc.valuedi.global.security.jwt.JwtUtil;
@@ -50,6 +51,7 @@ public class AuthCommandService {
     private final PasswordEncoder passwordEncoder;
     private final MemberAuthProviderRepository memberAuthProviderRepository;
     private static final SecureRandom sr = new SecureRandom();
+    private final MemberTermsService memberTermsService;
 
     // 카카오 로그인
     public AuthResDTO.LoginResultDTO loginKakao(String code) {
@@ -153,6 +155,7 @@ public class AuthCommandService {
             Member newMember = AuthConverter.toGeneralMember(dto, encodedPassword);
 
             Member savedMember = memberRepository.save(newMember);
+            memberTermsService.saveTermsForRegistration(savedMember, dto.agreements());
 
             return AuthConverter.toRegisterResDTO(savedMember);
         } catch (DataAccessResourceFailureException e) {

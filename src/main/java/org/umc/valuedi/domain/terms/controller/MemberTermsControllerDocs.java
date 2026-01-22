@@ -4,8 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
+import jakarta.validation.Valid;
 import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -57,7 +56,7 @@ public interface MemberTermsControllerDocs {
             }
     )
     ApiResponse<TermsResponseDTO.GetMemberAgreements> findMemberAgreements(
-            @RequestParam Long memberId
+            Long memberId
     );
 
     @Operation(
@@ -127,8 +126,8 @@ public interface MemberTermsControllerDocs {
             }
     )
     ApiResponse<Void> agreeTerms(
-            @RequestParam Long memberId,
-            @RequestBody TermsRequestDTO.AgreeTermsRequest dto
+            Long memberId,
+            @Valid TermsRequestDTO.AgreeTermsRequest dto
     );
 }
 
