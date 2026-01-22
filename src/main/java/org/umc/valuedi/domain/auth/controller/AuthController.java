@@ -143,4 +143,16 @@ public class AuthController implements AuthControllerDocs {
 
         return ApiResponse.onSuccess(AuthSuccessCode.TOKEN_REISSUE_SUCCESS, result);
     }
+
+    @Override
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(
+            @RequestHeader("Authorization") String accessToken,
+            HttpServletResponse response
+    ) {
+        authCommandService.logout(accessToken);
+        cookieUtil.deleteCookie(response, "refreshToken", "/auth/token/refresh");
+
+        return ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null);
+    }
 }

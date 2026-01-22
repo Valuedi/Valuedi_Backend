@@ -230,4 +230,27 @@ public class AuthCommandService {
 
         return AuthConverter.toLoginResultDTO(member, newAccessToken, newRefreshToken);
     }
+
+    // 로그아웃
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void logout(String accessToken) {
+        String resolveToken = accessToken.substring(7);
+        Long memberId = Long.valueOf(jwtUtil.getMemberId(resolveToken));
+
+        String redisKey = "RT:" + memberId;
+        redisTemplate.delete(redisKey);
+
+        long expiration = jwtUtil.getExpiration(resolveToken);
+        long diff = expiration - System.currentTimeMillis();
+
+        // 0보다 작거나 같으면 이미 만료된 토큰
+        if(diff > 0) {
+            redisTemplate.opsForValue().set(
+                    "BL:" + resolveToken,
+                    "logout",
+                    diff,
+                    TimeUnit.MILLISECONDS
+            );
+        }
+    }
 }

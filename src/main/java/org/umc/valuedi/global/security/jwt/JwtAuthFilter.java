@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +25,7 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final StringRedisTemplate redisTemplate;
     private final SecurityExceptionHandler securityExceptionHandler;
     private final CustomUserDetailsService customUserDetailsService;
 
@@ -42,6 +44,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             token = token.replace("Bearer ", "");
+            String isBlacklisted = redisTemplate.opsForValue().get("BL:" + token);
+
+            if(isBlacklisted != null) {
+                securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.TOKEN_IN_BLACKLIST);
+                return;
+            }
+
             String category = jwtUtil.getCategory(token);
 
             if(!category.equals("access")) {

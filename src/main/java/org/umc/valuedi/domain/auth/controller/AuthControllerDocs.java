@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -466,6 +467,12 @@ public interface AuthControllerDocs {
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
             @Parameter(description = "쿠키에 저장된 리프레시 토큰 값")
             String refreshToken,
+            HttpServletResponse response
+    );
+
+    public ApiResponse<Void> logout(
+            @Parameter(hidden = true)
+            String accessToken,
             HttpServletResponse response
     );
 }
