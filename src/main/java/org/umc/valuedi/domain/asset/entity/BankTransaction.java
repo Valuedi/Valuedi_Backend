@@ -44,15 +44,15 @@ public class BankTransaction extends BaseEntity {
     private Long afterBalance;
 
     // 보낸분/받는분
-    @Column(name = "desc1", length = 200)
+    @Column(name = "desc1", length = 500)
     private String desc1;
 
     // 거래구분/메모: 오픈뱅킹, 펌뱅킹, 체크우리, 모바일 등
-    @Column(name = "desc2", length = 200)
+    @Column(name = "desc2", length = 500)
     private String desc2;
 
     // 적요(거래내용): 네이버페이 결제, 토스 OOO 등
-    @Column(name = "desc3", length = 200)
+    @Column(name = "desc3", length = 700)
     private String desc3;
 
     // 거래점: 하나은행, OO지점 등
@@ -60,7 +60,7 @@ public class BankTransaction extends BaseEntity {
     private String desc4;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "direction", nullable = false, length = 10)
+    @Column(name = "direction", nullable = false, length = 20)
     private TransactionDirection direction;
 
     @Column(name = "order_seq")
