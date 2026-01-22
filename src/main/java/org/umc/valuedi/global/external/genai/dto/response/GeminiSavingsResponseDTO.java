@@ -5,7 +5,10 @@ import java.util.List;
 
 public class GeminiSavingsResponseDTO {
 
-    public record Result(List<Item> recommendations) {}
+    public record Result(
+            String rationale,
+            List<Item> recommendations
+    ) {}
 
     public record Item(
             String finPrdtCd,

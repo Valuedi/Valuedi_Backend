@@ -2,6 +2,7 @@ package org.umc.valuedi.domain.savings.dto.response;
 
 import lombok.Builder;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public class SavingsResponseDTO {
@@ -52,4 +53,20 @@ public class SavingsResponseDTO {
                 Double intrRate2  // 최고 우대금리
         ) {}
     }
+
+    @Builder
+    public record RecommendResponse(
+            List<RecommendedProduct> products,
+            String rationale
+    ) {}
+
+    @Builder
+    public record RecommendedProduct(
+            String korCoNm,
+            String finPrdtCd,
+            String finPrdtNm,
+            String rsrvType,
+            String rsrvTypeNm,
+            BigDecimal score
+    ) {}
 }
