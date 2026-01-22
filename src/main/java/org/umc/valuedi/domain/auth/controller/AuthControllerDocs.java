@@ -465,11 +465,34 @@ public interface AuthControllerDocs {
             )
     })
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
-            @Parameter(description = "쿠키에 저장된 리프레시 토큰 값")
+            @Parameter(hidden = true)
             String refreshToken,
             HttpServletResponse response
     );
 
+    @Operation(
+            summary = "로그아웃 API",
+            description = "카카오/로컬로 로그인한 계정을 로그아웃 시킵니다.  \n요청 시 헤더에 포함된 엑세스 토큰을 이용해 엑세스/리프레시 토큰을 무효화합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 로그아웃 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "로그아웃 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "AUTH200_7",
+                                                      "message": "로그아웃이 완료되었습니다.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            )
+    })
     public ApiResponse<Void> logout(
             @Parameter(hidden = true)
             String accessToken,
