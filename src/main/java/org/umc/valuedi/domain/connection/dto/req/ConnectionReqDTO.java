@@ -19,7 +19,7 @@ public class ConnectionReqDTO {
     public static class Connect {
 
         @NotBlank
-        @Schema(description = "기관 코드", example = "0020", required = true)
+        @Schema(description = "기관 코드 (예: 우리은행 0020)", example = "0020", required = true)
         private String organization;
 
         @NotBlank
@@ -27,23 +27,23 @@ public class ConnectionReqDTO {
         private String businessType;
 
         @NotBlank
-        @Schema(description = "로그인 ID", example = "testuser", required = true)
-        private String id;
+        @Schema(description = "금융사 로그인 ID", example = "testuser", required = true)
+        private String loginId;
 
         @NotBlank
-        @Schema(description = "로그인 비밀번호", example = "password123", required = true)
-        private String password;
+        @Schema(description = "금융사 로그인 비밀번호", example = "password123", required = true)
+        private String loginPassword;
 
         @Builder.Default
         @Schema(description = "국가 코드", example = "KR")
         private String countryCode = "KR";
 
         @Builder.Default
-        @Schema(description = "고객 구분", example = "P")
+        @Schema(description = "고객 구분 (P: 개인, B: 법인)", example = "P")
         private String clientType = "P";
 
         @Builder.Default
-        @Schema(description = "로그인 타입", example = "1")
+        @Schema(description = "로그인 타입 (1: ID/PW)", example = "1")
         private String loginType = "1";
 
         @JsonIgnore

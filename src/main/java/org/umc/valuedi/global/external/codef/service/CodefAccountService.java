@@ -49,7 +49,7 @@ public class CodefAccountService {
                 .orElse(null);
 
         // 비밀번호 암호화
-        String encryptedPassword = encryptUtil.encrypt(request.getPassword());
+        String encryptedPassword = encryptUtil.encrypt(request.getLoginPassword());
         Map<String, Object> requestBody = createRequestBody(request, encryptedPassword);
 
         String targetConnectedId;
@@ -154,7 +154,7 @@ public class CodefAccountService {
         accountMap.put("countryCode", req.getCountryCode());
         accountMap.put("clientType", req.getClientType());
         accountMap.put("loginType", req.getLoginType());
-        accountMap.put("id", req.getId());
+        accountMap.put("id", req.getLoginId());
         accountMap.put("password", encryptedPassword);
 
         List<Map<String, Object>> accountList = new ArrayList<>();

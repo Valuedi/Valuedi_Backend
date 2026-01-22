@@ -14,10 +14,10 @@ import org.umc.valuedi.global.apiPayload.ApiResponse;
 
 import java.util.List;
 
-@Tag(name = "Asset", description = "자산(계좌/은행) 관련 API")
+@Tag(name = "Asset", description = "자산(계좌/카드) 관련 API")
 public interface AssetControllerDocs {
 
-    @Operation(summary = "연동된 카드 목록 조회 API", description = "현재 사용자가 연동한 카드 리스트를 조회합니다.")
+    @Operation(summary = "연동된 전체 카드 목록 조회 API", description = "현재 사용자가 연동한 모든 카드를 조회합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -31,56 +31,25 @@ public interface AssetControllerDocs {
                                               "isSuccess": true,
                                               "code": "COMMON200",
                                               "message": "성공입니다.",
-                                              "result": [
-                                                {
-                                                  "cardName": "현대카드 M Edition3",
-                                                  "cardNumber": "4321-****-****-1234",
-                                                  "cardType": "CREDIT",
-                                                  "connectedAt": "2024-05-22T09:00:00"
-                                                },
-                                                {
-                                                  "cardName": "신한 Deep Dream",
-                                                  "cardNumber": "5336-****-****-5678",
-                                                  "cardType": "CHECK",
-                                                  "connectedAt": "2024-05-23T11:20:00"
-                                                }
-                                              ]
-                                            }
-                                    """
-                            )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "401",
-                    description = "에러 - 인증되지 않은 사용자",
-                    content = @Content(
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    name = "인증 에러 예시",
-                                    value = """
-                                            {
-                                              "isSuccess": false,
-                                              "code": "AUTH401_1",
-                                              "message": "로그인이 필요합니다.",
-                                              "result": null
-                                            }
-                                    """
-                            )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "500",
-                    description = "에러 - 서버 내부 오류 (데이터 조회 실패)",
-                    content = @Content(
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    name = "서버 에러 예시",
-                                    value = """
-                                            {
-                                              "isSuccess": false,
-                                              "code": "COMMON500",
-                                              "message": "서버 에러, 관리자에게 문의 바랍니다.",
-                                              "result": null
+                                              "result": {
+                                                "cardList": [
+                                                  {
+                                                    "cardName": "현대카드 M Edition3",
+                                                    "cardNoMasked": "4321-****-****-1234",
+                                                    "cardType": "CREDIT",
+                                                    "organization": "0302",
+                                                    "createdAt": "2024-05-22T09:00:00"
+                                                  },
+                                                  {
+                                                    "cardName": "신한 Deep Dream",
+                                                    "cardNoMasked": "5336-****-****-5678",
+                                                    "cardType": "CHECK",
+                                                    "organization": "0304",
+                                                    "createdAt": "2024-05-23T11:20:00"
+                                                  }
+                                                ],
+                                                "totalCount": 2
+                                              }
                                             }
                                     """
                             )
@@ -177,52 +146,20 @@ public interface AssetControllerDocs {
                                               "message": "성공입니다.",
                                               "result": [
                                                 {
-                                                  "bankName": "국민은행",
-                                                  "bankCode": "004",
-                                                  "connectedAt": "2024-05-20T10:00:00"
+                                                  "id": 1,
+                                                  "organizationCode": "0004",
+                                                  "organizationName": "KB국민은행",
+                                                  "connectedAt": "2024-05-20T10:00:00",
+                                                  "status": "ACTIVE"
                                                 },
                                                 {
-                                                  "bankName": "신한은행",
-                                                  "bankCode": "088",
-                                                  "connectedAt": "2024-05-21T15:30:00"
+                                                  "id": 2,
+                                                  "organizationCode": "0088",
+                                                  "organizationName": "신한은행",
+                                                  "connectedAt": "2024-05-21T15:30:00",
+                                                  "status": "ACTIVE"
                                                 }
                                               ]
-                                            }
-                                    """
-                            )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "401",
-                    description = "에러 - 인증되지 않은 사용자",
-                    content = @Content(
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    name = "인증 에러 예시",
-                                    value = """
-                                            {
-                                              "isSuccess": false,
-                                              "code": "AUTH401_1",
-                                              "message": "로그인이 필요합니다.",
-                                              "result": null
-                                            }
-                                    """
-                            )
-                    )
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "500",
-                    description = "에러 - CODEF API 연동 오류",
-                    content = @Content(
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    name = "외부 API 연동 실패 예시",
-                                    value = """
-                                            {
-                                              "isSuccess": false,
-                                              "code": "BANK500_1",
-                                              "message": "은행 연동 데이터를 가져오는 중 오류가 발생했습니다.",
-                                              "result": null
                                             }
                                     """
                             )
@@ -249,8 +186,8 @@ public interface AssetControllerDocs {
                                                 "accountList": [
                                                   {
                                                     "accountName": "KB나라사랑우대통장",
-                                                    "balanceAmount": "150000",
-                                                    "organization": "004",
+                                                    "balanceAmount": 150000,
+                                                    "organization": "0004",
                                                     "createdAt": "2024-05-20T10:00:00"
                                                   }
                                                 ],
@@ -282,8 +219,8 @@ public interface AssetControllerDocs {
                                                 "accountList": [
                                                   {
                                                     "accountName": "KB나라사랑우대통장",
-                                                    "balanceAmount": "150000",
-                                                    "organization": "004",
+                                                    "balanceAmount": 150000,
+                                                    "organization": "0004",
                                                     "createdAt": "2024-05-20T10:00:00"
                                                   }
                                                 ],

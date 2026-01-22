@@ -1,12 +1,14 @@
 package org.umc.valuedi.domain.connection.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -75,15 +77,15 @@ public interface ConnectionControllerDocs {
                                               "message": "성공입니다.",
                                               "result": [
                                                 {
-                                                  "id": 1,
-                                                  "organization": "국민은행",
-                                                  "type": "BANK",
+                                                  "connectionId": 1,
+                                                  "organization": "0020",
+                                                  "type": "BK",
                                                   "connectedAt": "2024-05-20T10:00:00"
                                                 },
                                                 {
-                                                  "id": 2,
-                                                  "organization": "현대카드",
-                                                  "type": "CARD",
+                                                  "connectionId": 2,
+                                                  "organization": "0309",
+                                                  "type": "CD",
                                                   "connectedAt": "2024-05-22T09:00:00"
                                                 }
                                               ]

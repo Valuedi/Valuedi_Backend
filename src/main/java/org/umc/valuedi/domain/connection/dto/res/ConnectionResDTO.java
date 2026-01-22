@@ -9,9 +9,6 @@ import java.time.LocalDateTime;
 
 public class ConnectionResDTO {
 
-
-
-
     @Getter
     @Builder
     @NoArgsConstructor
@@ -19,8 +16,8 @@ public class ConnectionResDTO {
     @Schema(description = "연동 정보 (공통)")
     public static class Connection {
 
-        @Schema(description = "연동 ID", example = "1")
-        private Long id;
+        @Schema(description = "연동 ID (연동 해제 시 사용)", example = "1")
+        private Long connectionId;
 
         @Schema(description = "기관 코드", example = "0020")
         private String organizationCode;

@@ -28,7 +28,7 @@ public class ConnectionConverter {
      */
     public ConnectionResDTO.Connection toConnectionDTO(CodefConnection connection) {
         return ConnectionResDTO.Connection.builder()
-                .id(connection.getId())
+                .connectionId(connection.getId())
                 .organizationCode(connection.getOrganization())
                 .organizationName(Organization.getNameByCode(connection.getOrganization()))
                 .businessType(connection.getBusinessType())
