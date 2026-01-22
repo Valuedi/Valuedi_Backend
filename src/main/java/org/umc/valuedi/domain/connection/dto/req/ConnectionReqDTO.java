@@ -19,19 +19,19 @@ public class ConnectionReqDTO {
     public static class Connect {
 
         @NotBlank
-        @Schema(description = "기관 코드 (예: 우리은행 0020)", example = "0020", required = true)
+        @Schema(description = "기관 코드 (예: 우리은행 0020)", example = "0020", requiredMode = Schema.RequiredMode.REQUIRED)
         private String organization;
 
         @NotBlank
-        @Schema(description = "업무 구분 (BK: 은행, CD: 카드)", example = "BK", required = true)
+        @Schema(description = "업무 구분 (BK: 은행, CD: 카드)", example = "BK", requiredMode = Schema.RequiredMode.REQUIRED)
         private String businessType;
 
         @NotBlank
-        @Schema(description = "금융사 로그인 ID", example = "testuser", required = true)
+        @Schema(description = "금융사 로그인 ID", example = "testuser", requiredMode = Schema.RequiredMode.REQUIRED)
         private String loginId;
 
         @NotBlank
-        @Schema(description = "금융사 로그인 비밀번호", example = "password123", required = true)
+        @Schema(description = "금융사 로그인 비밀번호", example = "password123", requiredMode = Schema.RequiredMode.REQUIRED)
         private String loginPassword;
 
         @Builder.Default
