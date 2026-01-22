@@ -13,4 +13,9 @@ public interface KakaoApiClient {
             @RequestHeader("Authorization") String accessToken
     );
 
+    @GetMapping(value = "/v2/user/service_terms")
+    KakaoResDTO.UserServiceTerms getServiceTerms(
+            @RequestHeader("Authorization") String accessToken
+    );
+
 }

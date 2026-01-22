@@ -55,12 +55,12 @@ public class AuthCommandService {
 
     // 카카오 로그인
     public AuthResDTO.LoginResultDTO loginKakao(String code) {
-        KakaoResDTO.UserInfoDTO userInfo = kakaoService.getKakaoUserInfo(code);
-        String providerUserId = String.valueOf(userInfo.getId());
+        KakaoResDTO.UserTokenInfo userTokenInfo = kakaoService.getKakaoUserInfo(code);
+        String providerUserId = String.valueOf(userTokenInfo.userInfo().getId());
 
         Member member = memberAuthProviderRepository.findByProviderAndProviderUserId(Provider.KAKAO, providerUserId)
                 .map(MemberAuthProvider::getMember)
-                .orElseGet(() -> registerKakao(userInfo));
+                .orElseGet(() -> registerKakao(userTokenInfo));
 
         // 휴면 계정이거나 탈퇴한 계정은 로그인 X
         if(member.getStatus() == Status.SUSPENDED) {
@@ -84,12 +84,16 @@ public class AuthCommandService {
     }
 
     // 카카오로 회원가입
-    private Member registerKakao(KakaoResDTO.UserInfoDTO userInfo) {
+    private Member registerKakao(KakaoResDTO.UserTokenInfo userTokenInfo) {
         try {
-            Member newMember = AuthConverter.toKakaoMember(userInfo);
-            memberRepository.save(newMember);
+            Member newMember = AuthConverter.toKakaoMember(userTokenInfo.userInfo());
+            Member savedMember = memberRepository.save(newMember);
 
-            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(newMember, String.valueOf(userInfo.getId()));
+            memberTermsService.saveTermsForRegistration(
+                    savedMember,
+                    kakaoService.getKakaoServiceTerms(userTokenInfo.accessToken()));
+
+            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(newMember, String.valueOf(userTokenInfo.userInfo().getId()));
             memberAuthProviderRepository.save(authProvider);
 
             return newMember;
