@@ -57,7 +57,7 @@ public interface MemberTermsControllerDocs {
             }
     )
     ApiResponse<TermsResponseDTO.GetMemberAgreements> findMemberAgreements(
-            Long memberId
+            CustomUserDetails userDetails
     );
 
     @Operation(

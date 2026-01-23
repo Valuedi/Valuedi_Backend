@@ -21,9 +21,9 @@ public class MemberTermsController implements MemberTermsControllerDocs{
     @Override
     @GetMapping("/member")
     public ApiResponse<TermsResponseDTO.GetMemberAgreements> findMemberAgreements(
-            @RequestParam Long memberId
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        TermsResponseDTO.GetMemberAgreements result = memberTermsService.getMemberAgreements(memberId);
+        TermsResponseDTO.GetMemberAgreements result = memberTermsService.getMemberAgreements(userDetails.getMemberId());
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
 
@@ -33,7 +33,7 @@ public class MemberTermsController implements MemberTermsControllerDocs{
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody TermsRequestDTO.AgreeTermsRequest dto
     ) {
-        memberTermsService.updateMemberTerms(Long.valueOf(userDetails.getUsername()), dto.agreements());
+        memberTermsService.updateMemberTerms(userDetails.getMemberId(), dto.agreements());
         return ApiResponse.onSuccess(TermsSuccessCode.TERMS_AGREE_SUCCESS, null);
     }
 
