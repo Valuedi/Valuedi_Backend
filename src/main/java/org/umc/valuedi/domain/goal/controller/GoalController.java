@@ -3,7 +3,6 @@ package org.umc.valuedi.domain.goal.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
@@ -12,6 +11,7 @@ import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
+import org.umc.valuedi.domain.goal.enums.GoalSort;
 import org.umc.valuedi.domain.goal.exception.code.GoalSuccessCode;
 import org.umc.valuedi.domain.goal.service.command.GoalCommandService;
 import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
@@ -41,11 +41,13 @@ public class GoalController implements GoalControllerDocs{
     @GetMapping
     public ApiResponse<GoalListResponseDto> getGoals(
             @RequestParam Long memberId,
-            @RequestParam GoalStatus status
+            @RequestParam GoalStatus status,
+            @RequestParam(defaultValue = "CREATED_AT_DESC") GoalSort sort,
+            @RequestParam(required = false) Integer limit
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_LIST_FETCHED,
-                goalQueryService.getGoals(memberId, status)
+                goalQueryService.getGoals(memberId, status, sort, limit)
         );
     }
 

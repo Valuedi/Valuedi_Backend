@@ -52,6 +52,8 @@ public class SecurityConfig {
 
             // Terms APIs
             "/api/terms",
+
+            "/api/goals/**"
     };
 
     @Bean

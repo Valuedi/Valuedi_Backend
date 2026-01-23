@@ -76,6 +76,10 @@ public class Goal extends BaseEntity {
         this.targetAmount = targetAmount;
     }
 
+    public void changeColor(String color) { this.color = color; }
+
+    public void changeIcon(Integer icon) { this.icon = icon; }
+
     public void Activate() {
         this.status = GoalStatus.ACTIVE;
         this.completedAt = null;

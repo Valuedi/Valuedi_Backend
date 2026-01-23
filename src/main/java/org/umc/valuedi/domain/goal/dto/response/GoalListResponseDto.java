@@ -15,7 +15,9 @@ public record GoalListResponseDto(
             Integer achievementRate,   // 0~100
             String bankName,            // 계좌 연동 되면 구현 할 예정입당
 
-            GoalStatus status
+            GoalStatus status,
+            String colorCode,
+            Integer iconId
 
     ) {}
 }

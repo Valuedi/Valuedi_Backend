@@ -10,7 +10,9 @@ public record GoalDetailResponseDto(
         Long remainingDays,
         Integer achievementRate, // 0~100
         AccountDto account,
-        GoalStatus status
+        GoalStatus status,
+        String colorCode,
+        Integer iconId
 ) {
     public record AccountDto(
             String bankName,

@@ -12,6 +12,7 @@ import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.exception.GoalException;
 import org.umc.valuedi.domain.goal.exception.code.GoalErrorCode;
 import org.umc.valuedi.domain.goal.repository.GoalRepository;
+import org.umc.valuedi.domain.goal.validator.GoalValidator;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
@@ -30,7 +31,8 @@ public class GoalCommandService {
         Member member = memberRepository.findById(req.memberId())
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        validateDateRange(req.startDate(), req.endDate());
+        GoalValidator.validateDateRange(req.startDate(), req.endDate());
+        GoalValidator.validateStyle(req.colorCode(), req.iconId());
 
         Goal goal = GoalConverter.toEntity(member, req);
         Goal saved = goalRepository.save(goal);
@@ -43,15 +45,18 @@ public class GoalCommandService {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
-        // 취소 or 완료 된 목표는 수정 불가
-        if (goal.getStatus() != GoalStatus.ACTIVE) throw new GoalException(GoalErrorCode.GOAL_NOT_EDITABLE);
+        if (goal.getStatus() != GoalStatus.ACTIVE) {
+            throw new GoalException(GoalErrorCode.GOAL_NOT_EDITABLE);
+        }
 
         if (req.startDate() != null || req.endDate() != null) {
-            validateDateRange(
+            GoalValidator.validateDateRange(
                     req.startDate() != null ? req.startDate() : goal.getStartDate(),
                     req.endDate() != null ? req.endDate() : goal.getEndDate()
             );
         }
+
+        GoalValidator.validateStyle(req.colorCode(), req.iconId());
 
         GoalConverter.applyPatch(goal, req);
     }
@@ -62,12 +67,5 @@ public class GoalCommandService {
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
         goalRepository.delete(goal);
-    }
-
-    // 날짜 검증
-    private void validateDateRange(java.time.LocalDate start, java.time.LocalDate end) {
-        if (start.isAfter(end)) {
-            throw new GoalException(GoalErrorCode.INVALID_DATE_RANGE);
-        }
     }
 }

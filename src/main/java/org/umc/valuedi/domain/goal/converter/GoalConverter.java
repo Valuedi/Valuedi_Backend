@@ -1,5 +1,6 @@
 package org.umc.valuedi.domain.goal.converter;
 
+import org.umc.valuedi.domain.goal.constant.GoalStyleCatalog;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
@@ -25,8 +26,8 @@ public class GoalConverter {
                 .targetAmount(req.targetAmount())
                 .status(GoalStatus.ACTIVE)
                 .completedAt(null)
-                .color(null)
-                .icon(null)
+                .color(GoalStyleCatalog.normalizeColor(req.colorCode()))
+                .icon(req.iconId())
                 .build();
     }
 
@@ -43,8 +44,13 @@ public class GoalConverter {
 
         if (req.targetAmount() != null)
             goal.changeTargetAmount(req.targetAmount());
-    }
 
+        if (req.colorCode() != null)
+            goal.changeColor(req.colorCode());
+
+        if (req.iconId() != null)
+            goal.changeIcon(req.iconId());
+    }
 
     public static GoalListResponseDto.GoalSummaryDto toSummaryDto(
             Goal goal,
@@ -61,7 +67,9 @@ public class GoalConverter {
                 remainingDays,
                 achievementRate,
                 null, // 계좌 연동 되면 채우기
-                goal.getStatus()
+                goal.getStatus(),
+                goal.getColor(),
+                goal.getIcon()
         );
     }
 
@@ -80,7 +88,9 @@ public class GoalConverter {
                 remainingDays,
                 achievementRate,
                 null, // 계좌 연동 되면 채우기
-                goal.getStatus()
+                goal.getStatus(),
+                goal.getColor(),
+                goal.getIcon()
         );
     }
 

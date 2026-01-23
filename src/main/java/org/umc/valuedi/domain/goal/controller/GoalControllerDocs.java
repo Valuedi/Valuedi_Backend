@@ -15,6 +15,7 @@ import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
+import org.umc.valuedi.domain.goal.enums.GoalSort;
 
 @Tag(name = "Goal", description = "목표(Goal) 생성/조회/수정/삭제 API")
 public interface GoalControllerDocs {
@@ -48,7 +49,14 @@ public interface GoalControllerDocs {
             @RequestParam Long memberId,
 
             @Parameter(description = "목표 상태", example = "ACTIVE", required = true)
-            @RequestParam GoalStatus status
+            @RequestParam GoalStatus status,
+
+            @Parameter(description = "목표 정렬", example = "CREATED_AT_DESC", required = true)
+            @RequestParam GoalSort sort,
+
+            @Parameter(description = "표시할 목표 수", example = "3", required = true)
+            @RequestParam Integer limit
+
     );
 
     @Operation(
