@@ -97,7 +97,7 @@ public class RecommendationService {
 
         // 추천 상품 후보 조회
         Pageable candidatePage = PageRequest.of(0, CANDIDATE_LIMIT);
-        List<SavingsOption> candidates = savingsOptionRepository.findCandidates(request.rsrvType(), request.preferredSaveTerm(), candidatePage);
+        List<SavingsOption> candidates = savingsOptionRepository.findCandidates(candidatePage);
 
         if (candidates.isEmpty()) {
             return SavingsResponseDTO.RecommendResponse.builder()
@@ -107,7 +107,7 @@ public class RecommendationService {
         }
 
         // 제미나이 프롬프트 생성
-        String prompt = buildPrompt(mbtiType, financeMbtiTypeInfo, request, candidates, RECOMMEND_COUNT);
+        String prompt = buildPrompt(mbtiType, financeMbtiTypeInfo, candidates, RECOMMEND_COUNT);
 
         log.info("[Gemini] request memberId={}, promptChars={}",
                 request.memberId(),
@@ -273,7 +273,6 @@ public class RecommendationService {
     private String buildPrompt(
             MbtiType mbtiType,
             FinanceMbtiTypeInfoDto typeInfo,
-            SavingsRequestDTO.RecommendRequest request,
             List<SavingsOption> candidates,
             int recommendCount
     ) {
@@ -309,10 +308,6 @@ public class RecommendationService {
                 - recommend: %s
                 - warning: %s
 
-                [사용자 필터]
-                - rsrvType(적립유형): %s
-                - preferredSaveTerm(개월): %s
-
                 [후보 적금 옵션 목록]
                 %s
 
@@ -345,8 +340,6 @@ public class RecommendationService {
                 safeStr(typeInfo.detail()),
                 safeStr(String.join(" / ", safeList(typeInfo.cautions()))),
                 safeStr(String.join(" / ", safeList(typeInfo.recommendedActions()))),
-                safeStr(request.rsrvType()),
-                request.preferredSaveTerm(),
                 candidateText
         );
     }

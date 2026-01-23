@@ -24,12 +24,9 @@ public interface SavingsOptionRespository extends JpaRepository<SavingsOption, L
         select so
         from SavingsOption so
         join fetch so.savings s
-        where (:rsrvType is null or so.rsrvType = :rsrvType)
-          and (:saveTrm is null or so.saveTrm = :saveTrm)
+        order by so.intrRate2 desc nulls last, so.intrRate desc nulls last
     """)
     List<SavingsOption> findCandidates(
-            @Param("rsrvType") String rsrvType,
-            @Param("saveTrm") Integer saveTrm,
             Pageable pageable
     );
 }
