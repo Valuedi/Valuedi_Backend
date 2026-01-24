@@ -24,7 +24,7 @@ public class ConnectionController implements ConnectionControllerDocs {
             // @CurrentMember Long memberId,
             @RequestBody ConnectionReqDTO.Connect request
     ) {
-        Long memberId = 1L; // 임시
+        Long memberId = 1L;
         connectionCommandService.connect(memberId, request);
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_SUCCESS, null);
     }
@@ -33,7 +33,7 @@ public class ConnectionController implements ConnectionControllerDocs {
     public ApiResponse<List<ConnectionResDTO.Connection>> getAllConnections(
             // @CurrentMember Long memberId
     ) {
-        Long memberId = 1L; // 임시
+        Long memberId = 1L;
         List<ConnectionResDTO.Connection> connections = connectionQueryService.getAllConnections(memberId);
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_LIST_FETCH_SUCCESS, connections);
     }
