@@ -121,10 +121,9 @@ public class RecommendationService {
         // 제미나이 호출
         String raw = geminiClient.generateText(prompt);
 
-        log.info("[Gemini] response memberId={}, rawChars={}, head={}",
+        log.info("[Gemini] response memberId={}, rawChars={}",
                 memberId,
-                raw == null ? 0 : raw.length(),
-                raw == null ? "null" : raw.substring(0, Math.min(raw.length(), 200))
+                raw == null ? 0 : raw.length()
         );
 
         // JSON 파싱
