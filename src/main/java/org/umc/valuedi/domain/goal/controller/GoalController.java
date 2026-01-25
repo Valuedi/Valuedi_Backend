@@ -14,6 +14,7 @@ import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.enums.GoalSort;
 import org.umc.valuedi.domain.goal.exception.code.GoalSuccessCode;
 import org.umc.valuedi.domain.goal.service.command.GoalCommandService;
+import org.umc.valuedi.domain.goal.service.query.GoalListQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 
@@ -24,6 +25,7 @@ public class GoalController implements GoalControllerDocs{
 
     private final GoalCommandService goalService;
     private final GoalQueryService goalQueryService;
+    private final GoalListQueryService goalListQueryService;
 
     // 목표 추가
     @PostMapping
@@ -41,13 +43,13 @@ public class GoalController implements GoalControllerDocs{
     @GetMapping
     public ApiResponse<GoalListResponseDto> getGoals(
             @RequestParam Long memberId,
-            @RequestParam GoalStatus status,
+            @RequestParam(defaultValue = "ACTIVE") GoalStatus status,
             @RequestParam(defaultValue = "CREATED_AT_DESC") GoalSort sort,
             @RequestParam(required = false) Integer limit
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_LIST_FETCHED,
-                goalQueryService.getGoals(memberId, status, sort, limit)
+                goalListQueryService.getGoals(memberId, status, sort, limit)
         );
     }
 
