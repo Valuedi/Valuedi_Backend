@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.security.principal.CustomUserDetails;
@@ -171,6 +172,11 @@ public interface RecommendationControllerDocs {
             }
     )
     ApiResponse<SavingsResponseDTO.SavingsListResponse> latest15(
+            @Parameter(
+                    description = "적립유형 필터 (S=정기적금, F=자유적금). 미입력 시 전체",
+                    schema = @Schema(allowableValues = {"S", "F"}, example = "S")
+            )
+            @RequestParam(required = false) String rsrvType,
             @AuthenticationPrincipal CustomUserDetails userDetails
     );
 

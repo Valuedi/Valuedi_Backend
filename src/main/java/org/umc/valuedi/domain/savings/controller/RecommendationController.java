@@ -30,10 +30,11 @@ public class RecommendationController implements RecommendationControllerDocs {
     // 최신 추천 15개 조회
     @GetMapping
     public ApiResponse<SavingsResponseDTO.SavingsListResponse> latest15(
+            @RequestParam(required = false) String rsrvType,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
         Long memberId = Long.parseLong(userDetails.getUsername());
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendation(memberId));
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendation(memberId, rsrvType));
     }
 
     // 최신 추천 Top3 조회

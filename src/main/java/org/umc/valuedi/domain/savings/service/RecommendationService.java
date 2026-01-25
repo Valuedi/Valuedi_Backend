@@ -212,7 +212,7 @@ public class RecommendationService {
 
     // 추천 상품 15개 조회
     @Transactional(readOnly = true)
-    public SavingsResponseDTO.SavingsListResponse getRecommendation(Long memberId) {
+    public SavingsResponseDTO.SavingsListResponse getRecommendation(Long memberId, String rsrvType) {
         Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND))
                 .getId();
@@ -220,7 +220,14 @@ public class RecommendationService {
         Pageable pageable = PageRequest.of(0, RECOMMEND_COUNT);
         List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
+        String normalized = (rsrvType == null ? null : rsrvType.trim().toUpperCase()); // "S" or "F" or null
+
         List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
+                .filter(r -> {
+                    if (normalized == null || normalized.isBlank()) return true;
+                    SavingsOption so = r.getSavingsOption();
+                    return so != null && normalized.equals(so.getRsrvType());
+                })
                 .map(r -> {
                     Savings s = r.getSavings();
                     SavingsOption so = r.getSavingsOption();
