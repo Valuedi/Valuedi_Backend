@@ -28,6 +28,7 @@ import org.umc.valuedi.domain.savings.exception.SavingsException;
 import org.umc.valuedi.domain.savings.exception.code.SavingsErrorCode;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
 import org.umc.valuedi.domain.savings.repository.SavingsOptionRespository;
+import org.umc.valuedi.domain.savings.repository.SavingsRepository;
 import org.umc.valuedi.global.external.genai.client.GeminiClient;
 import org.umc.valuedi.global.external.genai.dto.response.GeminiSavingsResponseDTO;
 import tools.jackson.databind.ObjectMapper;
@@ -52,6 +53,7 @@ public class RecommendationService {
     private final MemberMbtiTestRepository memberMbtiTestRepository;
     private final FinanceMbtiProvider financeMbtiProvider;
 
+    private final SavingsRepository savingsRepository;
     private final SavingsOptionRespository savingsOptionRepository;
     private final RecommendationRepository recommendationRepository;
 
@@ -363,7 +365,7 @@ public class RecommendationService {
     // 추천 상품 상세 조회
     public SavingsResponseDTO.SavingsDetailResponse getSavingsDetail(String finPrdtCd) {
         // Savings 엔티티 조회
-        Savings savings = recommendationRepository.findByFinPrdtCd(finPrdtCd)
+        Savings savings = savingsRepository.findByFinPrdtCd(finPrdtCd)
                 .orElseThrow(() -> new SavingsException(SavingsErrorCode.SAVINGS_NOT_FOUND));
 
         // DTO 변환 후 반환

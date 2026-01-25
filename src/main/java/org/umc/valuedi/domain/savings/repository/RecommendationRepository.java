@@ -5,10 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
-import org.umc.valuedi.domain.savings.entity.Savings;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface RecommendationRepository extends JpaRepository<Recommendation, Long> {
 
@@ -37,6 +35,4 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
             @Param("memberId") Long memberId,
             @Param("memberMbtiTestId") Long memberMbtiTestId
     );
-
-    Optional<Savings> findByFinPrdtCd(String finPrdtCd);
 }
