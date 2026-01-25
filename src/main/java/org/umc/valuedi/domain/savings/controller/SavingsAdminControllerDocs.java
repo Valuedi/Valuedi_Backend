@@ -13,9 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 
-
 @Tag(name = "Savings-Admin", description = "적금 상품 적재(개발/운영) API")
-public interface SavingsLoadControllerDocs {
+public interface SavingsAdminControllerDocs {
 
     @Operation(
             summary = "적금 상품 DB 적재 API",

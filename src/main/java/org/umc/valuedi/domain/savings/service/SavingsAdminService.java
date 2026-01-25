@@ -21,7 +21,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class SavingsLoadService {
+public class SavingsAdminService {
 
     private final FssSavingsClient fssSavingsClient;
     private final SavingsRepository savingsRepository;
