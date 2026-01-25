@@ -27,7 +27,7 @@ import org.umc.valuedi.domain.savings.enums.ReasonCode;
 import org.umc.valuedi.domain.savings.exception.SavingsException;
 import org.umc.valuedi.domain.savings.exception.code.SavingsErrorCode;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
-import org.umc.valuedi.domain.savings.repository.SavingsOptionRespository;
+import org.umc.valuedi.domain.savings.repository.SavingsOptionRepository;
 import org.umc.valuedi.domain.savings.repository.SavingsRepository;
 import org.umc.valuedi.global.external.genai.client.GeminiClient;
 import org.umc.valuedi.global.external.genai.dto.response.GeminiSavingsResponseDTO;
@@ -54,7 +54,7 @@ public class RecommendationService {
     private final FinanceMbtiProvider financeMbtiProvider;
 
     private final SavingsRepository savingsRepository;
-    private final SavingsOptionRespository savingsOptionRepository;
+    private final SavingsOptionRepository savingsOptionRepository;
     private final RecommendationRepository recommendationRepository;
 
     private final GeminiClient geminiClient;

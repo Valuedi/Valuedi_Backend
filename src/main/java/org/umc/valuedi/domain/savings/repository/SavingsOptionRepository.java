@@ -8,7 +8,7 @@ import org.umc.valuedi.domain.savings.entity.SavingsOption;
 
 import java.util.List;
 
-public interface SavingsOptionRespository extends JpaRepository<SavingsOption, Long> {
+public interface SavingsOptionRepository extends JpaRepository<SavingsOption, Long> {
 
     @Query("""
         select so
