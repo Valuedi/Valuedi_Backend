@@ -13,7 +13,7 @@ import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
-@Tag(name = "Recommendation", description = "적금 추천 API")
+@Tag(name = "Savings", description = "적금 추천 API")
 public interface RecommendationControllerDocs {
 
     @Operation(
