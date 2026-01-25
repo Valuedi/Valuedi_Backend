@@ -1,7 +1,6 @@
 package org.umc.valuedi.domain.savings.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
@@ -48,10 +47,10 @@ public class RecommendationController implements RecommendationControllerDocs {
 
     // 추천 상품 상세 조회
     @GetMapping("/{finPrdtCd}")
-    public ResponseEntity<ApiResponse<SavingsResponseDTO.SavingsDetailResponse>> findSavingsDetail(
+    public ApiResponse<SavingsResponseDTO.SavingsDetailResponse> findSavingsDetail(
             @PathVariable String finPrdtCd
     ) {
         SavingsResponseDTO.SavingsDetailResponse result = recommendationService.getSavingsDetail(finPrdtCd);
-        return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
+        return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
 }

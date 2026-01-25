@@ -303,7 +303,7 @@ public interface RecommendationControllerDocs {
                     )
             }
     )
-    ResponseEntity<ApiResponse<SavingsResponseDTO.SavingsDetailResponse>> findSavingsDetail(
+    ApiResponse<SavingsResponseDTO.SavingsDetailResponse> findSavingsDetail(
             @Parameter(description = "금융상품 코드(fin_prdt_cd)", example = "01012000200000000004")
             @PathVariable String finPrdtCd
     );
