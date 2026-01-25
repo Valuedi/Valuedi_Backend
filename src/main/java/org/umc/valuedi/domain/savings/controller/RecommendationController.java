@@ -1,10 +1,8 @@
 package org.umc.valuedi.domain.savings.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.umc.valuedi.domain.savings.dto.request.SavingsRequestDTO;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.service.RecommendationService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -21,9 +19,10 @@ public class RecommendationController {
     // 15개 추천 생성 + 저장 + 응답(15개)
     @PostMapping
     public ApiResponse<SavingsResponseDTO.RecommendResponse> recommend(
-            @RequestBody @Valid SavingsRequestDTO.RecommendRequest request
+            @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
-        SavingsResponseDTO.RecommendResponse result = recommendationService.recommend(request);
+        Long memberId = Long.parseLong(userDetails.getUsername());
+        SavingsResponseDTO.RecommendResponse result = recommendationService.recommend(memberId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
 

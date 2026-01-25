@@ -17,7 +17,6 @@ import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
-import org.umc.valuedi.domain.savings.dto.request.SavingsRequestDTO;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
 import org.umc.valuedi.domain.savings.entity.RecommendationReason;
@@ -58,22 +57,22 @@ public class RecommendationService {
 
     @Transactional
     public SavingsResponseDTO.RecommendResponse recommend(
-            SavingsRequestDTO.RecommendRequest request
+            Long memberId
     ) {
         // Member 엔티티 조회
-        Member member = memberRepository.findById(request.memberId())
+        Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         // 금융 mbti 최신 결과 조회
-        MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(request.memberId())
+        MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
 
         Long memberMbtiTestId = memberMbtiTest.getId();
 
-        boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(request.memberId(), memberMbtiTestId);
+        boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTestId);
         if (exists) {
             PageRequest pageable = PageRequest.of(0, RECOMMEND_COUNT);
-            List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(request.memberId(), memberMbtiTestId, pageable);
+            List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, memberMbtiTestId, pageable);
 
             List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
                     .map(r -> new SavingsResponseDTO.RecommendedProduct(
@@ -110,7 +109,7 @@ public class RecommendationService {
         String prompt = buildPrompt(mbtiType, financeMbtiTypeInfo, candidates, RECOMMEND_COUNT);
 
         log.info("[Gemini] request memberId={}, promptChars={}",
-                request.memberId(),
+                memberId,
                 prompt == null ? 0 : prompt.length()
         );
 
@@ -118,7 +117,7 @@ public class RecommendationService {
         String raw = geminiClient.generateText(prompt);
 
         log.info("[Gemini] response memberId={}, rawChars={}, head={}",
-                request.memberId(),
+                memberId,
                 raw == null ? 0 : raw.length(),
                 raw == null ? "null" : raw.substring(0, Math.min(raw.length(), 200))
         );
