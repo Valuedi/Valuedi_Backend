@@ -1,5 +1,6 @@
 package org.umc.valuedi.global.security.jwt;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -59,21 +60,43 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             }
 
             String memberId = jwtUtil.getMemberId(token);
-            UserDetails user = customUserDetailsService.loadUserByUsername(memberId);
-            Authentication auth = new UsernamePasswordAuthenticationToken(
-                    user,
-                    null,
-                    user.getAuthorities()
-            );
-            SecurityContextHolder.getContext().setAuthentication(auth);
+            setAuthenticationContext(memberId);
 
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException e) {
+            String uri = request.getRequestURI();
+            // 로그아웃과 토큰 재발급의 경우 만료된 토큰도 필터 통과
+            if(uri.equals("/auth/logout") || uri.equals("/auth/token/refresh")) {
+                Claims claims = e.getClaims();
+                String category = claims.get("category", String.class);
+
+                // 만료된 토큰이어도 엑세스 토큰이 맞는지 확인
+                if (!category.equals("access")) {
+                    securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.NOT_ACCESS_TOKEN);
+                    return;
+                }
+
+                setAuthenticationContext(claims.getSubject());
+                filterChain.doFilter(request, response);
+                return;
+            }
+            // 로그아웃과 토큰 재발급이 아니면 예러 응답
             securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
             securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.INVALID_TOKEN);
         } catch (Exception e) {
             securityExceptionHandler.sendErrorResponse(response, GeneralErrorCode.UNAUTHORIZED);
         }
+    }
+
+    // 인증 객체 저장
+    private void setAuthenticationContext(String memberId) {
+        UserDetails user = customUserDetailsService.loadUserByUsername(memberId);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                user,
+                null,
+                user.getAuthorities()
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 }

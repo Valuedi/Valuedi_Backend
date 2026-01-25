@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 @Tag(name = "Auth", description = "Auth 관련 API (로그인, 회원가입 등)")
 public interface AuthControllerDocs {
@@ -496,6 +497,7 @@ public interface AuthControllerDocs {
             )
     })
     public ApiResponse<Void> logout(
+            CustomUserDetails userDetails,
             @Parameter(hidden = true)
             String accessToken,
             HttpServletResponse response

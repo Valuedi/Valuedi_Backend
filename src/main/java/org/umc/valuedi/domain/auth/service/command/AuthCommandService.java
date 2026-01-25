@@ -258,9 +258,8 @@ public class AuthCommandService {
 
     // 로그아웃
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    public void logout(String accessToken) {
+    public void logout(Long memberId, String accessToken) {
         String resolveToken = accessToken.substring(7);
-        Long memberId = Long.valueOf(jwtUtil.getMemberId(resolveToken));
 
         String redisKey = "RT:" + memberId;
         redisTemplate.delete(redisKey);
