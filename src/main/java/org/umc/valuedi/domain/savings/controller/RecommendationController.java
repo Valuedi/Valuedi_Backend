@@ -1,6 +1,7 @@
 package org.umc.valuedi.domain.savings.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
@@ -12,7 +13,7 @@ import org.umc.valuedi.global.security.principal.CustomUserDetails;
 @RestController
 @RequestMapping("/api/savings/recommendations")
 @RequiredArgsConstructor
-public class RecommendationController {
+public class RecommendationController implements RecommendationControllerDocs {
 
     private final RecommendationService recommendationService;
 
@@ -42,5 +43,14 @@ public class RecommendationController {
     ) {
         Long memberId = Long.parseLong(userDetails.getUsername());
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendationTop3(memberId));
+    }
+
+    // 추천 상품 상세 조회
+    @GetMapping("/{finPrdtCd}")
+    public ResponseEntity<ApiResponse<SavingsResponseDTO.SavingsDetailResponse>> findSavingsDetail(
+            @PathVariable String finPrdtCd
+    ) {
+        SavingsResponseDTO.SavingsDetailResponse result = recommendationService.getSavingsDetail(finPrdtCd);
+        return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
     }
 }

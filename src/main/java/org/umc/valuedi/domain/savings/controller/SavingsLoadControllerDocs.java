@@ -1,13 +1,17 @@
 package org.umc.valuedi.domain.savings.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 
 
 @Tag(name = "Savings-Admin", description = "적금 상품 적재(개발/운영) API")
@@ -161,5 +165,58 @@ public interface SavingsLoadControllerDocs {
     )
     ResponseEntity<org.umc.valuedi.global.apiPayload.ApiResponse<Integer>> loadSavings(
             @RequestParam(defaultValue = "1") Integer pageNo
+    );
+
+    @Operation(
+            summary = "DB 적재된 적금 상품 목록 조회 API",
+            description = "DB에 저장된 적금 상품 목록을 조회합니다. (개발/운영용)",
+            responses = {
+                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                            responseCode = "COMMON200",
+                            description = "요청이 성공적으로 처리되었습니다.",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = org.umc.valuedi.global.apiPayload.ApiResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "success",
+                                                    summary = "성공 예시",
+                                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "COMMON200",
+                                                      "message": "요청이 성공적으로 처리되었습니다.",
+                                                      "result": {
+                                                        "totalCount": 2,
+                                                        "maxPageNo": 1,
+                                                        "nowPageNo": 1,
+                                                        "products": [
+                                                          {
+                                                            "korCoNm": "OO은행",
+                                                            "finPrdtCd": "ABC123",
+                                                            "finPrdtNm": "OO정기적금",
+                                                            "rsrvType": "S",
+                                                            "rsrvTypeNm": "정액적립식"
+                                                          },
+                                                          {
+                                                            "korCoNm": "XX저축은행",
+                                                            "finPrdtCd": "DEF456",
+                                                            "finPrdtNm": "XX자유적금",
+                                                            "rsrvType": "F",
+                                                            "rsrvTypeNm": "자유적립식"
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                    """
+                                            )
+                                    }
+                            )
+                    )
+            }
+    )
+    ResponseEntity<org.umc.valuedi.global.apiPayload.ApiResponse<SavingsResponseDTO.SavingsListResponse>> findSavingsList(
+            @Parameter(description = "페이지 정보(page, size, sort)")
+            @PageableDefault(size = 15, sort = "korCoNm") Pageable pageable
     );
 }

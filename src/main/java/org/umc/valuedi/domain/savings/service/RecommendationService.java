@@ -17,12 +17,15 @@ import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
+import org.umc.valuedi.domain.savings.converter.SavingsConverter;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
 import org.umc.valuedi.domain.savings.entity.RecommendationReason;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.entity.SavingsOption;
 import org.umc.valuedi.domain.savings.enums.ReasonCode;
+import org.umc.valuedi.domain.savings.exception.SavingsException;
+import org.umc.valuedi.domain.savings.exception.code.SavingsErrorCode;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
 import org.umc.valuedi.domain.savings.repository.SavingsOptionRespository;
 import org.umc.valuedi.global.external.genai.client.GeminiClient;
@@ -355,6 +358,16 @@ public class RecommendationService {
         } catch (Exception e) {
             return new GeminiSavingsResponseDTO.Result(null, List.of());
         }
+    }
+
+    // 추천 상품 상세 조회
+    public SavingsResponseDTO.SavingsDetailResponse getSavingsDetail(String finPrdtCd) {
+        // Savings 엔티티 조회
+        Savings savings = recommendationRepository.findByFinPrdtCd(finPrdtCd)
+                .orElseThrow(() -> new SavingsException(SavingsErrorCode.SAVINGS_NOT_FOUND));
+
+        // DTO 변환 후 반환
+        return SavingsConverter.toSavingsDetailResponseDTO(savings);
     }
 
     // NullPointerException 방지

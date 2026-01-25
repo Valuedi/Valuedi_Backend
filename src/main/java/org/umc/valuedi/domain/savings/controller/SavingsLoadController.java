@@ -1,11 +1,11 @@
 package org.umc.valuedi.domain.savings.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.service.SavingsLoadService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
@@ -23,6 +23,15 @@ public class SavingsLoadController implements SavingsLoadControllerDocs {
             @RequestParam(defaultValue = "1") Integer pageNo
     ) {
         int result = savingsLoadService.loadAndUpsert(pageNo);
+        return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
+    }
+
+    // 적재된 적금 상품 목록 조회
+    @GetMapping
+    public ResponseEntity<ApiResponse<SavingsResponseDTO.SavingsListResponse>> findSavingsList(
+            @PageableDefault(size = 10, sort = "korCoNm") Pageable pageable
+    ) {
+        SavingsResponseDTO.SavingsListResponse result = savingsLoadService.getSavingsList(pageable);
         return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
     }
 }
