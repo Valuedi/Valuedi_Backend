@@ -31,71 +31,41 @@ public class CodefAccountService {
     private final MemberRepository memberRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    /**
-     * 금융사 계정 연동 메인 로직
-     */
     @Transactional
     public void connectAccount(Long memberId, ConnectionReqDTO.Connect request) {
-
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        // 기존에 발급받은 Connected ID가 있는지 리스트에서 확인
-        String existingConnectedId = member.getCodefConnectionList().stream()
-                .map(CodefConnection::getConnectedId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .findFirst()
-                .orElse(null);
-
-        // 비밀번호 암호화
-        String encryptedPassword = encryptUtil.encrypt(request.getLoginPassword());
+        String existingConnectedId = findExistingConnectedId(member);
+        String encryptedPassword = encryptPassword(request.getLoginPassword());
         Map<String, Object> requestBody = createRequestBody(request, encryptedPassword);
 
         String targetConnectedId;
-
         if (existingConnectedId == null) {
-            // 최초 등록 (Create)
             targetConnectedId = handleFirstCreation(requestBody);
         } else {
-            // 계정 추가 (Add)
             targetConnectedId = handleAddition(existingConnectedId, requestBody);
         }
         saveConnectionRecord(member, targetConnectedId, request.getOrganization(), request.getBusinessTypeEnum());
+        log.info("금융사 연동 완료 - MemberId: {}, Organization: {}", memberId, request.getOrganization());
     }
 
-    /**
-     * 금융사 연동 해제 (Codef 계정 삭제)
-     */
+    @Transactional
     public void deleteAccount(String connectedId, String organization, BusinessType businessType) {
-        Map<String, Object> accountMap = new HashMap<>();
-        accountMap.put("organization", organization);
-        accountMap.put("businessType", businessType);
-        accountMap.put("countryCode", "KR");
-        accountMap.put("clientType", "P");
-        accountMap.put("loginType", "1");
-
-        List<Map<String, Object>> accountList = new ArrayList<>();
-        accountList.add(accountMap);
-
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("connectedId", connectedId);
-        requestBody.put("accountList", accountList);
-
-        CodefApiResponse<Object> response = codefApiClient.deleteAccount(requestBody);
+        Map<String, Object> requestBody = createDeleteRequestBody(connectedId, organization, businessType);
+        CodefApiResponse<Object> response = executeApiCall(() -> codefApiClient.deleteAccount(requestBody));
 
         if (!response.isSuccess()) {
+            log.error("CODEF 계정 삭제 실패 - Message: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_DELETE_FAILED);
         }
+        log.info("금융사 연동 해제 완료 - ConnectedId: {}, Organization: {}", connectedId, organization);
     }
 
-    /**
-     * 최초 등록 처리
-     */
     private String handleFirstCreation(Map<String, Object> requestBody) {
-        CodefApiResponse<Map<String, Object>> response = codefApiClient.createConnectedId(requestBody);
+        CodefApiResponse<Map<String, Object>> response = executeApiCall(() -> codefApiClient.createConnectedId(requestBody));
         if (!response.isSuccess()) {
-            log.error("CODEF 계정 생성 실패: {}", response.getResult().getMessage());
+            log.error("CODEF 계정 생성 실패 - Message: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CREATE_FAILED);
         }
         Map<String, Object> data = response.getData();
@@ -107,46 +77,52 @@ public class CodefAccountService {
         return connectedId;
     }
 
-    /**
-     * 기존 ID에 기관 추가 처리
-     */
     private String handleAddition(String connectedId, Map<String, Object> requestBody) {
-        requestBody.put("connectedId", connectedId); // 기존 ID를 바디에 주입
-        CodefApiResponse<Map<String, Object>> response = codefApiClient.addAccountToConnectedId(requestBody);
+        requestBody.put("connectedId", connectedId);
+        CodefApiResponse<Map<String, Object>> response = executeApiCall(() -> codefApiClient.addAccountToConnectedId(requestBody));
 
         if (!response.isSuccess()) {
-            log.error("CODEF 계정 추가 실패: {}", response.getResult() != null ? response.getResult().getMessage() : "no result");
+            log.error("CODEF 계정 추가 실패 - Message: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_ADD_FAILED);
         }
-        // 추가 성공 시에도 기존 아이디를 그대로 반환
         return connectedId;
     }
 
-    /**
-     * DB에 연결 기록 저장
-     */
     private void saveConnectionRecord(Member member, String connectedId, String organization, BusinessType businessType) {
         boolean isAlreadyLinked = member.getCodefConnectionList().stream()
                 .anyMatch(c -> organization.equals(c.getOrganization()));
 
-        if (!isAlreadyLinked) {
-            CodefConnection connection = CodefConnection.builder()
-                    .organization(organization)
-                    .connectedId(connectedId)
-                    .businessType(businessType)
-                    .member(member)
-                    .build();
-            member.addCodefConnection(connection);
-            log.info("기관 [{}] 연동 정보 저장 완료", organization);
+        if (isAlreadyLinked) {
+            throw new CodefException(CodefErrorCode.CODEF_DUPLICATE_ORGANIZATION);
+        }
 
-            // 이벤트 발행
-            eventPublisher.publishEvent(new ConnectionSuccessEvent(connection));
+        CodefConnection connection = CodefConnection.builder()
+                .organization(organization)
+                .connectedId(connectedId)
+                .businessType(businessType)
+                .member(member)
+                .build();
+        member.addCodefConnection(connection);
+        eventPublisher.publishEvent(new ConnectionSuccessEvent(connection));
+    }
+    
+    private String findExistingConnectedId(Member member) {
+        return member.getCodefConnectionList().stream()
+                .map(CodefConnection::getConnectedId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String encryptPassword(String password) {
+        try {
+            return encryptUtil.encrypt(password);
+        } catch (Exception e) {
+            throw new CodefException(CodefErrorCode.CODEF_ENCRYPTION_ERROR);
         }
     }
 
-    /**
-     * CODEF 요청 규격(accountList) 생성 헬퍼
-     */
     private Map<String, Object> createRequestBody(ConnectionReqDTO.Connect req, String encryptedPassword) {
         Map<String, Object> accountMap = new HashMap<>();
         accountMap.put("organization", req.getOrganization());
@@ -163,5 +139,34 @@ public class CodefAccountService {
         Map<String, Object> body = new HashMap<>();
         body.put("accountList", accountList);
         return body;
+    }
+
+    private Map<String, Object> createDeleteRequestBody(String connectedId, String organization, BusinessType businessType) {
+        Map<String, Object> accountMap = new HashMap<>();
+        accountMap.put("organization", organization);
+        accountMap.put("businessType", businessType.toString());
+        accountMap.put("countryCode", "KR");
+        accountMap.put("clientType", "P");
+        accountMap.put("loginType", "1");
+
+        List<Map<String, Object>> accountList = new ArrayList<>();
+        accountList.add(accountMap);
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("connectedId", connectedId);
+        requestBody.put("accountList", accountList);
+        return requestBody;
+    }
+
+    private <T> CodefApiResponse<T> executeApiCall(java.util.function.Supplier<CodefApiResponse<T>> apiCall) {
+        try {
+            CodefApiResponse<T> response = apiCall.get();
+            if (response == null) {
+                throw new CodefException(CodefErrorCode.CODEF_RESPONSE_EMPTY);
+            }
+            return response;
+        } catch (Exception e) {
+            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
+        }
     }
 }

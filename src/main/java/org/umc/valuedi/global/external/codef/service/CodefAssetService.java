@@ -35,24 +35,26 @@ public class CodefAssetService {
 
     public List<BankAccount> getBankAccounts(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
-
-        CodefApiResponse<Object> response = codefApiClient.getBankAccounts(requestBody);
+        CodefApiResponse<Object> response = executeApiCall(() -> codefApiClient.getBankAccounts(requestBody));
 
         if (!response.isSuccess()) {
-            log.error("CODEF 보유 계좌 목록 조회 실패: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_BANK_ACCOUNT_LIST_FAILED);
         }
 
-        CodefAssetResDTO.BankAccountList listResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankAccountList.class);
-        List<CodefAssetResDTO.BankAccount> allAccounts = new ArrayList<>();
+        try {
+            CodefAssetResDTO.BankAccountList listResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankAccountList.class);
+            List<CodefAssetResDTO.BankAccount> allAccounts = new ArrayList<>();
 
-        if (listResponse.getResDepositTrust() != null) allAccounts.addAll(listResponse.getResDepositTrust());
-        if (listResponse.getResForeignCurrency() != null) allAccounts.addAll(listResponse.getResForeignCurrency());
-        if (listResponse.getResFund() != null) allAccounts.addAll(listResponse.getResFund());
-        if (listResponse.getResLoan() != null) allAccounts.addAll(listResponse.getResLoan());
-        if (listResponse.getResInsurance() != null) allAccounts.addAll(listResponse.getResInsurance());
+            if (listResponse.getResDepositTrust() != null) allAccounts.addAll(listResponse.getResDepositTrust());
+            if (listResponse.getResForeignCurrency() != null) allAccounts.addAll(listResponse.getResForeignCurrency());
+            if (listResponse.getResFund() != null) allAccounts.addAll(listResponse.getResFund());
+            if (listResponse.getResLoan() != null) allAccounts.addAll(listResponse.getResLoan());
+            if (listResponse.getResInsurance() != null) allAccounts.addAll(listResponse.getResInsurance());
 
-        return codefAssetConverter.toBankAccountList(allAccounts, connection);
+            return codefAssetConverter.toBankAccountList(allAccounts, connection);
+        } catch (IllegalArgumentException e) {
+            throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
+        }
     }
 
     public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account) {
@@ -65,54 +67,54 @@ public class CodefAssetService {
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
 
-        CodefApiResponse<Object> response = codefApiClient.getBankTransactions(requestBody);
+        CodefApiResponse<Object> response = executeApiCall(() -> codefApiClient.getBankTransactions(requestBody));
 
         if (!response.isSuccess()) {
             String msg = response.getResult().getMessage();
-
             if (msg.contains("일치하는 정보가 없습니다") || msg.contains("존재하지 않습니다") || msg.contains("보유계좌")) {
-                // 경고 레벨로 낮춤 (정상적인 예외 상황)
-                log.warn("거래내역 조회 불가 계좌 (건너뜀) - 계좌명: {}, 메시지: {}", account.getAccountName(), msg);
-            } else {
-                log.error("CODEF 계좌 거래 내역 조회 API 오류 - 계좌: {}, 에러: {}", account.getAccountDisplay(), msg);
+                log.warn("계좌 거래내역 없음 (정상 처리) - Account: {}, Message: {}", account.getAccountDisplay(), msg);
+                return List.of();
             }
-
-            return List.of();
+            throw new CodefException(CodefErrorCode.CODEF_API_INTERNAL_ERROR);
         }
 
-        CodefAssetResDTO.BankTransactionList transactionResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankTransactionList.class);
-        if (transactionResponse.getResTrHistoryList() == null) {
-            return List.of();
+        try {
+            CodefAssetResDTO.BankTransactionList transactionResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankTransactionList.class);
+            if (transactionResponse.getResTrHistoryList() == null) {
+                return List.of();
+            }
+            return codefAssetConverter.toBankTransactionList(transactionResponse.getResTrHistoryList(), account);
+        } catch (IllegalArgumentException e) {
+            throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
         }
-
-        return codefAssetConverter.toBankTransactionList(transactionResponse.getResTrHistoryList(), account);
     }
 
     public List<Card> getCards(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
-
-        CodefApiResponse<Object> response = codefApiClient.getCardList(requestBody);
+        CodefApiResponse<Object> response = executeApiCall(() -> codefApiClient.getCardList(requestBody));
 
         if (!response.isSuccess()) {
-            log.error("CODEF 보유 카드 목록 조회 실패: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
 
-        Object responseData = response.getData();
-        List<CodefAssetResDTO.Card> cardList = new ArrayList<>();
-        
-        if (responseData instanceof Map) {
-            CodefAssetResDTO.Card card = objectMapper.convertValue(responseData, CodefAssetResDTO.Card.class);
-            cardList.add(card);
-        } else if (responseData instanceof List) {
-             List<CodefAssetResDTO.Card> cards = objectMapper.convertValue(responseData, new TypeReference<List<CodefAssetResDTO.Card>>() {});
-             cardList.addAll(cards);
-        } else {
-            log.error("CODEF 보유 카드 목록 응답 형식이 예상과 다릅니다. Data: {}", responseData);
-            throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
+        try {
+            Object responseData = response.getData();
+            List<CodefAssetResDTO.Card> cardList = new ArrayList<>();
+            
+            if (responseData instanceof Map) {
+                CodefAssetResDTO.Card card = objectMapper.convertValue(responseData, CodefAssetResDTO.Card.class);
+                cardList.add(card);
+            } else if (responseData instanceof List) {
+                 List<CodefAssetResDTO.Card> cards = objectMapper.convertValue(responseData, new TypeReference<List<CodefAssetResDTO.Card>>() {});
+                 cardList.addAll(cards);
+            } else {
+                throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
+            }
+            
+            return codefAssetConverter.toCardList(cardList, connection);
+        } catch (IllegalArgumentException e) {
+            throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
         }
-        
-        return codefAssetConverter.toCardList(cardList, connection);
     }
 
     public List<CardApproval> getCardApprovals(CodefConnection connection) {
@@ -125,23 +127,25 @@ public class CodefAssetService {
         requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
-        requestBody.put("memberStoreInfoType", "1"); // 가맹점 상세 정보 조회 옵션
+        requestBody.put("memberStoreInfoType", "1");
 
-        CodefApiResponse<Object> response = codefApiClient.getCardApprovals(requestBody);
+        CodefApiResponse<Object> response = executeApiCall(() -> codefApiClient.getCardApprovals(requestBody));
 
         if (!response.isSuccess()) {
-            log.error("CODEF 카드 승인 내역 조회 실패: {}", response.getResult().getMessage());
-            return List.of();
+            throw new CodefException(CodefErrorCode.CODEF_API_INTERNAL_ERROR);
         }
 
-        List<CodefAssetResDTO.CardApproval> approvalList;
-        if (response.getData() instanceof List) {
-             approvalList = objectMapper.convertValue(response.getData(), new TypeReference<List<CodefAssetResDTO.CardApproval>>() {});
-        } else {
-             return List.of();
+        try {
+            List<CodefAssetResDTO.CardApproval> approvalList;
+            if (response.getData() instanceof List) {
+                 approvalList = objectMapper.convertValue(response.getData(), new TypeReference<List<CodefAssetResDTO.CardApproval>>() {});
+            } else {
+                 return List.of();
+            }
+            return codefAssetConverter.toCardApprovalList(approvalList);
+        } catch (IllegalArgumentException e) {
+            throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
         }
-
-        return codefAssetConverter.toCardApprovalList(approvalList);
     }
 
     private Map<String, Object> createAssetRequestBody(CodefConnection connection) {
@@ -149,5 +153,17 @@ public class CodefAssetService {
         body.put("connectedId", connection.getConnectedId());
         body.put("organization", connection.getOrganization());
         return body;
+    }
+
+    private <T> CodefApiResponse<T> executeApiCall(java.util.function.Supplier<CodefApiResponse<T>> apiCall) {
+        try {
+            CodefApiResponse<T> response = apiCall.get();
+            if (response == null) {
+                throw new CodefException(CodefErrorCode.CODEF_RESPONSE_EMPTY);
+            }
+            return response;
+        } catch (Exception e) {
+            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
+        }
     }
 }

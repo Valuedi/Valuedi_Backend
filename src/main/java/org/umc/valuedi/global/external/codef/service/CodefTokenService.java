@@ -1,7 +1,6 @@
 package org.umc.valuedi.global.external.codef.service;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.global.external.codef.client.CodefAuthClient;
 import org.umc.valuedi.global.external.codef.config.CodefProperties;
@@ -12,7 +11,6 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Map;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CodefTokenService {
@@ -49,39 +47,41 @@ public class CodefTokenService {
      * 토큰 재발급
      */
     private String fetchNewToken() {
+        Map<String, Object> response;
         try {
             // Basic Auth 헤더 생성
             String auth = codefProperties.getClientId() + ":" + codefProperties.getClientSecret();
             String basicAuth = "Basic " + Base64.getEncoder().encodeToString(auth.getBytes());
 
             // 전용 FeignClient 호출
-            Map<String, Object> response = codefAuthClient.getAccessToken(
+            response = codefAuthClient.getAccessToken(
                     basicAuth,
                     "client_credentials",
                     "read"
             );
-
-            if (response != null && response.containsKey("access_token")) {
-                log.info("CODEF Access Token 발급 성공");
-
-                long expiresIn = 3600; // 기본값 1시간
-                if (response.containsKey("expires_in")) {
-                    Object expiresInObj = response.get("expires_in");
-                    if (expiresInObj instanceof Number) {
-                        expiresIn = ((Number) expiresInObj).longValue();
-                    } else if (expiresInObj instanceof String) {
-                        expiresIn = Long.parseLong((String) expiresInObj);
-                    }
-                }
-                // 만료 시간 설정 (현재 시간 + 유효기간)
-                this.tokenExpirationTime = LocalDateTime.now().plusSeconds(expiresIn);
-                return (String) response.get("access_token");
-            }
-            throw new CodefException(CodefErrorCode.CODEF_TOKEN_ERROR);
-
         } catch (Exception e) {
-            log.error("CODEF 토큰 발급 중 예외 발생", e);
+            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
+        }
+
+        if (response == null || !response.containsKey("access_token")) {
             throw new CodefException(CodefErrorCode.CODEF_TOKEN_ERROR);
+        }
+
+        try {
+            long expiresIn = 3600; // 기본값 1시간
+            if (response.containsKey("expires_in")) {
+                Object expiresInObj = response.get("expires_in");
+                if (expiresInObj instanceof Number) {
+                    expiresIn = ((Number) expiresInObj).longValue();
+                } else if (expiresInObj instanceof String) {
+                    expiresIn = Long.parseLong((String) expiresInObj);
+                }
+            }
+            // 만료 시간 설정 (현재 시간 + 유효기간)
+            this.tokenExpirationTime = LocalDateTime.now().plusSeconds(expiresIn);
+            return (String) response.get("access_token");
+        } catch (ClassCastException | NumberFormatException e) {
+            throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
         }
     }
 }
