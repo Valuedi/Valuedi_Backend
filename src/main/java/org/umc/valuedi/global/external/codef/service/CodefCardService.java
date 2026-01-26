@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
+import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 
@@ -52,7 +53,7 @@ public class CodefCardService {
         requestBody.put("connectedId", connectedId);
         requestBody.put("organization", organization);
 
-        CodefApiResponse<Object> response;
+        CodefApiResponse<CodefAssetResDTO.CardList> response; // 타입 변경
         try {
             response = codefApiClient.getCardList(requestBody);
         } catch (Exception e) {
@@ -69,38 +70,44 @@ public class CodefCardService {
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
 
-        return parseCardListResponse(response.getData());
+        return parseCardListResponse(response.getData(), organization); // organization 인자 추가
     }
 
     /**
      * CODEF 응답 데이터를 DTO로 변환
      */
-    private List<CardResDTO.CardConnection> parseCardListResponse(Object data) {
+    private List<CardResDTO.CardConnection> parseCardListResponse(CodefAssetResDTO.CardList data, String organization) { // organization 인자 추가
         if (data == null) {
             return Collections.emptyList();
         }
 
+        List<CodefAssetResDTO.Card> allCards = new ArrayList<>();
+
+        if (data.getResCardList() != null && !data.getResCardList().isEmpty()) {
+            // 여러 카드 응답 처리
+            allCards.addAll(data.getResCardList());
+        } else if (data.getResCardName() != null) {
+            // 단일 카드 응답 처리: CardList DTO의 필드들을 사용하여 Card DTO 객체를 직접 생성
+            CodefAssetResDTO.Card singleCard = CodefAssetResDTO.Card.builder()
+                    .resCardName(data.getResCardName())
+                    .resCardNo(data.getResCardNo())
+                    .resCardType(data.getResCardType())
+                    .resUserNm(data.getResUserNm())
+                    .resSleepYN(data.getResSleepYN())
+                    .resTrafficYN(data.getResTrafficYN())
+                    .resValidPeriod(data.getResValidPeriod())
+                    .resIssueDate(data.getResIssueDate())
+                    .resState(data.getResState())
+                    .resImageLink(data.getResImageLink())
+                    .build();
+            allCards.add(singleCard);
+        }
+
         try {
-            Map<String, Object> dataMap = (Map<String, Object>) data;
-
-            if (dataMap.containsKey("resCardList")) {
-                List<Map<String, Object>> cardList =
-                        (List<Map<String, Object>>) dataMap.get("resCardList");
-
-                if (cardList == null || cardList.isEmpty()) {
-                    return Collections.emptyList();
-                }
-
-                return cardList.stream()
-                        .map(this::buildCardConnection)
-                        .toList();
-            }
-            if (dataMap.containsKey("resCardName")) {
-                return List.of(buildCardConnection(dataMap));
-            }
-            return Collections.emptyList();
-
-        } catch (ClassCastException | NullPointerException e) {
+            return allCards.stream()
+                    .map(card -> buildCardConnection(card, organization)) // organization 인자 전달
+                    .toList();
+        } catch (Exception e) {
             throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
         }
     }
@@ -108,14 +115,14 @@ public class CodefCardService {
     /**
      * 카드 데이터를 DTO로 변환하는 헬퍼 메서드
      */
-    private CardResDTO.CardConnection buildCardConnection(Map<String, Object> card) {
+    private CardResDTO.CardConnection buildCardConnection(CodefAssetResDTO.Card card, String organization) { // organization 인자 추가
         try {
             return CardResDTO.CardConnection.builder()
-                    .cardId((String) card.get("resCardId"))
-                    .cardName((String) card.get("resCardName"))
-                    .cardNum((String) card.get("resCardNo"))
-                    .cardCompany((String) card.get("organization"))
-                    .cardCompanyCode((String) card.get("organization"))
+                    .cardId(card.getResCardNo())
+                    .cardName(card.getResCardName())
+                    .cardNum(card.getResCardNo())
+                    .cardCompany(organization) // organization 사용
+                    .cardCompanyCode(organization) // organization 사용
                     .build();
         } catch (Exception e) {
             throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);

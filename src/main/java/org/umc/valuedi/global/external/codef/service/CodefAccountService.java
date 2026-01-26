@@ -15,6 +15,7 @@ import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
+import org.umc.valuedi.global.external.codef.dto.res.CodefConnectedIdResDTO;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.util.CodefEncryptUtil;
@@ -33,6 +34,7 @@ public class CodefAccountService {
 
     @Transactional
     public void connectAccount(Long memberId, ConnectionReqDTO.Connect request) {
+        log.info("금융사 연동 요청 - MemberId: {}, Organization: {}", memberId, request.getOrganization());
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
@@ -52,8 +54,9 @@ public class CodefAccountService {
 
     @Transactional
     public void deleteAccount(String connectedId, String organization, BusinessType businessType) {
+        log.info("금융사 연동 해제 요청 - ConnectedId: {}, Organization: {}", connectedId, organization);
         Map<String, Object> requestBody = createDeleteRequestBody(connectedId, organization, businessType);
-        CodefApiResponse<Object> response = executeApiCall(() -> codefApiClient.deleteAccount(requestBody));
+        CodefApiResponse<Void> response = executeApiCall(() -> codefApiClient.deleteAccount(requestBody));
 
         if (!response.isSuccess()) {
             log.error("CODEF 계정 삭제 실패 - Message: {}", response.getResult().getMessage());
@@ -63,13 +66,13 @@ public class CodefAccountService {
     }
 
     private String handleFirstCreation(Map<String, Object> requestBody) {
-        CodefApiResponse<Map<String, Object>> response = executeApiCall(() -> codefApiClient.createConnectedId(requestBody));
+        CodefApiResponse<CodefConnectedIdResDTO> response = executeApiCall(() -> codefApiClient.createConnectedId(requestBody));
         if (!response.isSuccess()) {
             log.error("CODEF 계정 생성 실패 - Message: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CREATE_FAILED);
         }
-        Map<String, Object> data = response.getData();
-        String connectedId = data != null ? (String) data.get("connectedId") : null;
+        CodefConnectedIdResDTO data = response.getData();
+        String connectedId = data != null ? data.getConnectedId() : null;
 
         if (connectedId == null || connectedId.isBlank()) {
             throw new CodefException(CodefErrorCode.CODEF_API_CREATE_FAILED);
@@ -79,7 +82,7 @@ public class CodefAccountService {
 
     private String handleAddition(String connectedId, Map<String, Object> requestBody) {
         requestBody.put("connectedId", connectedId);
-        CodefApiResponse<Map<String, Object>> response = executeApiCall(() -> codefApiClient.addAccountToConnectedId(requestBody));
+        CodefApiResponse<Void> response = executeApiCall(() -> codefApiClient.addAccountToConnectedId(requestBody));
 
         if (!response.isSuccess()) {
             log.error("CODEF 계정 추가 실패 - Message: {}", response.getResult().getMessage());
