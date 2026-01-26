@@ -1,16 +1,18 @@
 package org.umc.valuedi.global.external.codef.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.global.external.codef.client.CodefAuthClient;
 import org.umc.valuedi.global.external.codef.config.CodefProperties;
+import org.umc.valuedi.global.external.codef.dto.res.CodefTokenResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CodefTokenService {
@@ -47,7 +49,7 @@ public class CodefTokenService {
      * 토큰 재발급
      */
     private String fetchNewToken() {
-        Map<String, Object> response;
+        CodefTokenResDTO response;
         try {
             // Basic Auth 헤더 생성
             String auth = codefProperties.getClientId() + ":" + codefProperties.getClientSecret();
@@ -59,29 +61,20 @@ public class CodefTokenService {
                     "client_credentials",
                     "read"
             );
+
+            if (response == null || response.getAccessToken() == null) {
+                throw new CodefException(CodefErrorCode.CODEF_TOKEN_ERROR);
+            }
+
         } catch (Exception e) {
+            log.error("CODEF 토큰 발급 API 호출 중 오류 발생", e);
             throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
         }
 
-        if (response == null || !response.containsKey("access_token")) {
-            throw new CodefException(CodefErrorCode.CODEF_TOKEN_ERROR);
-        }
+        long expiresIn = (response.getExpiresIn() != null) ? response.getExpiresIn() : 3600L;
+        this.tokenExpirationTime = LocalDateTime.now().plusSeconds(expiresIn);
+        log.info("CODEF Access Token 발급 성공. 만료 시간: {}", this.tokenExpirationTime);
 
-        try {
-            long expiresIn = 3600; // 기본값 1시간
-            if (response.containsKey("expires_in")) {
-                Object expiresInObj = response.get("expires_in");
-                if (expiresInObj instanceof Number) {
-                    expiresIn = ((Number) expiresInObj).longValue();
-                } else if (expiresInObj instanceof String) {
-                    expiresIn = Long.parseLong((String) expiresInObj);
-                }
-            }
-            // 만료 시간 설정 (현재 시간 + 유효기간)
-            this.tokenExpirationTime = LocalDateTime.now().plusSeconds(expiresIn);
-            return (String) response.get("access_token");
-        } catch (ClassCastException | NumberFormatException e) {
-            throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
-        }
+        return response.getAccessToken();
     }
 }
