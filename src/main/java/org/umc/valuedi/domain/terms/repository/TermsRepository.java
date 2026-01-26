@@ -9,6 +9,7 @@ import java.util.List;
 public interface TermsRepository extends JpaRepository<Terms, Long> {
 
     List<Terms> findAllByIsActiveTrueAndIsRequiredTrue();
+    List<Terms> findAllByCodeInAndIsActiveTrue(List<String> codes);
 
     @Query("""
     SELECT t
