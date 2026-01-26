@@ -1,12 +1,14 @@
 package org.umc.valuedi.domain.connection.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -75,15 +77,15 @@ public interface ConnectionControllerDocs {
                                               "message": "성공입니다.",
                                               "result": [
                                                 {
-                                                  "id": 1,
-                                                  "organization": "국민은행",
-                                                  "type": "BANK",
+                                                  "connectionId": 1,
+                                                  "organization": "0020",
+                                                  "type": "BK",
                                                   "connectedAt": "2024-05-20T10:00:00"
                                                 },
                                                 {
-                                                  "id": 2,
-                                                  "organization": "현대카드",
-                                                  "type": "CARD",
+                                                  "connectionId": 2,
+                                                  "organization": "0309",
+                                                  "type": "CD",
                                                   "connectedAt": "2024-05-22T09:00:00"
                                                 }
                                               ]
@@ -94,4 +96,47 @@ public interface ConnectionControllerDocs {
             )
     })
     ApiResponse<List<ConnectionResDTO.Connection>> getAllConnections();
+
+    @Operation(summary = "금융사 연동 해제 API", description = "특정 금융사(은행/카드사)와의 연동을 해제합니다. 연동 해제 시 해당 금융사에 속한 모든 계좌 및 카드가 비활성화됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 연동 해제 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "CONNECTION200_1",
+                                              "message": "성공적으로 금융사 연동이 삭제되었습니다.",
+                                              "result": null
+                                            }
+                                    """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "에러 - 연동 정보를 찾을 수 없음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "실패 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "CONNECTION404_1",
+                                              "message": "해당 연동 정보를 찾을 수 없습니다.",
+                                              "result": null
+                                            }
+                                    """
+                            )
+                    )
+            )
+    })
+    ApiResponse<Void> disconnect(
+            @Parameter(description = "해제할 연동 ID (connectionId)") @PathVariable Long connectionId
+    );
 }

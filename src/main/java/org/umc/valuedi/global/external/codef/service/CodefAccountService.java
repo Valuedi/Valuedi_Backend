@@ -49,7 +49,7 @@ public class CodefAccountService {
                 .orElse(null);
 
         // 비밀번호 암호화
-        String encryptedPassword = encryptUtil.encrypt(request.getPassword());
+        String encryptedPassword = encryptUtil.encrypt(request.getLoginPassword());
         Map<String, Object> requestBody = createRequestBody(request, encryptedPassword);
 
         String targetConnectedId;
@@ -62,6 +62,31 @@ public class CodefAccountService {
             targetConnectedId = handleAddition(existingConnectedId, requestBody);
         }
         saveConnectionRecord(member, targetConnectedId, request.getOrganization(), request.getBusinessTypeEnum());
+    }
+
+    /**
+     * 금융사 연동 해제 (Codef 계정 삭제)
+     */
+    public void deleteAccount(String connectedId, String organization, BusinessType businessType) {
+        Map<String, Object> accountMap = new HashMap<>();
+        accountMap.put("organization", organization);
+        accountMap.put("businessType", businessType);
+        accountMap.put("countryCode", "KR");
+        accountMap.put("clientType", "P");
+        accountMap.put("loginType", "1");
+
+        List<Map<String, Object>> accountList = new ArrayList<>();
+        accountList.add(accountMap);
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("connectedId", connectedId);
+        requestBody.put("accountList", accountList);
+
+        CodefApiResponse<Object> response = codefApiClient.deleteAccount(requestBody);
+
+        if (!response.isSuccess()) {
+            throw new CodefException(CodefErrorCode.CODEF_API_DELETE_FAILED);
+        }
     }
 
     /**
@@ -129,7 +154,7 @@ public class CodefAccountService {
         accountMap.put("countryCode", req.getCountryCode());
         accountMap.put("clientType", req.getClientType());
         accountMap.put("loginType", req.getLoginType());
-        accountMap.put("id", req.getId());
+        accountMap.put("id", req.getLoginId());
         accountMap.put("password", encryptedPassword);
 
         List<Map<String, Object>> accountList = new ArrayList<>();
