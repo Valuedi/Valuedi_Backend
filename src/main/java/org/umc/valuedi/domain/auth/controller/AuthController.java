@@ -4,7 +4,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.auth.config.KakaoProperties;
@@ -16,8 +15,8 @@ import org.umc.valuedi.domain.auth.exception.code.AuthSuccessCode;
 import org.umc.valuedi.domain.auth.service.command.AuthCommandService;
 import org.umc.valuedi.domain.auth.service.query.AuthQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 import org.umc.valuedi.global.security.jwt.JwtUtil;
-import org.umc.valuedi.global.security.principal.CustomUserDetails;
 import org.umc.valuedi.global.security.util.CookieUtil;
 
 import java.util.UUID;
@@ -150,11 +149,11 @@ public class AuthController implements AuthControllerDocs {
     @Override
     @PostMapping("/logout")
     public ApiResponse<Void> logout(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @CurrentMember Long memberId,
             @RequestHeader("Authorization") String accessToken,
             HttpServletResponse response
     ) {
-        authCommandService.logout(userDetails.getMemberId(), accessToken);
+        authCommandService.logout(memberId, accessToken);
         cookieUtil.deleteCookie(response, "refreshToken", "/auth/token/refresh");
 
         return ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null);

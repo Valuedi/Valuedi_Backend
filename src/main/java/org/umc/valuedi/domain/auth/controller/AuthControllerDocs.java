@@ -497,7 +497,7 @@ public interface AuthControllerDocs {
             )
     })
     public ApiResponse<Void> logout(
-            CustomUserDetails userDetails,
+            Long memberId,
             @Parameter(hidden = true)
             String accessToken,
             HttpServletResponse response

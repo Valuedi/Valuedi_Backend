@@ -1,7 +1,6 @@
 package org.umc.valuedi.domain.terms.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
 import org.umc.valuedi.domain.terms.dto.response.TermsResponseDTO;
@@ -9,7 +8,7 @@ import org.umc.valuedi.domain.terms.exception.code.TermsSuccessCode;
 import org.umc.valuedi.domain.terms.service.MemberTermsService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
-import org.umc.valuedi.global.security.principal.CustomUserDetails;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 @RestController
 @RequestMapping("/api/terms")
@@ -21,19 +20,19 @@ public class MemberTermsController implements MemberTermsControllerDocs{
     @Override
     @GetMapping("/member")
     public ApiResponse<TermsResponseDTO.GetMemberAgreements> findMemberAgreements(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
     ) {
-        TermsResponseDTO.GetMemberAgreements result = memberTermsService.getMemberAgreements(userDetails.getMemberId());
+        TermsResponseDTO.GetMemberAgreements result = memberTermsService.getMemberAgreements(memberId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
 
     @Override
     @PostMapping("/agree")
     public ApiResponse<Void> agreeTerms(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @CurrentMember Long memberId,
             @RequestBody TermsRequestDTO.AgreeTermsRequest dto
     ) {
-        memberTermsService.updateMemberTerms(userDetails.getMemberId(), dto.agreements());
+        memberTermsService.updateMemberTerms(memberId, dto.agreements());
         return ApiResponse.onSuccess(TermsSuccessCode.TERMS_AGREE_SUCCESS, null);
     }
 

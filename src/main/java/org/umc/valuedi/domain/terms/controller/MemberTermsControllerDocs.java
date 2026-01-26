@@ -57,7 +57,7 @@ public interface MemberTermsControllerDocs {
             }
     )
     ApiResponse<TermsResponseDTO.GetMemberAgreements> findMemberAgreements(
-            CustomUserDetails userDetails
+            Long memberId
     );
 
     @Operation(
@@ -127,7 +127,7 @@ public interface MemberTermsControllerDocs {
             }
     )
     ApiResponse<Void> agreeTerms(
-            CustomUserDetails userDetails,
+            Long memberId,
             @Valid TermsRequestDTO.AgreeTermsRequest dto
     );
 }
