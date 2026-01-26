@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
@@ -25,6 +24,8 @@ import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -55,40 +56,56 @@ public class AssetSyncService {
     }
 
     private void syncBankAssets(CodefConnection connection) {
-        List<BankAccount> accounts = codefAssetService.getBankAccounts(connection);
-        
-        try {
-            bankAccountRepository.saveAll(accounts);
-        } catch (DataIntegrityViolationException e) {
-            log.warn("계좌 저장 중 중복 발생, 개별 저장 시도 - Connection ID: {}", connection.getId());
-            for (BankAccount account : accounts) {
-                try {
-                    bankAccountRepository.save(account);
-                } catch (DataIntegrityViolationException ex) {
-                    // Ignore duplicate
-                }
-            }
+        // 1. API를 통해 계좌 목록 조회
+        List<BankAccount> accountsFromApi = codefAssetService.getBankAccounts(connection);
+        if (accountsFromApi.isEmpty()) {
+            return;
         }
 
-        for (BankAccount account : accounts) {
+        // 2. DB에 이미 저장된 계좌 목록 조회
+        List<BankAccount> existingAccounts = bankAccountRepository.findAllByMemberIdAndOrganization(
+                connection.getMember().getId(), connection.getOrganization());
+
+        Set<String> existingAccountNumbers = existingAccounts.stream()
+                .map(BankAccount::getAccountDisplay)
+                .collect(Collectors.toSet());
+
+        // 3. DB에 없는 새로운 계좌만 필터링
+        List<BankAccount> newAccounts = accountsFromApi.stream()
+                .filter(apiAccount -> !existingAccountNumbers.contains(apiAccount.getAccountDisplay()))
+                .collect(Collectors.toList());
+
+        // 4. 새로운 계좌만 저장
+        if (!newAccounts.isEmpty()) {
+            bankAccountRepository.saveAll(newAccounts);
+            log.info("새로운 은행 계좌 {}건 저장 - Connection ID: {}", newAccounts.size(), connection.getId());
+        }
+
+        // 5. API로 조회한 모든 계좌에 대해 거래 내역 동기화 (기존 계좌의 거래내역도 업데이트 필요)
+        for (BankAccount account : accountsFromApi) {
             syncBankTransactions(connection, account);
         }
     }
 
     private void syncCardAssets(CodefConnection connection) {
-        List<Card> cards = codefAssetService.getCards(connection);
-        
-        try {
-            cardRepository.saveAll(cards);
-        } catch (DataIntegrityViolationException e) {
-            log.warn("카드 저장 중 중복 발생, 개별 저장 시도 - Connection ID: {}", connection.getId());
-            for (Card card : cards) {
-                try {
-                    cardRepository.save(card);
-                } catch (DataIntegrityViolationException ex) {
-                    // Ignore duplicate
-                }
-            }
+        List<Card> cardsFromApi = codefAssetService.getCards(connection);
+        if (cardsFromApi.isEmpty()) {
+            return;
+        }
+
+        List<Card> existingCards = cardRepository.findByCodefConnection(connection);
+        Set<String> existingCardNumbers = existingCards.stream()
+                .map(Card::getCardNoMasked)
+                .collect(Collectors.toSet());
+
+        List<Card> newCards = cardsFromApi.stream()
+                .filter(apiCard -> !existingCardNumbers.contains(apiCard.getCardNoMasked()))
+                .collect(Collectors.toList());
+
+        // 새로운 카드만 저장
+        if (!newCards.isEmpty()) {
+            cardRepository.saveAll(newCards);
+            log.info("새로운 카드 {}건 저장 - Connection ID: {}", newCards.size(), connection.getId());
         }
         syncCardApprovals(connection);
     }
