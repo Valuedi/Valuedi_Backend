@@ -1,6 +1,5 @@
 package org.umc.valuedi.domain.auth.converter;
 
-import jakarta.security.auth.message.AuthStatus;
 import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
