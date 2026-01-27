@@ -51,7 +51,7 @@ public interface GoalControllerDocs {
             @Parameter(description = "목표 상태", example = "ACTIVE", required = true)
             @RequestParam GoalStatus status,
 
-            @Parameter(description = "목표 정렬", example = "CREATED_AT_DESC", required = true)
+            @Parameter(description = "목표 정렬", example = "TIME_DESC", required = true)
             @RequestParam GoalSort sort,
 
             @Parameter(description = "표시할 목표 수", example = "3", required = true)

@@ -44,7 +44,7 @@ public class GoalController implements GoalControllerDocs{
     public ApiResponse<GoalListResponseDto> getGoals(
             @RequestParam Long memberId,
             @RequestParam(defaultValue = "ACTIVE") GoalStatus status,
-            @RequestParam(defaultValue = "CREATED_AT_DESC") GoalSort sort,
+            @RequestParam(defaultValue = "TIME_DESC") GoalSort sort,
             @RequestParam(required = false) Integer limit
     ) {
         return ApiResponse.onSuccess(
