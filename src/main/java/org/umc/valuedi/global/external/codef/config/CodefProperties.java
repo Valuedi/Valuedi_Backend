@@ -14,4 +14,5 @@ public class CodefProperties {
     private String clientSecret;
     private String publicKey;
     private String apiUrl;
+    private String aesSecret;
 }

@@ -17,7 +17,7 @@ import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
-import org.umc.valuedi.global.external.codef.util.CodefEncryptUtil;
+import org.umc.valuedi.global.external.codef.util.EncryptUtil;
 
 import java.util.*;
 
@@ -27,7 +27,7 @@ import java.util.*;
 public class CodefAccountService {
 
     private final CodefApiClient codefApiClient;
-    private final CodefEncryptUtil encryptUtil;
+    private final EncryptUtil encryptUtil;
     private final MemberRepository memberRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -49,7 +49,7 @@ public class CodefAccountService {
                 .orElse(null);
 
         // 비밀번호 암호화
-        String encryptedPassword = encryptUtil.encrypt(request.getLoginPassword());
+        String encryptedPassword = encryptUtil.encryptRSA(request.getLoginPassword());
         Map<String, Object> requestBody = createRequestBody(request, encryptedPassword);
 
         String targetConnectedId;
