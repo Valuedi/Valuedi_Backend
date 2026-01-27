@@ -16,6 +16,7 @@ import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
+import org.umc.valuedi.global.external.codef.util.EncryptUtil;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -32,6 +33,7 @@ public class CodefAssetService {
     private final CodefApiClient codefApiClient;
     private final CodefAssetConverter codefAssetConverter;
     private final ObjectMapper objectMapper;
+    private final EncryptUtil encryptUtil;
 
     public List<BankAccount> getBankAccounts(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
@@ -57,7 +59,9 @@ public class CodefAssetService {
 
     public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
-        requestBody.put("account", account.getAccountDisplay());
+        
+        String originalAccountNo = encryptUtil.decryptAES(account.getAccountNoEnc());
+        requestBody.put("account", originalAccountNo);
         
         LocalDate now = LocalDate.now();
         requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
