@@ -3,6 +3,7 @@ package org.umc.valuedi.global.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,6 +30,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
+    private final StringRedisTemplate redisTemplate;
     private final SecurityExceptionHandler securityExceptionHandler;
     private final CustomUserDetailsService customUserDetailsService;
 
@@ -86,7 +88,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthFilter jwtAuthFilter() {
-        return new JwtAuthFilter(jwtUtil, securityExceptionHandler, customUserDetailsService);
+        return new JwtAuthFilter(jwtUtil, redisTemplate, securityExceptionHandler, customUserDetailsService);
     }
 
     @Bean

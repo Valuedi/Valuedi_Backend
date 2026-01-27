@@ -11,10 +11,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 @Tag(name = "Auth", description = "Auth 관련 API (로그인, 회원가입 등)")
 public interface AuthControllerDocs {
@@ -47,7 +48,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "카카오 로그인 콜백 API",
-            description = "카카오로부터 인가 코드를 받아 로그인을 완료하고 JWT를 발급합니다.  \n기존에 카카오로 로그인한 적 없는 경우, 회원가입 처리 후 JWT를 발급합니다.")
+            description = "카카오로부터 인가 코드를 받아 로그인을 완료하고 JWT를 발급합니다.  \n기존에 카카오로 로그인한 적 없는 경우, 회원가입 처리 후 JWT를 발급합니다.  \n리프레시 토큰은 쿠키에 저장됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -63,7 +64,6 @@ public interface AuthControllerDocs {
                                               "message": "로그인에 성공했습니다.",
                                               "result": {
                                                 "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
                                                 "memberId": 1
                                               }
                                             }
@@ -361,7 +361,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "로컬 계정 로그인 API",
-            description = "로컬 계정으로 로그인을 시도합니다. 로그인이 완료되면 JWT를 발급합니다.")
+            description = "로컬 계정으로 로그인을 시도합니다. 로그인이 완료되면 JWT를 발급합니다.  \n리프레시 토큰은 쿠키에 저장됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -377,7 +377,6 @@ public interface AuthControllerDocs {
                                               "message": "로그인에 성공했습니다.",
                                               "result": {
                                                 "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
-                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
                                                 "memberId": 1
                                               }
                                             }
@@ -435,5 +434,72 @@ public interface AuthControllerDocs {
                     )
             )
     })
-    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(@Valid AuthReqDTO.LocalLoginDTO dto);
+    public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(
+            @Valid AuthReqDTO.LocalLoginDTO dto,
+            HttpServletResponse response
+    );
+
+    @Operation(
+            summary = "토큰 재발급 API",
+            description = "쿠키에 저장된 리프레시 토큰으로 새로운 엑세스 토큰과 리프레시 토큰을 발급합니다.  \n요청 헤더에 만료되지 않은 엑세스 토큰이 있다면 이를 무효화하며, 새로 발급된 리프레시 토큰은 쿠키에 저장됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 토큰 재발급 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "토큰 재발급 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "AUTH200_6",
+                                                      "message": "토큰 재발급에 성공했습니다.",
+                                                      "result": {
+                                                        "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                        "memberId": 1
+                                                      }
+                                                    }
+                                            """
+                            )
+                    )
+            )
+    })
+    public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
+            @Parameter(hidden = true)
+            String accessToken,
+            @Parameter(hidden = true)
+            String refreshToken,
+            HttpServletResponse response
+    );
+
+    @Operation(
+            summary = "로그아웃 API",
+            description = "카카오/로컬로 로그인한 계정을 로그아웃 시킵니다.  \n요청 시 헤더에 포함된 엑세스 토큰을 이용해 엑세스/리프레시 토큰을 무효화합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 로그아웃 완료",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "로그아웃 예시",
+                                    value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "AUTH200_7",
+                                                      "message": "로그아웃이 완료되었습니다.",
+                                                      "result": null
+                                                    }
+                                            """
+                            )
+                    )
+            )
+    })
+    public ApiResponse<Void> logout(
+            Long memberId,
+            @Parameter(hidden = true)
+            String accessToken,
+            HttpServletResponse response
+    );
 }

@@ -1,5 +1,7 @@
 package org.umc.valuedi.domain.auth.service.command;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -26,6 +28,7 @@ import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberAuthProviderRepository;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
+import org.umc.valuedi.domain.terms.service.MemberTermsService;
 import org.umc.valuedi.global.apiPayload.code.GeneralErrorCode;
 import org.umc.valuedi.global.apiPayload.exception.GeneralException;
 import org.umc.valuedi.global.security.jwt.JwtUtil;
@@ -48,15 +51,16 @@ public class AuthCommandService {
     private final PasswordEncoder passwordEncoder;
     private final MemberAuthProviderRepository memberAuthProviderRepository;
     private static final SecureRandom sr = new SecureRandom();
+    private final MemberTermsService memberTermsService;
 
     // 카카오 로그인
     public AuthResDTO.LoginResultDTO loginKakao(String code) {
-        KakaoResDTO.UserInfoDTO userInfo = kakaoService.getKakaoUserInfo(code);
-        String providerUserId = String.valueOf(userInfo.getId());
+        KakaoResDTO.UserTokenInfo userTokenInfo = kakaoService.getKakaoUserInfo(code);
+        String providerUserId = String.valueOf(userTokenInfo.userInfo().getId());
 
         Member member = memberAuthProviderRepository.findByProviderAndProviderUserId(Provider.KAKAO, providerUserId)
                 .map(MemberAuthProvider::getMember)
-                .orElseGet(() -> registerKakao(userInfo));
+                .orElseGet(() -> registerKakao(userTokenInfo));
 
         // 휴면 계정이거나 탈퇴한 계정은 로그인 X
         if(member.getStatus() == Status.SUSPENDED) {
@@ -80,12 +84,16 @@ public class AuthCommandService {
     }
 
     // 카카오로 회원가입
-    private Member registerKakao(KakaoResDTO.UserInfoDTO userInfo) {
+    private Member registerKakao(KakaoResDTO.UserTokenInfo userTokenInfo) {
         try {
-            Member newMember = AuthConverter.toKakaoMember(userInfo);
-            memberRepository.save(newMember);
+            Member newMember = AuthConverter.toKakaoMember(userTokenInfo.userInfo());
+            Member savedMember = memberRepository.save(newMember);
 
-            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(newMember, String.valueOf(userInfo.getId()));
+            memberTermsService.saveTermsForRegistration(
+                    savedMember,
+                    kakaoService.getKakaoServiceTerms(userTokenInfo.accessToken()));
+
+            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(newMember, String.valueOf(userTokenInfo.userInfo().getId()));
             memberAuthProviderRepository.save(authProvider);
 
             return newMember;
@@ -151,6 +159,7 @@ public class AuthCommandService {
             Member newMember = AuthConverter.toGeneralMember(dto, encodedPassword);
 
             Member savedMember = memberRepository.save(newMember);
+            memberTermsService.saveTermsForRegistration(savedMember, dto.agreements());
 
             return AuthConverter.toRegisterResDTO(savedMember);
         } catch (DataAccessResourceFailureException e) {
@@ -188,5 +197,84 @@ public class AuthCommandService {
         );
 
         return AuthConverter.toLoginResultDTO(member, accessToken, refreshToken);
+    }
+
+    // 엑세스/리프레시 토큰 재발급
+    public AuthResDTO.LoginResultDTO tokenReissue(String accessToken, String refreshToken) {
+        // 리프레시 토큰이 맞는지 확인. 아닐 경우와 토큰 자체가 유효하지 않을 경우 예외 발생
+        try {
+            if(!jwtUtil.getCategory(refreshToken).equals("refresh")) {
+                throw new AuthException(AuthErrorCode.NOT_REFRESH_TOKEN);
+            }
+        } catch(ExpiredJwtException e) {
+            throw new AuthException(AuthErrorCode.EXPIRED_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN);
+        }
+
+        // 기존 엑세스 토큰이 만료되지 않았다면 무효화
+        if(accessToken != null && accessToken.startsWith("Bearer ")) {
+            accessToken = accessToken.replace("Bearer ", "");
+
+            long expiration = jwtUtil.getExpiration(accessToken);
+            long diff = expiration - System.currentTimeMillis();
+
+            // 0보다 작거나 같으면 이미 만료된 토큰
+            if(diff > 0) {
+                redisTemplate.opsForValue().set(
+                        "BL:" + accessToken,
+                        "reissue_waste",
+                        diff,
+                        TimeUnit.MILLISECONDS
+                );
+            }
+        }
+
+        Long memberId = Long.valueOf(jwtUtil.getMemberId(refreshToken));
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+        String redisKey = "RT:" + member.getId();
+        String savedRefreshToken = redisTemplate.opsForValue().get(redisKey);
+
+        // Redis에 저장된 토큰인지 확인
+        if(savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN);
+        }
+
+        CustomUserDetails userDetails = new CustomUserDetails(member);
+        String newAccessToken = jwtUtil.createAccessToken(userDetails);
+        String newRefreshToken = jwtUtil.createRefreshToken(userDetails);
+
+        redisTemplate.opsForValue().set(
+                redisKey,
+                newRefreshToken,
+                jwtUtil.getRefreshTokenExpiration(),
+                TimeUnit.MILLISECONDS
+        );
+
+        return AuthConverter.toLoginResultDTO(member, newAccessToken, newRefreshToken);
+    }
+
+    // 로그아웃
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void logout(Long memberId, String accessToken) {
+        String resolveToken = accessToken.substring(7);
+
+        String redisKey = "RT:" + memberId;
+        redisTemplate.delete(redisKey);
+
+        long expiration = jwtUtil.getExpiration(resolveToken);
+        long diff = expiration - System.currentTimeMillis();
+
+        // 0보다 작거나 같으면 이미 만료된 토큰
+        if(diff > 0) {
+            redisTemplate.opsForValue().set(
+                    "BL:" + resolveToken,
+                    "logout",
+                    diff,
+                    TimeUnit.MILLISECONDS
+            );
+        }
     }
 }

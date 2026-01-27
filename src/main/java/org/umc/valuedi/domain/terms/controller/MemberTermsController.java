@@ -8,6 +8,7 @@ import org.umc.valuedi.domain.terms.exception.code.TermsSuccessCode;
 import org.umc.valuedi.domain.terms.service.MemberTermsService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 @RestController
 @RequestMapping("/api/terms")
@@ -16,20 +17,22 @@ public class MemberTermsController implements MemberTermsControllerDocs{
 
     private final MemberTermsService memberTermsService;
 
+    @Override
     @GetMapping("/member")
     public ApiResponse<TermsResponseDTO.GetMemberAgreements> findMemberAgreements(
-            @RequestParam Long memberId
+            @CurrentMember Long memberId
     ) {
         TermsResponseDTO.GetMemberAgreements result = memberTermsService.getMemberAgreements(memberId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
 
+    @Override
     @PostMapping("/agree")
     public ApiResponse<Void> agreeTerms(
-            @RequestParam Long memberId,
+            @CurrentMember Long memberId,
             @RequestBody TermsRequestDTO.AgreeTermsRequest dto
     ) {
-        memberTermsService.saveAgreeTerms(memberId, dto);
+        memberTermsService.updateMemberTerms(memberId, dto.agreements());
         return ApiResponse.onSuccess(TermsSuccessCode.TERMS_AGREE_SUCCESS, null);
     }
 
