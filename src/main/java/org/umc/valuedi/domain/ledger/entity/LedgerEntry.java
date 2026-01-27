@@ -40,11 +40,14 @@ public class LedgerEntry {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @Column(length = 12)
+    @Column(length = 50)
     private String title;
 
     @Column(length = 200)
     private String memo;
+
+    @Column(nullable = false, length = 10)
+    private String transactionType;
 
     @Column(nullable = false) @Builder.Default
     private Boolean isUserModified = false;

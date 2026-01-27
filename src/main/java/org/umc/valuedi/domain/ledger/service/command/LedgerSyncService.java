@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
+import org.umc.valuedi.domain.asset.enums.TransactionDirection;
 import org.umc.valuedi.domain.asset.repository.bank.BankTransactionRepository;
 import org.umc.valuedi.domain.asset.repository.card.CardApprovalRepository;
 import org.umc.valuedi.domain.ledger.dto.request.LedgerSyncRequest;
@@ -93,22 +94,21 @@ public class LedgerSyncService {
 
         for (CardApproval ca : cards) {
             if (ledgerEntryRepository.existsByCardApprovalId(ca.getId())) continue;
-
             if (ObjectUtils.isEmpty(ca.getUsedDatetime())) continue;
-
 
             String merchantName = ca.getMerchantName();
             String merchantType = ca.getMerchantType();
 
             Category category = null;
+            String transactionType;
 
             // 업종(merchantType)으로 먼저 매핑 시도
-            if (ObjectUtils.isNotEmpty(merchantType)) {
+            if (!ObjectUtils.isEmpty(merchantType)) {
                 category = mapCategoryByKeyword(merchantType, null);
             }
 
             // 업종 매핑 실패 시 가맹점명(merchantName)으로 매핑 시도
-            if (ObjectUtils.isEmpty(category) && ObjectUtils.isNotEmpty(merchantName)) {
+            if (ObjectUtils.isEmpty(category) && !ObjectUtils.isEmpty(merchantName)) {
                 category = mapCategoryByKeyword(merchantName, defaultCategory);
             }
 
@@ -117,12 +117,15 @@ public class LedgerSyncService {
                 category = defaultCategory;
             }
 
+            transactionType = "출금";
+
             LedgerEntry entry = LedgerEntry.builder()
                     .member(member)
                     .cardApproval(ca)
                     .category(category)
-                    .title(merchantName.isEmpty() ? "카드 승인" : merchantName)
+                    .title(ObjectUtils.isEmpty(merchantName) ? "카드 승인" : merchantName)
                     .transactionAt(ca.getUsedDatetime())
+                    .transactionType(transactionType) // transactionType 필드 설정
                     .build();
             ledgerEntryRepository.save(entry);
         }
@@ -136,9 +139,7 @@ public class LedgerSyncService {
             if (ledgerEntryRepository.existsByBankTransactionId(bt.getId())) continue;
 
             // 필수 값 체크
-            if (ObjectUtils.isEmpty(bt.getTrDatetime())) {
-                continue;
-            }
+            if (ObjectUtils.isEmpty(bt.getTrDatetime())) continue;
 
             // desc 필드 결합
             String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4())
@@ -146,21 +147,29 @@ public class LedgerSyncService {
                     .collect(Collectors.joining(" "));
 
             // 직불/체크카드 중복 결제 여부 판단
-            if (isDebitCardDuplicate(combinedDesc)) {
-                // 카드 승인내역에서 처리될 소비이므로, 은행 거래는 스킵
-                continue;
-            }
+            if (isDebitCardDuplicate(combinedDesc)) continue;
+
 
             Category category;
+            String transactionType;
             String title = ObjectUtils.isEmpty(combinedDesc) ? "은행 거래" : combinedDesc;
+            if (title.length() > 50) {
+                title = title.substring(0, 50);
+            }
 
-            // 카드대금 정산/청구 여부 판단
             if (isCardSettlement(combinedDesc)) {
-                // 소비가 아닌 이체(정산)이므로 TRANSFER 카테고리 할당
                 category = transferCategory;
+                transactionType = "출금"; // 카드대금 정산은 출금
             } else {
-                // 일반 은행 거래로 간주하고 키워드 매핑
                 category = mapCategoryByKeyword(combinedDesc, defaultCategory);
+                // BankTransaction의 direction을 따름
+                if (bt.getDirection() == TransactionDirection.IN) {
+                    transactionType = "입금";
+                } else if (bt.getDirection() == TransactionDirection.OUT) {
+                    transactionType = "출금";
+                } else {
+                    transactionType = "출금"; // 기본값
+                }
             }
 
             LedgerEntry entry = LedgerEntry.builder()
@@ -169,6 +178,7 @@ public class LedgerSyncService {
                     .category(category)
                     .title(title)
                     .transactionAt(bt.getTrDatetime())
+                    .transactionType(transactionType) // transactionType 필드 설정
                     .build();
             ledgerEntryRepository.save(entry);
         }
@@ -190,8 +200,6 @@ public class LedgerSyncService {
 
         return CARD_PAYMENT_KEYWORDS.stream().anyMatch(text::contains);
     }
-
-
 
     private Category mapCategoryByKeyword(String text, Category defaultCategory) {
         if (ObjectUtils.isEmpty(text) || text.isEmpty()) return defaultCategory;

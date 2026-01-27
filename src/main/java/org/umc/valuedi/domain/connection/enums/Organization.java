@@ -14,10 +14,12 @@ public enum Organization {
     HANA_BANK("0081", "하나은행", BusinessType.BK),
     NH_BANK("0011", "농협은행", BusinessType.BK),
     IBK_BANK("0003", "기업은행", BusinessType.BK),
+    SC_BANK("0023", "SC은행", BusinessType.BK),
 
     // 카드 (03번대)
     KB_CARD("0301", "국민카드", BusinessType.CD),
     SHINHAN_CARD("0303", "신한카드", BusinessType.CD),
+    HD_CARD("0302", "현대카드", BusinessType.CD),
     WOORI_CARD("0309", "우리카드", BusinessType.CD),
     HANA_CARD("0313", "하나카드", BusinessType.CD),
     NH_CARD("0330", "농협카드", BusinessType.CD),
