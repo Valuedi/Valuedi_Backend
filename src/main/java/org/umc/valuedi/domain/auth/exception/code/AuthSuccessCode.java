@@ -16,7 +16,8 @@ public enum AuthSuccessCode implements BaseSuccessCode {
     EMAIL_VERIFY_SUCCESS(HttpStatus.OK, "AUTH200_5", "이메일 인증에 성공했습니다."),
     SIGNUP_SUCCESS(HttpStatus.CREATED, "AUTH201_1", "회원가입이 성공적으로 완료되었습니다."),
     TOKEN_REISSUE_SUCCESS(HttpStatus.OK, "AUTH200_6", "토큰 재발급에 성공했습니다."),
-    LOGOUT_OK(HttpStatus.OK, "AUTH200_7", "로그아웃이 완료되었습니다.")
+    LOGOUT_OK(HttpStatus.OK, "AUTH200_7", "로그아웃이 완료되었습니다."),
+    AUTH_STATUS_GET_SUCCESS(HttpStatus.OK, "AUTH200_8", "로그인 상태 조회에 성공했습니다.")
     ;
 
     private final HttpStatus status;

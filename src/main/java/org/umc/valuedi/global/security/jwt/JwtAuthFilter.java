@@ -65,7 +65,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException e) {
             String uri = request.getRequestURI();
-            // 로그아웃과 토큰 재발급의 경우 만료된 토큰도 필터 통과
+
+            // 로그인 상태 조회는 그냥 필터 통과
+            if (uri.equals("/auth/status")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 로그아웃과 토큰 재발급의 경우 인증 객체 생성 후 필터 통과
             if(uri.equals("/auth/logout") || uri.equals("/auth/token/refresh")) {
                 Claims claims = e.getClaims();
                 String category = claims.get("category", String.class);
@@ -80,9 +87,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 filterChain.doFilter(request, response);
                 return;
             }
-            // 로그아웃과 토큰 재발급이 아니면 예러 응답
+
+            // 위의 경우가 아니면 에러 응답
             securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.EXPIRED_TOKEN);
         } catch (JwtException | IllegalArgumentException e) {
+            String uri = request.getRequestURI();
+
+            // 로그인 상태 조회는 그냥 필터 통과
+            if (uri.equals("/auth/status")) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.INVALID_TOKEN);
         } catch (Exception e) {
             securityExceptionHandler.sendErrorResponse(response, GeneralErrorCode.UNAUTHORIZED);

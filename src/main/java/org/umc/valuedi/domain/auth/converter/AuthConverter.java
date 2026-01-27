@@ -1,5 +1,6 @@
 package org.umc.valuedi.domain.auth.converter;
 
+import jakarta.security.auth.message.AuthStatus;
 import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
@@ -67,6 +68,14 @@ public class AuthConverter {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .memberId(member.getId())
+                .build();
+    }
+
+    // 로그인 상태를 DTO로 변환
+    public static AuthResDTO.AuthStatusDTO toAuthStatusDTO(Boolean authStatus, Long memberId) {
+        return AuthResDTO.AuthStatusDTO.builder()
+                .isLogin(authStatus)
+                .memberId(memberId)
                 .build();
     }
 
