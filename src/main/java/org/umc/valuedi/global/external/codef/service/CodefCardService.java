@@ -53,7 +53,7 @@ public class CodefCardService {
         requestBody.put("connectedId", connectedId);
         requestBody.put("organization", organization);
 
-        CodefApiResponse<CodefAssetResDTO.CardList> response; // 타입 변경
+        CodefApiResponse<CodefAssetResDTO.CardList> response;
         try {
             response = codefApiClient.getCardList(requestBody);
         } catch (Exception e) {
@@ -70,13 +70,13 @@ public class CodefCardService {
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
 
-        return parseCardListResponse(response.getData(), organization); // organization 인자 추가
+        return parseCardListResponse(response.getData(), organization);
     }
 
     /**
      * CODEF 응답 데이터를 DTO로 변환
      */
-    private List<CardResDTO.CardConnection> parseCardListResponse(CodefAssetResDTO.CardList data, String organization) { // organization 인자 추가
+    private List<CardResDTO.CardConnection> parseCardListResponse(CodefAssetResDTO.CardList data, String organization) {
         if (data == null) {
             return Collections.emptyList();
         }
@@ -105,7 +105,7 @@ public class CodefCardService {
 
         try {
             return allCards.stream()
-                    .map(card -> buildCardConnection(card, organization)) // organization 인자 전달
+                    .map(card -> buildCardConnection(card, organization))
                     .toList();
         } catch (Exception e) {
             throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);
@@ -115,14 +115,14 @@ public class CodefCardService {
     /**
      * 카드 데이터를 DTO로 변환하는 헬퍼 메서드
      */
-    private CardResDTO.CardConnection buildCardConnection(CodefAssetResDTO.Card card, String organization) { // organization 인자 추가
+    private CardResDTO.CardConnection buildCardConnection(CodefAssetResDTO.Card card, String organization) {
         try {
             return CardResDTO.CardConnection.builder()
                     .cardId(card.getResCardNo())
                     .cardName(card.getResCardName())
                     .cardNum(card.getResCardNo())
-                    .cardCompany(organization) // organization 사용
-                    .cardCompanyCode(organization) // organization 사용
+                    .cardCompany(organization)
+                    .cardCompanyCode(organization)
                     .build();
         } catch (Exception e) {
             throw new CodefException(CodefErrorCode.CODEF_JSON_PARSE_ERROR);

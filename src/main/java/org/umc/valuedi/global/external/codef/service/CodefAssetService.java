@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -29,6 +30,10 @@ public class CodefAssetService {
 
     private final CodefApiClient codefApiClient;
     private final CodefAssetConverter codefAssetConverter;
+
+    // 기본 조회 기간 (최초 연동 시): 3개월
+    private static final int DEFAULT_SEARCH_MONTHS = 3;
+    private static final DateTimeFormatter CODEF_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     public List<BankAccount> getBankAccounts(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
@@ -50,8 +55,8 @@ public class CodefAssetService {
         return codefAssetConverter.toBankAccountList(allAccounts, connection);
     }
 
-    public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account) {
-        Map<String, Object> requestBody = createTransactionRequestBody(connection, account);
+    public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account, String startDate) {
+        Map<String, Object> requestBody = createTransactionRequestBody(connection, account, startDate);
         CodefApiResponse<CodefAssetResDTO.BankTransactionList> response = executeApiCall(() -> codefApiClient.getBankTransactions(requestBody));
 
         if (!response.isSuccess()) {
@@ -104,8 +109,8 @@ public class CodefAssetService {
         return codefAssetConverter.toCardList(allCards, connection);
     }
 
-    public List<CardApproval> getCardApprovals(CodefConnection connection) {
-        Map<String, Object> requestBody = createApprovalRequestBody(connection);
+    public List<CardApproval> getCardApprovals(CodefConnection connection, String startDate) {
+        Map<String, Object> requestBody = createApprovalRequestBody(connection, startDate);
         CodefApiResponse<List<CodefAssetResDTO.CardApproval>> response = executeApiCall(() -> codefApiClient.getCardApprovals(requestBody));
 
         if (!response.isSuccess()) {
@@ -126,24 +131,32 @@ public class CodefAssetService {
         return body;
     }
 
-    private Map<String, Object> createTransactionRequestBody(CodefConnection connection, BankAccount account) {
+    private Map<String, Object> createTransactionRequestBody(CodefConnection connection, BankAccount account, String startDate) {
         Map<String, Object> body = createAssetRequestBody(connection);
         body.put("account", account.getAccountDisplay());
-        LocalDate now = LocalDate.now();
-        body.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        body.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
+        
+        String finalStartDate = Optional.ofNullable(startDate)
+                                        .filter(s -> !s.isEmpty())
+                                        .orElse(LocalDate.now().minusMonths(DEFAULT_SEARCH_MONTHS).format(CODEF_DATE_FMT));
+        
+        body.put("startDate", finalStartDate);
+        body.put("endDate", LocalDate.now().format(CODEF_DATE_FMT));
         body.put("orderBy", "0");
         body.put("inquiryType", "1");
         return body;
     }
 
-    private Map<String, Object> createApprovalRequestBody(CodefConnection connection) {
+    private Map<String, Object> createApprovalRequestBody(CodefConnection connection, String startDate) {
         Map<String, Object> body = new HashMap<>();
         body.put("connectedId", connection.getConnectedId());
         body.put("organization", connection.getOrganization());
-        LocalDate now = LocalDate.now();
-        body.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        body.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
+
+        String finalStartDate = Optional.ofNullable(startDate)
+                                        .filter(s -> !s.isEmpty())
+                                        .orElse(LocalDate.now().minusMonths(DEFAULT_SEARCH_MONTHS).format(CODEF_DATE_FMT));
+
+        body.put("startDate", finalStartDate);
+        body.put("endDate", LocalDate.now().format(CODEF_DATE_FMT));
         body.put("orderBy", "0");
         body.put("inquiryType", "1");
         body.put("memberStoreInfoType", "1");
