@@ -21,13 +21,12 @@ public class ConnectionEventListener {
     @Async("assetSyncExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleConnectionSuccess(ConnectionSuccessEvent event) {
-        Long connectionId = event.getConnection().getId();
-        String organization = event.getConnection().getOrganization();
+        Long connectionId = event.getConnectionId();
 
-        log.info("금융사 연동 성공 이벤트 수신, 자산 동기화 시작 - Connection ID: {}, Organization: {}", connectionId, organization);
+        log.info("금융사 연동 성공 이벤트 수신, 자산 동기화 시작 - Connection ID: {}", connectionId);
 
         try {
-            assetSyncService.syncAssets(event.getConnection());
+            assetSyncService.syncAssets(connectionId);
             log.info("자산 동기화 성공 - Connection ID: {}", connectionId);
         } catch (AssetException e) {
             log.error("자산 동기화 실패 - Connection ID: {}, ErrorCode: {}, Message: {}", connectionId, e.getCode(), e.getMessage());

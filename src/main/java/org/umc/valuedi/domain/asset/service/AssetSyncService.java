@@ -19,6 +19,9 @@ import org.umc.valuedi.domain.asset.repository.card.CardApprovalRepository;
 import org.umc.valuedi.domain.asset.repository.card.CardRepository;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
+import org.umc.valuedi.domain.connection.exception.ConnectionException;
+import org.umc.valuedi.domain.connection.exception.code.ConnectionErrorCode;
+import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
@@ -41,9 +44,13 @@ public class AssetSyncService {
     private final CardRepository cardRepository;
     private final CardApprovalRepository cardApprovalRepository;
     private final ObjectMapper objectMapper;
+    private final CodefConnectionRepository codefConnectionRepository;
 
     @Transactional
-    public void syncAssets(CodefConnection connection) {
+    public void syncAssets(Long connectionId) {
+        CodefConnection connection = codefConnectionRepository.findById(connectionId)
+                .orElseThrow(() -> new ConnectionException(ConnectionErrorCode.CONNECTION_NOT_FOUND));
+
         log.info("자산 동기화 시작 - Connection ID: {}", connection.getId());
         try {
             if (connection.getBusinessType() == BusinessType.BK) {

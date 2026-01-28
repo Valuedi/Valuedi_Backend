@@ -113,7 +113,7 @@ public class CodefAccountService {
                 .member(member)
                 .build();
         member.addCodefConnection(connection);
-        eventPublisher.publishEvent(new ConnectionSuccessEvent(connection));
+        eventPublisher.publishEvent(new ConnectionSuccessEvent(connection.getId()));
     }
     
     private String findExistingConnectedId(Member member) {
