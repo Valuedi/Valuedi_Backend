@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.Card;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
+import org.umc.valuedi.domain.asset.event.AssetRawDataSavedEvent;
 import org.umc.valuedi.domain.asset.exception.AssetException;
 import org.umc.valuedi.domain.asset.exception.code.AssetErrorCode;
 import org.umc.valuedi.domain.asset.repository.bank.BankAccountRepository;
@@ -45,6 +47,7 @@ public class AssetSyncService {
     private final CardApprovalRepository cardApprovalRepository;
     private final ObjectMapper objectMapper;
     private final CodefConnectionRepository codefConnectionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public void syncAssets(Long connectionId) {
@@ -114,6 +117,9 @@ public class AssetSyncService {
         bankTransactionRepository.bulkInsert(transactions);
         log.info("거래내역 저장 완료 - Account: {}, Count: {}", account.getAccountDisplay(), transactions.size());
 
+        // 데이터 저장 후 이벤트 발행
+        eventPublisher.publishEvent(new AssetRawDataSavedEvent(connection.getId(), "BK"));
+
         // 성공 시 해당 계좌의 마지막 동기화 시각 업데이트 (더티 체킹)
         account.updateLastSyncedAt(LocalDateTime.now());
     }
@@ -175,6 +181,9 @@ public class AssetSyncService {
         if (!matchedApprovals.isEmpty()) {
             cardApprovalRepository.bulkInsert(matchedApprovals);
             log.info("카드 승인내역 저장 완료 - Connection ID: {}, Count: {}", connection.getId(), matchedApprovals.size());
+
+            // 데이터 저장 후 이벤트 발행
+            eventPublisher.publishEvent(new AssetRawDataSavedEvent(connection.getId(), "CD"));
         }
 
         // 성공 시 모든 카드의 동기화 시각 업데이트
