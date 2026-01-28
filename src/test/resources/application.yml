@@ -3,16 +3,17 @@ spring:
     name: valuedi-backend
 
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/valuedi_test
-    username: mock
-    password: mock
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:valuedi
+    username: sa
+  # password:
   data:
     redis:
       host: mock
       port: 12345
   jpa:
-    database: mysql
+    database: h2
+    database-platform: org.hibernate.dialect.H2Dialect
     show-sql: true
     hibernate:
       ddl-auto: update
