@@ -28,7 +28,7 @@ public class SavingsAdminService {
 
     // FSS에서 적금 상품을 가져와 DB에 적재
     @Transactional
-    public int loadAndUpsert(Integer pageNo) {
+    public int loadAndSave(Integer pageNo) {
         LocalDateTime loadedAt = LocalDateTime.now();
 
         FssSavingsResponse response = fssSavingsClient.fetchSavingsList(pageNo);

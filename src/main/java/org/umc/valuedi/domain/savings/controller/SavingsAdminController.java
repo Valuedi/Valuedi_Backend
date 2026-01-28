@@ -22,7 +22,7 @@ public class SavingsAdminController implements SavingsAdminControllerDocs {
     public ResponseEntity<ApiResponse<Integer>> loadSavings(
             @RequestParam(defaultValue = "1") Integer pageNo
     ) {
-        int result = savingsAdminService.loadAndUpsert(pageNo);
+        int result = savingsAdminService.loadAndSave(pageNo);
         return ResponseEntity.ok(ApiResponse.onSuccess(GeneralSuccessCode.OK, result));
     }
 
