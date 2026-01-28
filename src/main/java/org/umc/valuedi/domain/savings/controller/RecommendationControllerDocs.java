@@ -6,13 +6,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
-import org.umc.valuedi.global.security.principal.CustomUserDetails;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 @Tag(name = "Savings", description = "적금 추천 API")
 public interface RecommendationControllerDocs {
@@ -103,7 +101,7 @@ public interface RecommendationControllerDocs {
             }
     )
     ApiResponse<SavingsResponseDTO.RecommendResponse> recommend(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
     );
 
     @Operation(
@@ -177,7 +175,7 @@ public interface RecommendationControllerDocs {
                     schema = @Schema(allowableValues = {"S", "F"}, example = "S")
             )
             @RequestParam(required = false) String rsrvType,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
     );
 
     @Operation(
@@ -225,7 +223,7 @@ public interface RecommendationControllerDocs {
             }
     )
     ApiResponse<SavingsResponseDTO.SavingsListResponse> latestTop3(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
     );
 
     @Operation(

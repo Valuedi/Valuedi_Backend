@@ -1,13 +1,12 @@
 package org.umc.valuedi.domain.savings.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.service.RecommendationService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
-import org.umc.valuedi.global.security.principal.CustomUserDetails;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 @RestController
 @RequestMapping("/api/savings/recommendations")
@@ -19,9 +18,8 @@ public class RecommendationController implements RecommendationControllerDocs {
     // 15개 추천 생성 + 저장 + 응답(15개)
     @PostMapping
     public ApiResponse<SavingsResponseDTO.RecommendResponse> recommend(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
     ) {
-        Long memberId = Long.parseLong(userDetails.getUsername());
         SavingsResponseDTO.RecommendResponse result = recommendationService.recommend(memberId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
@@ -30,18 +28,16 @@ public class RecommendationController implements RecommendationControllerDocs {
     @GetMapping
     public ApiResponse<SavingsResponseDTO.SavingsListResponse> latest15(
             @RequestParam(required = false) String rsrvType,
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
     ) {
-        Long memberId = Long.parseLong(userDetails.getUsername());
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendation(memberId, rsrvType));
     }
 
     // 최신 추천 Top3 조회
     @GetMapping("/top3")
     public ApiResponse<SavingsResponseDTO.SavingsListResponse> latestTop3(
-            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
     ) {
-        Long memberId = Long.parseLong(userDetails.getUsername());
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, recommendationService.getRecommendationTop3(memberId));
     }
 
