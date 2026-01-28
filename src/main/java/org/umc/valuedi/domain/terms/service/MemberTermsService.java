@@ -40,22 +40,33 @@ public class MemberTermsService {
         return TermsConverter.toGetMemberAgreementsDTO(memberTermsList);
     }
 
-    // 약관 동의 저장
+    // 회원가입 시 약관 동의 내역 저장
     @Transactional
-    public void saveAgreeTerms(Long memberId, TermsRequestDTO.AgreeTermsRequest dto) {
-        // Member 엔티티 조회
+    public void saveTermsForRegistration(Member member, List<TermsRequestDTO.Agreement> agreements) {
+        List<Terms> mandatoryTerms = termsRepository.findAllByIsActiveTrueAndIsRequiredTrue();
+        validateMandatoryTerms(mandatoryTerms, agreements);
+
+        // 약관 저장 공통 로직
+        processMemberTermsUpsert(member, agreements);
+    }
+
+    // 기존 회원의 약관 동의 내역 저장
+    @Transactional
+    public void updateMemberTerms(Long memberId, List<TermsRequestDTO.Agreement> agreements) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
+        // 약관 저장 공통 로직
+        processMemberTermsUpsert(member, agreements);
+    }
+
+    // 약관 저장 공통 로직
+    private void processMemberTermsUpsert(Member member, List<TermsRequestDTO.Agreement> agreements) {
         // 요청 agreements에서 termsId만 추출
-        List<Long> termsIds = dto.agreements().stream()
+        List<Long> termsIds = agreements.stream()
                 .map(TermsRequestDTO.Agreement::termsId)
                 .distinct()
                 .toList();
-
-        if (termsIds.isEmpty()) {
-            throw new TermsException(TermsErrorCode.TERMS_NOT_FOUND);
-        }
 
         // Terms를 리스트로 조회
         List<Terms> termsList = termsRepository.findAllById(termsIds);
@@ -64,12 +75,12 @@ public class MemberTermsService {
                 .collect(Collectors.toMap(t -> t.getId(), Function.identity()));
 
         // MemberTerms를 리스트로 조회
-        List<MemberTerms> memberTermsList = memberTermsRepository.findAllByMemberIdAndTermsIdInWithTerms(memberId, termsIds);
+        List<MemberTerms> memberTermsList = memberTermsRepository.findAllByMemberIdAndTermsIdInWithTerms(member.getId(), termsIds);
 
         Map<Long, MemberTerms> memberTermsMap = memberTermsList.stream()
                 .collect(Collectors.toMap(mt -> mt.getTerms().getId(), Function.identity()));
 
-        for (TermsRequestDTO.Agreement agreement : dto.agreements()) {
+        for (TermsRequestDTO.Agreement agreement : agreements) {
             Long termsId = agreement.termsId();
             Terms terms = termsMap.get(termsId);
 
@@ -87,6 +98,21 @@ public class MemberTermsService {
                 memberTermsMap.put(termsId, newMemberTerms);
             } else {
                 memberTerms.updateAgreement(agreement.isAgreed(), agreedVersion);
+            }
+        }
+    }
+
+    // 회원가입 시 필수 약관에 동의했는지 검증
+    private void validateMandatoryTerms(List<Terms> mandatoryTerms, List<TermsRequestDTO.Agreement> agreements) {
+        for (Terms mandatory : mandatoryTerms) {
+            boolean agreed = agreements.stream()
+                    .filter(a -> a.termsId().equals(mandatory.getId()))
+                    .map(TermsRequestDTO.Agreement::isAgreed)
+                    .findFirst()
+                    .orElse(false);
+
+            if (!agreed) {
+                throw new TermsException(TermsErrorCode.MANDATORY_TERMS_NOT_AGREED);
             }
         }
     }

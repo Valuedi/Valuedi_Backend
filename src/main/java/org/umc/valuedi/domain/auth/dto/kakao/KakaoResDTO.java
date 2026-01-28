@@ -5,6 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 public class KakaoResDTO {
 
     @Getter
@@ -40,4 +43,22 @@ public class KakaoResDTO {
             private String gender;
         }
     }
+
+    public record UserTokenInfo(
+            KakaoResDTO.UserInfoDTO userInfo,
+            String accessToken
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record UserServiceTerms(
+            Long id,
+            @JsonProperty("service_terms")
+            List<ServiceTerm> serviceTerms
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record ServiceTerm(
+        String tag,
+        Boolean agreed
+    ) {}
 }

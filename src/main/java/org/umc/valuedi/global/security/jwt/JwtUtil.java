@@ -1,9 +1,6 @@
 package org.umc.valuedi.global.security.jwt;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -45,9 +42,16 @@ public class JwtUtil {
     public String getMemberId(String token) {
         return getClaims(token).getPayload().getSubject();
     }
-
     public String getCategory(String token) {
         return getClaims(token).getPayload().get("category", String.class);
+    }
+
+    public long getExpiration(String token) {
+        try {
+            return getClaims(token).getPayload().getExpiration().getTime();
+        } catch(ExpiredJwtException e) {
+            return 0;
+        }
     }
 
     public long getRefreshTokenExpiration() {

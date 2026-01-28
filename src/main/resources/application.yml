@@ -40,6 +40,7 @@ codef:
   client-secret: ${CODEF_CLIENT_SECRET}
   public-key: ${CODEF_PUBLIC_KEY}
   api-url: ${CODEF_API_URL:https://development.codef.io}
+  aes-secret: ${CODEF_AES_SECRET}
 
 kakao:
   client-id: ${KAKAO_CLIENT_ID}
