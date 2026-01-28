@@ -364,6 +364,7 @@ public class RecommendationService {
         try {
             return objectMapper.readValue(cleaned, GeminiSavingsResponseDTO.Result.class);
         } catch (Exception e) {
+            log.warn("[Gemini] JSON 파싱 실패 rawChars={}", raw == null ? 0 : raw.length(), e);
             return new GeminiSavingsResponseDTO.Result(null, List.of());
         }
     }
