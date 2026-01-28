@@ -547,6 +547,6 @@ public interface AuthControllerDocs {
             )
     })
     public ApiResponse<AuthResDTO.AuthStatusDTO> getAuthStatus(
-            Long memberId
+            @Parameter(hidden = true) Long memberId
     );
 }
