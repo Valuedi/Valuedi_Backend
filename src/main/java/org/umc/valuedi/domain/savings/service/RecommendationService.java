@@ -315,8 +315,8 @@ public class RecommendationService {
                 - title: %s
                 - tagline: %s
                 - detail: %s
-                - recommend: %s
                 - warning: %s
+                - recommend: %s
 
                 [후보 적금 옵션 목록]
                 %s
