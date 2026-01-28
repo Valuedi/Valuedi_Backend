@@ -14,6 +14,7 @@ import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
+import org.umc.valuedi.global.external.codef.util.EncryptUtil;
 import org.umc.valuedi.global.external.codef.util.CodefApiExecutor;
 
 import java.time.LocalDate;
@@ -31,6 +32,8 @@ public class CodefAssetService {
 
     private final CodefApiClient codefApiClient;
     private final CodefAssetConverter codefAssetConverter;
+    private final ObjectMapper objectMapper;
+    private final EncryptUtil encryptUtil;
     private final CodefApiExecutor codefApiExecutor;
 
     // 기본 조회 기간 (최초 연동 시): 3개월
@@ -58,8 +61,11 @@ public class CodefAssetService {
     }
 
     public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account, String startDate) {
-        Map<String, Object> requestBody = createTransactionRequestBody(connection, account, startDate);
-        CodefApiResponse<CodefAssetResDTO.BankTransactionList> response = codefApiExecutor.execute(() -> codefApiClient.getBankTransactions(requestBody));
+        String originalAccountNo = encryptUtil.decryptAES(account.getAccountNoEnc());
+        Map<String, Object> requestBody = createTransactionRequestBody(connection, originalAccountNo, startDate);
+
+        CodefApiResponse<CodefAssetResDTO.BankTransactionList> response =
+                codefApiExecutor.execute(() -> codefApiClient.getBankTransactions(requestBody));
 
         if (!response.isSuccess()) {
             String msg = response.getResult().getMessage();
@@ -140,9 +146,9 @@ public class CodefAssetService {
         body.put("endDate", LocalDate.now().format(CODEF_DATE_FMT));
     }
 
-    private Map<String, Object> createTransactionRequestBody(CodefConnection connection, BankAccount account, String startDate) {
+    private Map<String, Object> createTransactionRequestBody(CodefConnection connection, String originalAccountNo, String startDate) {
         Map<String, Object> body = createAssetRequestBody(connection);
-        body.put("account", account.getAccountDisplay());
+        body.put("account", originalAccountNo);
         addDateParameters(body, startDate);
         body.put("orderBy", "0");
         body.put("inquiryType", "1");

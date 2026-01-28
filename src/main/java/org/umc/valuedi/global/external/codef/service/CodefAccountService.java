@@ -19,8 +19,8 @@ import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.global.external.codef.dto.res.CodefConnectedIdResDTO;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
+import org.umc.valuedi.global.external.codef.util.EncryptUtil;
 import org.umc.valuedi.global.external.codef.util.CodefApiExecutor;
-import org.umc.valuedi.global.external.codef.util.CodefEncryptUtil;
 
 import java.util.*;
 
@@ -30,12 +30,15 @@ import java.util.*;
 public class CodefAccountService {
 
     private final CodefApiClient codefApiClient;
-    private final CodefEncryptUtil encryptUtil;
+    private final EncryptUtil encryptUtil;
     private final MemberRepository memberRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final CodefApiExecutor codefApiExecutor;
     private final CodefConnectionRepository codefConnectionRepository;
 
+    /**
+     * 금융사 계정 연동 메인 로직
+     */
     @Transactional
     public void connectAccount(Long memberId, ConnectionReqDTO.Connect request) {
         log.info("금융사 연동 요청 - MemberId: {}, Organization: {}", memberId, request.getOrganization());
@@ -51,6 +54,9 @@ public class CodefAccountService {
         log.info("금융사 연동 완료 - MemberId: {}, Organization: {}", memberId, request.getOrganization());
     }
 
+    /**
+     * 금융사 계정 해제
+     */
     @Transactional
     public void deleteAccount(String connectedId, String organization, BusinessType businessType) {
         log.info("금융사 연동 해제 요청 - ConnectedId: {}, Organization: {}", connectedId, organization);
@@ -74,6 +80,9 @@ public class CodefAccountService {
         }
     }
 
+    /**
+     * 최초 등록 처리
+     */
     private String handleFirstCreation(Map<String, Object> requestBody) {
         CodefApiResponse<CodefConnectedIdResDTO> response = codefApiExecutor.execute(() -> codefApiClient.createConnectedId(requestBody));
         if (!response.isSuccess()) {
@@ -89,6 +98,9 @@ public class CodefAccountService {
         return connectedId;
     }
 
+    /**
+     * 기존 ID에 기관 추가 처리
+     */
     private String handleAddition(String connectedId, Map<String, Object> requestBody) {
         requestBody.put("connectedId", connectedId);
         CodefApiResponse<Void> response = codefApiExecutor.execute(() -> codefApiClient.addAccountToConnectedId(requestBody));
@@ -100,6 +112,9 @@ public class CodefAccountService {
         return connectedId;
     }
 
+    /**
+     * DB에 연결 기록 저장
+     */
     private void saveConnectionRecord(Member member, String connectedId, String organization, BusinessType businessType) {
         boolean isAlreadyLinked = member.getCodefConnectionList().stream()
                 .anyMatch(c -> organization.equals(c.getOrganization()));
@@ -120,7 +135,7 @@ public class CodefAccountService {
         member.addCodefConnection(savedConnection);
         eventPublisher.publishEvent(new ConnectionSuccessEvent(savedConnection.getId()));
     }
-    
+
     private String findExistingConnectedId(Member member) {
         return member.getCodefConnectionList().stream()
                 .map(CodefConnection::getConnectedId)
@@ -132,12 +147,15 @@ public class CodefAccountService {
 
     private String encryptPassword(String password) {
         try {
-            return encryptUtil.encrypt(password);
+            return encryptUtil.encryptRSA(password);
         } catch (Exception e) {
             throw new CodefException(CodefErrorCode.CODEF_ENCRYPTION_ERROR);
         }
     }
 
+    /**
+     * CODEF 요청 규격(accountList) 생성 헬퍼
+     */
     private Map<String, Object> createRequestBody(ConnectionReqDTO.Connect req, String encryptedPassword) {
         Map<String, Object> accountMap = new HashMap<>();
         accountMap.put("organization", req.getOrganization());

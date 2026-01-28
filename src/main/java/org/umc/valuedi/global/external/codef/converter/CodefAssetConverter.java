@@ -15,6 +15,7 @@ import org.umc.valuedi.domain.asset.enums.PaymentType;
 import org.umc.valuedi.domain.asset.enums.TransactionDirection;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
+import org.umc.valuedi.global.external.codef.util.EncryptUtil;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class CodefAssetConverter {
 
     private final ObjectMapper objectMapper;
+    private final EncryptUtil encryptUtil;
 
     public List<BankAccount> toBankAccountList(List<CodefAssetResDTO.BankAccount> data, CodefConnection connection) {
         return data.stream()
@@ -41,10 +43,12 @@ public class CodefAssetConverter {
 
     private BankAccount toBankAccount(CodefAssetResDTO.BankAccount item, CodefConnection connection) {
         try {
+            String originalAccountNo = item.getResAccount();
             return BankAccount.builder()
                     .accountName(item.getResAccountName())
                     .accountDisplay(item.getResAccountDisplay())
-                    .accountNoHash(UUID.nameUUIDFromBytes(item.getResAccount().getBytes()).toString())
+                    .accountNoEnc(encryptUtil.encryptAES(originalAccountNo))
+                    .accountNoHash(UUID.nameUUIDFromBytes(originalAccountNo.getBytes()).toString())
                     .accountDepositCode(item.getResAccountDeposit() != null ? item.getResAccountDeposit() : "UNKNOWN")
                     .balanceAmount(parseAmount(item.getResAccountBalance()))
                     .currency(item.getResAccountCurrency() != null ? item.getResAccountCurrency() : "KRW")
