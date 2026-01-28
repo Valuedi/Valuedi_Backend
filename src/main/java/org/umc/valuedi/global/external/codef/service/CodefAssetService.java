@@ -32,7 +32,6 @@ public class CodefAssetService {
 
     private final CodefApiClient codefApiClient;
     private final CodefAssetConverter codefAssetConverter;
-    private final ObjectMapper objectMapper;
     private final EncryptUtil encryptUtil;
     private final CodefApiExecutor codefApiExecutor;
 
