@@ -114,8 +114,11 @@ public class CodefAccountService {
                 .businessType(businessType)
                 .member(member)
                 .build();
-        member.addCodefConnection(connection);
-        eventPublisher.publishEvent(new ConnectionSuccessEvent(connection.getId()));
+        // DB에 즉시 INSERT 쿼리를 보내고, ID가 할당된 영속 엔티티를 반환받음
+        CodefConnection savedConnection = codefConnectionRepository.saveAndFlush(connection);
+
+        member.addCodefConnection(savedConnection);
+        eventPublisher.publishEvent(new ConnectionSuccessEvent(savedConnection.getId()));
     }
     
     private String findExistingConnectedId(Member member) {
