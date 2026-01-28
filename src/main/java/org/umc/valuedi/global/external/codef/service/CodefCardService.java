@@ -9,6 +9,7 @@ import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
+import org.umc.valuedi.global.external.codef.util.CodefApiExecutor;
 
 import java.util.*;
 
@@ -18,6 +19,7 @@ import java.util.*;
 public class CodefCardService {
 
     private final CodefApiClient codefApiClient;
+    private final CodefApiExecutor codefApiExecutor;
 
     /**
      * 보유 카드 목록 조회 (부분 성공 적용)
@@ -53,17 +55,7 @@ public class CodefCardService {
         requestBody.put("connectedId", connectedId);
         requestBody.put("organization", organization);
 
-        CodefApiResponse<CodefAssetResDTO.CardList> response;
-        try {
-            response = codefApiClient.getCardList(requestBody);
-        } catch (Exception e) {
-            // FeignClient 예외 발생 시
-            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
-        }
-
-        if (response == null) {
-            throw new CodefException(CodefErrorCode.CODEF_RESPONSE_EMPTY);
-        }
+        CodefApiResponse<CodefAssetResDTO.CardList> response = codefApiExecutor.execute(() -> codefApiClient.getCardList(requestBody));
 
         if (!response.isSuccess()) {
             // Codef API가 에러 코드를 반환한 경우

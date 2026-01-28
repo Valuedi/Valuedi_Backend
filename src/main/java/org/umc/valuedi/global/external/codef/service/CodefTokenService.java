@@ -1,5 +1,6 @@
 package org.umc.valuedi.global.external.codef.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -67,9 +68,12 @@ public class CodefTokenService {
             }
             return response;
 
-        } catch (Exception e) {
-            log.error("CODEF 토큰 발급 API 호출 중 오류 발생", e);
+        } catch (FeignException e) {
+            log.error("CODEF 토큰 발급 API 호출 실패 - Status: {}, Body: {}", e.status(), e.contentUTF8(), e);
             throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
+        } catch (Exception e) {
+            log.error("CODEF 토큰 발급 API 호출 중 알 수 없는 오류 발생", e);
+            throw new CodefException(CodefErrorCode.CODEF_API_UNHANDLED_ERROR);
         }
     }
 }

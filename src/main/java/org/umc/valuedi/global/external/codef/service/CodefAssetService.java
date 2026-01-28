@@ -14,6 +14,7 @@ import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
 import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
+import org.umc.valuedi.global.external.codef.util.CodefApiExecutor;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +31,7 @@ public class CodefAssetService {
 
     private final CodefApiClient codefApiClient;
     private final CodefAssetConverter codefAssetConverter;
+    private final CodefApiExecutor codefApiExecutor;
 
     // 기본 조회 기간 (최초 연동 시): 3개월
     private static final int DEFAULT_SEARCH_MONTHS = 3;
@@ -37,7 +39,7 @@ public class CodefAssetService {
 
     public List<BankAccount> getBankAccounts(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
-        CodefApiResponse<CodefAssetResDTO.BankAccountList> response = executeApiCall(() -> codefApiClient.getBankAccounts(requestBody));
+        CodefApiResponse<CodefAssetResDTO.BankAccountList> response = codefApiExecutor.execute(() -> codefApiClient.getBankAccounts(requestBody));
 
         if (!response.isSuccess()) {
             throw new CodefException(CodefErrorCode.CODEF_API_BANK_ACCOUNT_LIST_FAILED);
@@ -57,7 +59,7 @@ public class CodefAssetService {
 
     public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account, String startDate) {
         Map<String, Object> requestBody = createTransactionRequestBody(connection, account, startDate);
-        CodefApiResponse<CodefAssetResDTO.BankTransactionList> response = executeApiCall(() -> codefApiClient.getBankTransactions(requestBody));
+        CodefApiResponse<CodefAssetResDTO.BankTransactionList> response = codefApiExecutor.execute(() -> codefApiClient.getBankTransactions(requestBody));
 
         if (!response.isSuccess()) {
             String msg = response.getResult().getMessage();
@@ -77,7 +79,7 @@ public class CodefAssetService {
 
     public List<Card> getCards(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
-        CodefApiResponse<CodefAssetResDTO.CardList> response = executeApiCall(() -> codefApiClient.getCardList(requestBody));
+        CodefApiResponse<CodefAssetResDTO.CardList> response = codefApiExecutor.execute(() -> codefApiClient.getCardList(requestBody));
 
         if (!response.isSuccess()) {
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
@@ -87,10 +89,8 @@ public class CodefAssetService {
         List<CodefAssetResDTO.Card> allCards = new ArrayList<>();
 
         if (cardListResponse.getResCardList() != null && !cardListResponse.getResCardList().isEmpty()) {
-            // 여러 카드 응답 처리
             allCards.addAll(cardListResponse.getResCardList());
         } else if (cardListResponse.getResCardName() != null) {
-            // 단일 카드 응답 처리: CardList DTO의 필드들을 사용하여 Card DTO 객체를 직접 생성
             CodefAssetResDTO.Card singleCard = CodefAssetResDTO.Card.builder()
                     .resCardName(cardListResponse.getResCardName())
                     .resCardNo(cardListResponse.getResCardNo())
@@ -111,7 +111,7 @@ public class CodefAssetService {
 
     public List<CardApproval> getCardApprovals(CodefConnection connection, String startDate) {
         Map<String, Object> requestBody = createApprovalRequestBody(connection, startDate);
-        CodefApiResponse<List<CodefAssetResDTO.CardApproval>> response = executeApiCall(() -> codefApiClient.getCardApprovals(requestBody));
+        CodefApiResponse<List<CodefAssetResDTO.CardApproval>> response = codefApiExecutor.execute(() -> codefApiClient.getCardApprovals(requestBody));
 
         if (!response.isSuccess()) {
             throw new CodefException(CodefErrorCode.CODEF_API_INTERNAL_ERROR);
@@ -131,47 +131,30 @@ public class CodefAssetService {
         return body;
     }
 
+    private void addDateParameters(Map<String, Object> body, String startDate) {
+        String finalStartDate = Optional.ofNullable(startDate)
+                .filter(s -> !s.isEmpty())
+                .orElse(LocalDate.now().minusMonths(DEFAULT_SEARCH_MONTHS).format(CODEF_DATE_FMT));
+
+        body.put("startDate", finalStartDate);
+        body.put("endDate", LocalDate.now().format(CODEF_DATE_FMT));
+    }
+
     private Map<String, Object> createTransactionRequestBody(CodefConnection connection, BankAccount account, String startDate) {
         Map<String, Object> body = createAssetRequestBody(connection);
         body.put("account", account.getAccountDisplay());
-        
-        String finalStartDate = Optional.ofNullable(startDate)
-                                        .filter(s -> !s.isEmpty())
-                                        .orElse(LocalDate.now().minusMonths(DEFAULT_SEARCH_MONTHS).format(CODEF_DATE_FMT));
-        
-        body.put("startDate", finalStartDate);
-        body.put("endDate", LocalDate.now().format(CODEF_DATE_FMT));
+        addDateParameters(body, startDate);
         body.put("orderBy", "0");
         body.put("inquiryType", "1");
         return body;
     }
 
     private Map<String, Object> createApprovalRequestBody(CodefConnection connection, String startDate) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("connectedId", connection.getConnectedId());
-        body.put("organization", connection.getOrganization());
-
-        String finalStartDate = Optional.ofNullable(startDate)
-                                        .filter(s -> !s.isEmpty())
-                                        .orElse(LocalDate.now().minusMonths(DEFAULT_SEARCH_MONTHS).format(CODEF_DATE_FMT));
-
-        body.put("startDate", finalStartDate);
-        body.put("endDate", LocalDate.now().format(CODEF_DATE_FMT));
+        Map<String, Object> body = createAssetRequestBody(connection);
+        addDateParameters(body, startDate);
         body.put("orderBy", "0");
         body.put("inquiryType", "1");
         body.put("memberStoreInfoType", "1");
         return body;
-    }
-
-    private <T> CodefApiResponse<T> executeApiCall(java.util.function.Supplier<CodefApiResponse<T>> apiCall) {
-        try {
-            CodefApiResponse<T> response = apiCall.get();
-            if (response == null) {
-                throw new CodefException(CodefErrorCode.CODEF_RESPONSE_EMPTY);
-            }
-            return response;
-        } catch (Exception e) {
-            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
-        }
     }
 }

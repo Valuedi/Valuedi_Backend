@@ -1,7 +1,5 @@
 package org.umc.valuedi.global.external.codef.service;
 
-import feign.FeignException;
-import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -9,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
+import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
@@ -20,6 +19,7 @@ import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.global.external.codef.dto.res.CodefConnectedIdResDTO;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
+import org.umc.valuedi.global.external.codef.util.CodefApiExecutor;
 import org.umc.valuedi.global.external.codef.util.CodefEncryptUtil;
 
 import java.util.*;
@@ -33,6 +33,8 @@ public class CodefAccountService {
     private final CodefEncryptUtil encryptUtil;
     private final MemberRepository memberRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final CodefApiExecutor codefApiExecutor;
+    private final CodefConnectionRepository codefConnectionRepository;
 
     @Transactional
     public void connectAccount(Long memberId, ConnectionReqDTO.Connect request) {
@@ -53,7 +55,7 @@ public class CodefAccountService {
     public void deleteAccount(String connectedId, String organization, BusinessType businessType) {
         log.info("금융사 연동 해제 요청 - ConnectedId: {}, Organization: {}", connectedId, organization);
         Map<String, Object> requestBody = createDeleteRequestBody(connectedId, organization, businessType);
-        CodefApiResponse<Void> response = executeApiCall(() -> codefApiClient.deleteAccount(requestBody));
+        CodefApiResponse<Void> response = codefApiExecutor.execute(() -> codefApiClient.deleteAccount(requestBody));
 
         if (!response.isSuccess()) {
             log.error("CODEF 계정 삭제 실패 - Message: {}", response.getResult().getMessage());
@@ -73,7 +75,7 @@ public class CodefAccountService {
     }
 
     private String handleFirstCreation(Map<String, Object> requestBody) {
-        CodefApiResponse<CodefConnectedIdResDTO> response = executeApiCall(() -> codefApiClient.createConnectedId(requestBody));
+        CodefApiResponse<CodefConnectedIdResDTO> response = codefApiExecutor.execute(() -> codefApiClient.createConnectedId(requestBody));
         if (!response.isSuccess()) {
             log.error("CODEF 계정 생성 실패 - Message: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CREATE_FAILED);
@@ -89,7 +91,7 @@ public class CodefAccountService {
 
     private String handleAddition(String connectedId, Map<String, Object> requestBody) {
         requestBody.put("connectedId", connectedId);
-        CodefApiResponse<Void> response = executeApiCall(() -> codefApiClient.addAccountToConnectedId(requestBody));
+        CodefApiResponse<Void> response = codefApiExecutor.execute(() -> codefApiClient.addAccountToConnectedId(requestBody));
 
         if (!response.isSuccess()) {
             log.error("CODEF 계정 추가 실패 - Message: {}", response.getResult().getMessage());
@@ -166,25 +168,5 @@ public class CodefAccountService {
         requestBody.put("connectedId", connectedId);
         requestBody.put("accountList", accountList);
         return requestBody;
-    }
-
-    private <T> CodefApiResponse<T> executeApiCall(java.util.function.Supplier<CodefApiResponse<T>> apiCall) {
-        try {
-            CodefApiResponse<T> response = apiCall.get();
-            if (response == null) {
-                log.warn("CODEF API 응답이 null입니다.");
-                throw new CodefException(CodefErrorCode.CODEF_RESPONSE_EMPTY);
-            }
-            return response;
-        } catch (RetryableException e) {
-            log.error("CODEF API 호출 중 재시도 가능한 오류 발생", e);
-            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
-        } catch (FeignException e) {
-            log.error("CODEF API 호출 실패 - Status: {}, Body: {}", e.status(), e.contentUTF8(), e);
-            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
-        } catch (Exception e) {
-            log.error("CODEF API 호출 중 알 수 없는 오류 발생", e);
-            throw new CodefException(CodefErrorCode.CODEF_API_UNHANDLED_ERROR);
-        }
     }
 }
