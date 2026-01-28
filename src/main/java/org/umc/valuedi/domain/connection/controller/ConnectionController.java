@@ -8,6 +8,7 @@ import org.umc.valuedi.domain.connection.service.ConnectionCommandService;
 import org.umc.valuedi.domain.connection.service.ConnectionQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
+import org.umc.valuedi.global.external.codef.service.CodefAccountService;
 
 import java.util.List;
 
@@ -18,6 +19,7 @@ public class ConnectionController implements ConnectionControllerDocs {
 
     private final ConnectionCommandService connectionCommandService;
     private final ConnectionQueryService connectionQueryService;
+    private final CodefAccountService codefAccountService;
 
     @PostMapping
     public ApiResponse<Void> connect(
@@ -25,7 +27,7 @@ public class ConnectionController implements ConnectionControllerDocs {
             @RequestBody ConnectionReqDTO.Connect request
     ) {
         Long memberId = 1L;
-        connectionCommandService.connect(memberId, request);
+        codefAccountService.connectAccount(memberId, request);
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_SUCCESS, null);
     }
 
