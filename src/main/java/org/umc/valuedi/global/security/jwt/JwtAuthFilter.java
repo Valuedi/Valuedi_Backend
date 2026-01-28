@@ -30,6 +30,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final SecurityExceptionHandler securityExceptionHandler;
     private final CustomUserDetailsService customUserDetailsService;
 
+    private static final String AUTH_STATUS_URI = "/auth/status";
+    private static final String LOGOUT_URI = "/auth/logout";
+    private static final String REFRESH_URI = "/auth/token/refresh";
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -63,26 +67,32 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             setAuthenticationContext(memberId);
 
             filterChain.doFilter(request, response);
-        } catch (ExpiredJwtException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             String uri = request.getRequestURI();
-            // 로그아웃과 토큰 재발급의 경우 만료된 토큰도 필터 통과
-            if(uri.equals("/auth/logout") || uri.equals("/auth/token/refresh")) {
-                Claims claims = e.getClaims();
-                String category = claims.get("category", String.class);
 
-                // 만료된 토큰이어도 엑세스 토큰이 맞는지 확인
-                if (!category.equals("access")) {
-                    securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.NOT_ACCESS_TOKEN);
-                    return;
-                }
-
-                setAuthenticationContext(claims.getSubject());
+            // 로그인 상태 조회는 토큰이 만료되거나 유효하지 않아도 필터 통과
+            if (uri.equals(AUTH_STATUS_URI)) {
                 filterChain.doFilter(request, response);
                 return;
             }
-            // 로그아웃과 토큰 재발급이 아니면 예러 응답
-            securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.EXPIRED_TOKEN);
-        } catch (JwtException | IllegalArgumentException e) {
+
+            if(e instanceof ExpiredJwtException expiredException) {
+                // 로그아웃과 토큰 재발급의 경우 만료된 토큰만 필터 통과
+                if(uri.equals(LOGOUT_URI) || uri.equals(REFRESH_URI)) {
+                    Claims claims = expiredException.getClaims();
+                    String category = claims.get("category", String.class);
+
+                    // 만료된 토큰이어도 엑세스 토큰이 맞는지 확인
+                    if (!category.equals("access")) {
+                        securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.NOT_ACCESS_TOKEN);
+                        return;
+                    }
+
+                    setAuthenticationContext(claims.getSubject());
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+            }
             securityExceptionHandler.sendErrorResponse(response, AuthErrorCode.INVALID_TOKEN);
         } catch (Exception e) {
             securityExceptionHandler.sendErrorResponse(response, GeneralErrorCode.UNAUTHORIZED);
