@@ -287,23 +287,29 @@ public class RecommendationService {
             int recommendCount
     ) {
         // 후보군 텍스트(짧게) 만들기: optionId + 상품명 + 금리 + 기간 + 적립유형
-        String candidateText = candidates.stream()
+        List<Map<String, Object>> candidatePayload = candidates.stream()
                 .map(so -> {
                     Savings s = so.getSavings();
-                    return String.format(
-                            Locale.KOREA,
-                            "{\"optionId\":%d,\"finPrdtCd\":\"%s\",\"finPrdtNm\":\"%s\",\"korCoNm\":\"%s\",\"rsrvType\":\"%s\",\"saveTrm\":%s,\"intrRate\":%s,\"intrRate2\":%s}",
-                            so.getId(),
-                            s.getFinPrdtCd(),
-                            safeStr(s.getFinPrdtNm()),
-                            safeStr(s.getKorCoNm()),
-                            safeStr(so.getRsrvType()),
-                            so.getSaveTrm(),
-                            so.getIntrRate(),
-                            so.getIntrRate2()
-                    );
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("optionId", so.getId());
+                    m.put("korCoNm", s.getKorCoNm());
+                    m.put("finPrdtCd", s.getFinPrdtCd());
+                    m.put("finPrdtNm", s.getFinPrdtNm());
+                    m.put("rsrvType", so.getRsrvType());
+                    m.put("saveTrm", so.getSaveTrm());
+                    m.put("intrRate", so.getIntrRate());
+                    m.put("intrRate2", so.getIntrRate2());
+                    return m;
                 })
-                .collect(Collectors.joining(",\n"));
+                .toList();
+
+        String candidateText;
+        try {
+            candidateText = objectMapper.writeValueAsString(candidatePayload);
+        } catch (Exception e) {
+            log.warn("[Gemini] 후보군 JSON 직렬화 실패 size={}", candidatePayload.size(), e);
+            candidateText = "[]";
+        }
 
         // JSON만 출력 강제 + 키 이름 DTO와 일치(GeminiSavingsResponseDTO.Result가 recommendations를 가지도록)
         return """
