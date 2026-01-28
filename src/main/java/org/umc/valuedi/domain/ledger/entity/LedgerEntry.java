@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
+import org.umc.valuedi.domain.ledger.enums.TransactionType;
 import org.umc.valuedi.domain.member.entity.Member;
 
 import java.time.LocalDateTime;
@@ -46,13 +47,14 @@ public class LedgerEntry {
     @Column(length = 200)
     private String memo;
 
-    @Column(nullable = false, length = 10)
-    private String transactionType;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TransactionType transactionType;
 
     @Column(nullable = false) @Builder.Default
     private Boolean isUserModified = false;
 
-    @Column(nullable = false) @Builder.Default
-    private LocalDateTime transactionAt = LocalDateTime.now();
+    @Column(nullable = false)
+    private LocalDateTime transactionAt;
 
 }

@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.umc.valuedi.domain.ledger.enums.LedgerSortType;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.domain.ledger.dto.request.LedgerSyncRequest;
 import org.umc.valuedi.domain.ledger.dto.response.*;
@@ -25,7 +26,7 @@ public interface LedgerControllerDocs {
             @Parameter(description = "특정 일자 필터 (YYYY-MM-DD)") @RequestParam(required = false) LocalDate date,
             @Parameter(description = "페이지 번호 (0부터 시작)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "페이지 크기") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "정렬 (latest, oldest, amount_desc, amount_asc)") @RequestParam(defaultValue = "latest") String sort
+            @Parameter(description = "정렬 (LATEST, OLDEST, AMOUNT_DESC, AMOUNT_ASC)") @RequestParam(defaultValue = "LATEST") LedgerSortType sort
     );
 
     @Operation(summary = "월 소비 내역 요약", description = "이번 달 총 수입/지출 및 전월 대비 증감액을 조회합니다.")

@@ -1,5 +1,6 @@
 package org.umc.valuedi.domain.ledger.repository;
 
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
@@ -10,10 +11,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.umc.valuedi.domain.asset.enums.CancelStatus;
 import org.umc.valuedi.domain.ledger.dto.response.CategoryStatResponse;
 import org.umc.valuedi.domain.ledger.dto.response.DailyStatResponse;
 import org.umc.valuedi.domain.ledger.dto.response.TrendResponse;
 import org.umc.valuedi.domain.ledger.entity.LedgerEntry;
+import org.umc.valuedi.domain.ledger.enums.LedgerSortType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,7 +36,7 @@ public class LedgerQueryRepository {
 
     private final JPAQueryFactory queryFactory;
 
-    public Page<LedgerEntry> searchTransactions(Long memberId, YearMonth yearMonth, LocalDate date, Pageable pageable) {
+    public Page<LedgerEntry> searchTransactions(Long memberId, YearMonth yearMonth, LocalDate date, Pageable pageable, LedgerSortType sort) {
         List<LedgerEntry> content = queryFactory
                 .selectFrom(ledgerEntry)
                 .leftJoin(ledgerEntry.category, category).fetchJoin()
@@ -44,7 +47,7 @@ public class LedgerQueryRepository {
                         yearMonthEq(yearMonth),
                         dateEq(date)
                 )
-                .orderBy(ledgerEntry.transactionAt.desc())
+                .orderBy(getOrderSpecifier(sort))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -64,16 +67,13 @@ public class LedgerQueryRepository {
 
     public List<CategoryStatResponse> findCategoryStats(Long memberId, YearMonth yearMonth) {
         // 카드 금액 계산 (취소 상계)
-        NumberExpression<Long> cartAmount = new CaseBuilder()
-                .when(cardApproval.cancelYn.stringValue().eq("0")).then(cardApproval.usedAmount)
-                .when(cardApproval.cancelYn.stringValue().in("1", "2")).then(cardApproval.usedAmount.negate()) // 취소
-                .otherwise(0L);
+        NumberExpression<Long> cardAmount = getCardAmountExpression();
 
         return queryFactory
                 .select(Projections.constructor(CategoryStatResponse.class,
                         category.code,
                         category.name,
-                        cartAmount.sumLong().coalesce(0L)
+                        cardAmount.sumLong().coalesce(0L)
                 )).from(ledgerEntry)
                 .join(ledgerEntry.category, category)
                 .leftJoin(ledgerEntry.cardApproval, cardApproval)
@@ -83,17 +83,14 @@ public class LedgerQueryRepository {
                         category.code.notIn("INCOME", "TRANSFER") // 지출만
                 )
                 .groupBy(category.code, category.name)
-                .orderBy(cartAmount.sumLong().desc())
+                .orderBy(cardAmount.sumLong().desc())
                 .fetch();
 
     }
 
     // 3. 월 총 지출액 (비율 계산용)
     public Long findTotalExpense(Long memberId, YearMonth yearMonth) {
-        NumberExpression<Long> cardAmount = new CaseBuilder()
-                .when(cardApproval.cancelYn.stringValue().eq("0")).then(cardApproval.usedAmount)
-                .when(cardApproval.cancelYn.stringValue().in("1", "2")).then(cardApproval.usedAmount.negate())
-                .otherwise(0L);
+        NumberExpression<Long> cardAmount = getCardAmountExpression();
 
         return queryFactory
                 .select(cardAmount.sumLong().coalesce(0L))
@@ -118,8 +115,6 @@ public class LedgerQueryRepository {
         if (date == null) return null;
         return ledgerEntry.transactionAt.between(date.atStartOfDay(), date.atTime(LocalTime.MAX));
     }
-
-    // ... 기존 코드 ...
 
     // 월 총 수입 조회
     public Long findTotalIncome(Long memberId, YearMonth yearMonth) {
@@ -164,7 +159,7 @@ public class LedgerQueryRepository {
                                         expense = entry.getBankTransaction().getOutAmount();
                                     } else if (entry.getCardApproval() != null) {
                                         // 카드 취소는 마이너스 지출로 처리
-                                        if ("0".equals(entry.getCardApproval().getCancelYn().toString())) { // NORMAL
+                                        if (entry.getCardApproval().getCancelYn().equals(CancelStatus.NORMAL)) { // NORMAL
                                             expense = entry.getCardApproval().getUsedAmount();
                                         } else {
                                             expense = -entry.getCardApproval().getUsedAmount();
@@ -207,7 +202,7 @@ public class LedgerQueryRepository {
                         Collectors.summingLong(entry -> {
                             if (entry.getCardApproval() != null) {
                                 // 카드 취소 고려
-                                return "0".equals(entry.getCardApproval().getCancelYn().toString())
+                                return entry.getCardApproval().getCancelYn().equals(CancelStatus.NORMAL)
                                         ? entry.getCardApproval().getUsedAmount()
                                         : -entry.getCardApproval().getUsedAmount();
                             } else if (entry.getBankTransaction() != null) {
@@ -220,6 +215,35 @@ public class LedgerQueryRepository {
                 .map(e -> new TrendResponse(e.getKey(), e.getValue()))
                 .sorted((a, b) -> a.getYearMonth().compareTo(b.getYearMonth()))
                 .collect(Collectors.toList());
+    }
+
+    private NumberExpression<Long> getCardAmountExpression() {
+        return new CaseBuilder()
+                .when(cardApproval.cancelYn.eq(CancelStatus.NORMAL)).then(cardApproval.usedAmount)
+                .when(cardApproval.cancelYn.in(CancelStatus.CANCEL, CancelStatus.PARTIAL_CANCEL)).then(cardApproval.usedAmount.negate())
+                .otherwise(0L);
+    }
+
+    private OrderSpecifier<?> getOrderSpecifier(LedgerSortType sort) {
+        if (sort == null) return ledgerEntry.transactionAt.desc();
+
+        switch (sort) {
+            case LATEST:
+                return ledgerEntry.transactionAt.desc();
+            case OLDEST:
+                return ledgerEntry.transactionAt.asc();
+            // 금액 정렬은 복잡하므로(원천 테이블 조인 필요), 여기서는 transactionAt 기준으로 하거나
+            // 별도의 NumberExpression을 만들어 정렬해야 함.
+            // MVP에서는 날짜 정렬만 지원하거나, 금액 정렬 로직을 추가 구현해야 함.
+            case AMOUNT_DESC:
+                // TODO: 금액 정렬 구현 (복잡함)
+                return ledgerEntry.transactionAt.desc();
+            case AMOUNT_ASC:
+                // TODO: 금액 정렬 구현
+                return ledgerEntry.transactionAt.desc();
+            default:
+                return ledgerEntry.transactionAt.desc();
+        }
     }
 }
 

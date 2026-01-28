@@ -14,6 +14,7 @@ import org.umc.valuedi.domain.ledger.dto.request.LedgerSyncRequest;
 import org.umc.valuedi.domain.ledger.entity.Category;
 import org.umc.valuedi.domain.ledger.entity.CategoryKeyword;
 import org.umc.valuedi.domain.ledger.entity.LedgerEntry;
+import org.umc.valuedi.domain.ledger.enums.TransactionType;
 import org.umc.valuedi.domain.ledger.exception.LedgerException;
 import org.umc.valuedi.domain.ledger.exception.code.LedgerErrorCode;
 import org.umc.valuedi.domain.ledger.repository.CategoryKeywordRepository;
@@ -70,7 +71,7 @@ public class LedgerSyncService {
 
     public void syncTransactions(Long memberId, LedgerSyncRequest request) {
         // 요청 파라미터 검증
-        if (ObjectUtils.isEmpty(request.getYearMonth()) && ObjectUtils.isEmpty(request.getFromDate())) {
+        if (ObjectUtils.isEmpty(request.getYearMonth()) && ObjectUtils.isEmpty(request.getFromDate()) || ObjectUtils.isEmpty(request.getToDate())) {
             throw new LedgerException(LedgerErrorCode.INVALID_SYNC_REQUEST);
         }
 
@@ -100,7 +101,7 @@ public class LedgerSyncService {
             String merchantType = ca.getMerchantType();
 
             Category category = null;
-            String transactionType;
+            TransactionType transactionType;
 
             // 업종(merchantType)으로 먼저 매핑 시도
             if (!ObjectUtils.isEmpty(merchantType)) {
@@ -117,7 +118,7 @@ public class LedgerSyncService {
                 category = defaultCategory;
             }
 
-            transactionType = "출금";
+            transactionType = TransactionType.EXPENSE;
 
             LedgerEntry entry = LedgerEntry.builder()
                     .member(member)
@@ -151,7 +152,7 @@ public class LedgerSyncService {
 
 
             Category category;
-            String transactionType;
+            TransactionType transactionType;
             String title = ObjectUtils.isEmpty(combinedDesc) ? "은행 거래" : combinedDesc;
             if (title.length() > 50) {
                 title = title.substring(0, 50);
@@ -159,16 +160,16 @@ public class LedgerSyncService {
 
             if (isCardSettlement(combinedDesc)) {
                 category = transferCategory;
-                transactionType = "출금"; // 카드대금 정산은 출금
+                transactionType = TransactionType.EXPENSE; // 카드대금 정산은 출금
             } else {
                 category = mapCategoryByKeyword(combinedDesc, defaultCategory);
                 // BankTransaction의 direction을 따름
                 if (bt.getDirection() == TransactionDirection.IN) {
-                    transactionType = "입금";
+                    transactionType = TransactionType.INCOME;
                 } else if (bt.getDirection() == TransactionDirection.OUT) {
-                    transactionType = "출금";
+                    transactionType = TransactionType.EXPENSE;
                 } else {
-                    transactionType = "출금"; // 기본값
+                    transactionType = TransactionType.EXPENSE; // 기본값
                 }
             }
 

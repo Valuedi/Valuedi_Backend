@@ -1,6 +1,8 @@
 package org.umc.valuedi.domain.ledger.dto.response;
 
 import lombok.*;
+import org.umc.valuedi.domain.ledger.enums.TransactionType;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -23,7 +25,7 @@ public class LedgerListResponse {
         private Long id;
         private String title;
         private Long amount;
-        private String type; // INCOME, EXPENSE, TRANSFER, REFUND
+        private TransactionType type; // INCOME, EXPENSE, TRANSFER, REFUND
         private String categoryCode;
         private String categoryName;
         private LocalDateTime transactionAt;

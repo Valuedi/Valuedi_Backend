@@ -8,12 +8,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.ledger.converter.LedgerConverter;
 import org.umc.valuedi.domain.ledger.dto.response.*;
 import org.umc.valuedi.domain.ledger.entity.LedgerEntry;
+import org.umc.valuedi.domain.ledger.enums.LedgerSortType;
 import org.umc.valuedi.domain.ledger.repository.LedgerQueryRepository;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +25,8 @@ public class LedgerQueryService {
     private final LedgerQueryRepository ledgerQueryRepository;
 
     // 거래 내역 목록 조회
-    public LedgerListResponse getTransactions(Long memberId, YearMonth yearMonth, LocalDate date, int page, int size, String sort) {
-        Page<LedgerEntry> result = ledgerQueryRepository.searchTransactions(memberId, yearMonth, date, PageRequest.of(page, size));
+    public LedgerListResponse getTransactions(Long memberId, YearMonth yearMonth, LocalDate date, int page, int size, LedgerSortType sort) {
+        Page<LedgerEntry> result = ledgerQueryRepository.searchTransactions(memberId, yearMonth, date, PageRequest.of(page, size), sort);
         return LedgerConverter.toLedgerListResponse(result.getContent(), page, size, result.getTotalElements());
     }
 
@@ -68,15 +70,22 @@ public class LedgerQueryService {
     public List<TopCategoryResponse> getTopCategories(Long memberId, YearMonth yearMonth, int limit) {
         List<CategoryStatResponse> stats = ledgerQueryRepository.findCategoryStats(memberId, yearMonth);
 
-        // 금액 내림차순 정렬 후 상위 limit개 추출 및 변환
-        return stats.stream()
+        // 금액 내림차순 정렬
+        List<CategoryStatResponse> sortedStats = stats.stream()
                 .sorted((a, b) -> b.getTotalAmount().compareTo(a.getTotalAmount()))
                 .limit(limit)
-                .map(stat -> TopCategoryResponse.builder()
-                        .categoryName(stat.getCategoryName())
-                        .totalAmount(stat.getTotalAmount())
-                        .rank(stats.indexOf(stat) + 1)
-                        .build())
+                .toList();
+
+        // 금액 내림차순 정렬 후 상위 limit개 추출 및 변환
+        return IntStream.range(0, sortedStats.size())
+                .mapToObj(i -> {
+                    CategoryStatResponse stat = sortedStats.get(i);
+                    return TopCategoryResponse.builder()
+                            .categoryName(stat.getCategoryName())
+                            .totalAmount(stat.getTotalAmount())
+                            .rank(i + 1)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
