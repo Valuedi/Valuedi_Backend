@@ -27,7 +27,8 @@ public enum CodefErrorCode implements BaseErrorCode {
     
     CODEF_JSON_PARSE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "CODEF500_6", "CODEF 응답 데이터 파싱 중 오류가 발생했습니다."),
     CODEF_API_CONNECTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "CODEF500_7", "CODEF API 서버와의 통신 중 오류가 발생했습니다."),
-    CODEF_RESPONSE_EMPTY(HttpStatus.INTERNAL_SERVER_ERROR, "CODEF500_8", "CODEF API 응답이 비어있습니다.")
+    CODEF_RESPONSE_EMPTY(HttpStatus.INTERNAL_SERVER_ERROR, "CODEF500_8", "CODEF API 응답이 비어있습니다."),
+    CODEF_API_UNHANDLED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "CODEF500_9", "CODEF API 호출 중 알 수 없는 오류가 발생했습니다.")
     ;
 
     private final HttpStatus status;

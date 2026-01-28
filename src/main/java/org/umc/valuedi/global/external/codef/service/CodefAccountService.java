@@ -1,5 +1,7 @@
 package org.umc.valuedi.global.external.codef.service;
 
+import feign.FeignException;
+import feign.RetryableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,17 +40,12 @@ public class CodefAccountService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        String existingConnectedId = findExistingConnectedId(member);
         String encryptedPassword = encryptPassword(request.getLoginPassword());
         Map<String, Object> requestBody = createRequestBody(request, encryptedPassword);
 
-        String targetConnectedId;
-        if (existingConnectedId == null) {
-            targetConnectedId = handleFirstCreation(requestBody);
-        } else {
-            targetConnectedId = handleAddition(existingConnectedId, requestBody);
-        }
-        saveConnectionRecord(member, targetConnectedId, request.getOrganization(), request.getBusinessTypeEnum());
+        String connectedId = processCodefAccount(member, requestBody);
+
+        saveConnectionRecord(member, connectedId, request.getOrganization(), request.getBusinessTypeEnum());
         log.info("금융사 연동 완료 - MemberId: {}, Organization: {}", memberId, request.getOrganization());
     }
 
@@ -63,6 +60,16 @@ public class CodefAccountService {
             throw new CodefException(CodefErrorCode.CODEF_API_DELETE_FAILED);
         }
         log.info("금융사 연동 해제 완료 - ConnectedId: {}, Organization: {}", connectedId, organization);
+    }
+
+    private String processCodefAccount(Member member, Map<String, Object> requestBody) {
+        String existingConnectedId = findExistingConnectedId(member);
+
+        if (existingConnectedId == null) {
+            return handleFirstCreation(requestBody);
+        } else {
+            return handleAddition(existingConnectedId, requestBody);
+        }
     }
 
     private String handleFirstCreation(Map<String, Object> requestBody) {
@@ -165,11 +172,19 @@ public class CodefAccountService {
         try {
             CodefApiResponse<T> response = apiCall.get();
             if (response == null) {
+                log.warn("CODEF API 응답이 null입니다.");
                 throw new CodefException(CodefErrorCode.CODEF_RESPONSE_EMPTY);
             }
             return response;
-        } catch (Exception e) {
+        } catch (RetryableException e) {
+            log.error("CODEF API 호출 중 재시도 가능한 오류 발생", e);
             throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
+        } catch (FeignException e) {
+            log.error("CODEF API 호출 실패 - Status: {}, Body: {}", e.status(), e.contentUTF8(), e);
+            throw new CodefException(CodefErrorCode.CODEF_API_CONNECTION_ERROR);
+        } catch (Exception e) {
+            log.error("CODEF API 호출 중 알 수 없는 오류 발생", e);
+            throw new CodefException(CodefErrorCode.CODEF_API_UNHANDLED_ERROR);
         }
     }
 }
