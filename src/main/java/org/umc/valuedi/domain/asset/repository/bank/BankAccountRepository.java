@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface BankAccountRepository extends JpaRepository<BankAccount, Long> {
 
@@ -39,4 +40,39 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Long> 
             "WHERE ba.codefConnection.member.id = :memberId " +
             "AND ba.isActive = true")
     long countByMemberId(@Param("memberId") Long memberId);
+
+    /**
+     * 목표와 연결되지 않은 계좌 목록 조회
+     */
+    @Query("""
+    SELECT ba
+    FROM BankAccount ba
+    JOIN ba.codefConnection cc
+    WHERE cc.member.id = :memberId
+      AND ba.isActive = TRUE
+      AND ( :excludeIdsIsEmpty = TRUE OR ba.id NOT IN :excludeIds )
+    ORDER BY ba.id DESC
+""")
+    List<BankAccount> findUnlinkedByMemberId(
+            @Param("memberId") Long memberId,
+            @Param("excludeIds") List<Long> excludeIds,
+            @Param("excludeIdsIsEmpty") boolean excludeIdsIsEmpty
+    );
+
+    /**
+     * 특정 계좌(accountId)가 해당 회원(memberId)의 소유이며 활성 상태인지 조회
+     */
+    @Query("""
+    SELECT ba
+    FROM BankAccount ba
+    JOIN ba.codefConnection cc
+    WHERE ba.id = :accountId
+      AND cc.member.id = :memberId
+      AND ba.isActive = TRUE
+""")
+    Optional<BankAccount> findByIdAndMemberId(
+            @Param("accountId") Long accountId,
+            @Param("memberId") Long memberId
+    );
+
 }

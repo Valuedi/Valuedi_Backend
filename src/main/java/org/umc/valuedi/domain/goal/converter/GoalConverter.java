@@ -1,8 +1,10 @@
 package org.umc.valuedi.domain.goal.converter;
 
+import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.goal.constant.GoalStyleCatalog;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
+import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.entity.Goal;
@@ -16,10 +18,10 @@ public class GoalConverter {
 
     private GoalConverter() {}
 
-    public static Goal toEntity(Member member, GoalCreateRequestDto req) {
+    public static Goal toEntity(Member member,BankAccount bankAccount, GoalCreateRequestDto req) {
         return Goal.builder()
                 .member(member)
-                .accountId(null)                 // 계좌 연동 되면 채우기
+                .bankAccount(bankAccount)
                 .title(req.title())
                 .startDate(req.startDate())
                 .endDate(req.endDate())
@@ -51,6 +53,30 @@ public class GoalConverter {
         if (req.iconId() != null)
             goal.changeIcon(req.iconId());
     }
+    public static GoalCreateResponseDto toCreateDto(Goal goal) {
+        long remainingDays = calcRemainingDays(goal.getEndDate());
+
+        GoalCreateResponseDto.AccountDto accountDto = null;
+        if (goal.getBankAccount() != null) {
+            String bankName = null;
+            if (goal.getBankAccount().getCodefConnection() != null) {
+                bankName = goal.getBankAccount().getCodefConnection().getOrganization();
+            }
+            String accountNumber = goal.getBankAccount().getAccountDisplay();
+            accountDto = new GoalCreateResponseDto.AccountDto(bankName, accountNumber);
+        }
+
+        return new GoalCreateResponseDto(
+                goal.getId(),
+                goal.getTitle(),
+                goal.getTargetAmount(),
+                goal.getStartDate(),
+                goal.getEndDate(),
+                remainingDays,
+                accountDto,
+                goal.getIcon()
+        );
+    }
 
     public static GoalListResponseDto.GoalSummaryDto toSummaryDto(
             Goal goal,
@@ -66,7 +92,6 @@ public class GoalConverter {
                 remainingAmount,
                 remainingDays,
                 achievementRate,
-                null, // 계좌 연동 되면 채우기
                 goal.getStatus(),
                 goal.getColor(),
                 goal.getIcon()
@@ -87,11 +112,26 @@ public class GoalConverter {
                 goal.getTargetAmount(),
                 remainingDays,
                 achievementRate,
-                null, // 계좌 연동 되면 채우기
+                toAccountDto(goal.getBankAccount()),
                 goal.getStatus(),
                 goal.getColor(),
                 goal.getIcon()
         );
+    }
+
+    private static GoalDetailResponseDto.AccountDto toAccountDto(BankAccount bankAccount) {
+        if (bankAccount == null) {
+            return null;
+        }
+
+        String bankName = null;
+        if (bankAccount.getCodefConnection() != null) {
+            bankName = bankAccount.getCodefConnection().getOrganization();
+        }
+
+        String accountNumber = bankAccount.getAccountDisplay();
+
+        return new GoalDetailResponseDto.AccountDto(bankName, accountNumber);
     }
 
     private static long calcRemainingDays(LocalDate endDate) {
@@ -99,4 +139,5 @@ public class GoalConverter {
         long days = ChronoUnit.DAYS.between(today, endDate);
         return Math.max(days, 0);
     }
+
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.entity.BaseEntity;
@@ -29,8 +30,9 @@ public class Goal extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(name = "id2", nullable = true)
-    private Long accountId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bank_account_id", unique = true)
+    private BankAccount bankAccount;
 
     @Column(name = "title", nullable = false, length = 20)
     private String title;
@@ -95,6 +97,15 @@ public class Goal extends BaseEntity {
     public void Fail() {
         this.status = GoalStatus.FAILED;
         this.completedAt = LocalDateTime.now();
+    }
+
+
+    public void linkBankAccount(BankAccount bankAccount) {
+        this.bankAccount = bankAccount;
+    }
+
+    public void unlinkBankAccount() {
+        this.bankAccount = null;
     }
 
 }

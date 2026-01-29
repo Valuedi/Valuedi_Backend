@@ -5,15 +5,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
+import org.umc.valuedi.domain.goal.dto.request.GoalLinkAccountRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
+import org.umc.valuedi.domain.goal.dto.response.*;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.enums.GoalSort;
 import org.umc.valuedi.domain.goal.exception.code.GoalSuccessCode;
+import org.umc.valuedi.domain.goal.service.command.GoalAccountCommandService;
 import org.umc.valuedi.domain.goal.service.command.GoalCommandService;
+import org.umc.valuedi.domain.goal.service.query.GoalAccountQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalListQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -26,6 +26,8 @@ public class GoalController implements GoalControllerDocs{
     private final GoalCommandService goalService;
     private final GoalQueryService goalQueryService;
     private final GoalListQueryService goalListQueryService;
+    private final GoalAccountQueryService goalAccountQueryService;
+    private final GoalAccountCommandService goalAccountCommandService;
 
     // 목표 추가
     @PostMapping
@@ -97,6 +99,31 @@ public class GoalController implements GoalControllerDocs{
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_ACTIVE_COUNT_FETCHED,
                 goalQueryService.getActiveGoalCount(memberId)
+        );
+    }
+
+
+    @GetMapping("/accounts")
+    public ApiResponse<GoalAccountResDto.UnlinkedBankAccountListDTO> getUnlinkedAccounts(
+            @RequestParam Long memberId
+
+    ) {
+        return ApiResponse.onSuccess(
+                GoalSuccessCode.GOAL_UNLINKED_ACCOUNTS_FETCHED,
+                goalAccountQueryService.getUnlinkedAccounts(memberId)
+        );
+    }
+
+    @PutMapping("/{goalId}/linked-accounts")
+    public ApiResponse<Void> linkAccountToGoal(
+            @RequestParam Long memberId,
+            @PathVariable Long goalId,
+            @RequestBody @Valid GoalLinkAccountRequestDto req
+    ) {
+        goalAccountCommandService.setLinkedAccount(memberId, goalId, req.accountId());
+        return ApiResponse.onSuccess(
+                GoalSuccessCode.GOAL_ACCOUNT_LINKED,
+                null
         );
     }
 }

@@ -14,7 +14,9 @@ public enum GoalSuccessCode implements BaseSuccessCode {
     GOAL_DETAIL_FETCHED(HttpStatus.OK, "GOAL200_2", "목표 상세 조회 성공"),
     GOAL_UPDATED(HttpStatus.OK, "GOAL200_3", "목표가 성공적으로 수정되었습니다."),
     GOAL_DELETED(HttpStatus.OK, "GOAL204_1", "목표가 성공적으로 삭제되었습니다."),
-    GOAL_ACTIVE_COUNT_FETCHED(HttpStatus.OK, "GOAL200_5", "진행 중인 목표 개수 조회 성공");
+    GOAL_ACTIVE_COUNT_FETCHED(HttpStatus.OK, "GOAL200_5", "진행 중인 목표 개수 조회 성공"),
+    GOAL_UNLINKED_ACCOUNTS_FETCHED(HttpStatus.OK, "GOAL200_6", "연결 목표가 없는 계좌 조회 성공"),
+    GOAL_ACCOUNT_LINKED(HttpStatus.OK, "GOAL200_7", "계좌가 목표와 성공적으로 연결 되었습니다.");
 
     private final HttpStatus status;
     private final String code;

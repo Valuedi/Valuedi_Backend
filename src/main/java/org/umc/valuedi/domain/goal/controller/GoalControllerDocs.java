@@ -9,11 +9,9 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
+import org.umc.valuedi.domain.goal.dto.request.GoalLinkAccountRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
-import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
+import org.umc.valuedi.domain.goal.dto.response.*;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.enums.GoalSort;
 
@@ -116,5 +114,41 @@ public interface GoalControllerDocs {
     org.umc.valuedi.global.apiPayload.ApiResponse<GoalActiveCountResponseDto> getActiveGoalCount(
             @Parameter(description = "회원 ID", example = "1", required = true)
             @RequestParam Long memberId
+    );
+
+
+    @Operation(
+            summary = "목표에 연결되지 않은 계좌 목록 조회 API",
+            description = "사용자의 계좌 중 아직 어떤 목표에도 연결되지 않은 계좌 목록을 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "회원이 존재하지 않음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    org.umc.valuedi.global.apiPayload.ApiResponse<GoalAccountResDto.UnlinkedBankAccountListDTO> getUnlinkedAccounts(
+            @Parameter(description = "회원 ID", example = "1", required = true)
+            @RequestParam Long memberId
+    );
+
+
+    @Operation(
+            summary = "목표-계좌 연결 API",
+            description = "특정 목표(goalId)에 사용자의 계좌(accountId)를 1:1로 연결합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "연결 성공"),
+            @ApiResponse(responseCode = "400", description = "이미 연결된 목표/계좌 등 요청 오류"),
+            @ApiResponse(responseCode = "404", description = "목표 또는 계좌가 존재하지 않음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    org.umc.valuedi.global.apiPayload.ApiResponse<Void> linkAccountToGoal(
+            @Parameter(description = "회원 ID", example = "1", required = true)
+            @RequestParam Long memberId,
+
+            @Parameter(description = "목표 ID", example = "10", required = true)
+            Long goalId,
+
+            @Valid @RequestBody GoalLinkAccountRequestDto req
     );
 }

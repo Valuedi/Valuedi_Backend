@@ -13,6 +13,9 @@ public record GoalCreateRequestDto(
 
         @Schema(description = "회원 ID", example = "1")
         @NotNull Long memberId,
+        @Schema(description = "연결할 계좌 ID", example = "1")
+        @NotNull
+        Long accountId,
 
         @Schema(description = "목표 이름(최대 12자)", example = "유럽 여행 자금")
         @NotNull
@@ -25,6 +28,7 @@ public record GoalCreateRequestDto(
 
         @Schema(description = "목표 종료일 (YYYY-MM-DD)", example = "2026-08-31")
         @NotNull LocalDate endDate,
+
 
         @Schema(description = "목표 금액(원 단위, 1 이상)", example = "3000000", minimum = "1")
         @NotNull(message = "targetAmount는 필수입니다.")

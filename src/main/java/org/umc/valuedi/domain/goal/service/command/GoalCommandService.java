@@ -3,6 +3,8 @@ package org.umc.valuedi.domain.goal.service.command;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.asset.entity.BankAccount;
+import org.umc.valuedi.domain.asset.repository.bank.BankAccountRepository;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
@@ -26,6 +28,8 @@ public class GoalCommandService {
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
 
+    private final BankAccountRepository bankAccountRepository;
+
     // 목표 생성
     public GoalCreateResponseDto createGoal(GoalCreateRequestDto req) {
         Member member = memberRepository.findById(req.memberId())
@@ -34,10 +38,20 @@ public class GoalCommandService {
         GoalValidator.validateDateRange(req.startDate(), req.endDate());
         GoalValidator.validateStyle(req.colorCode(), req.iconId());
 
-        Goal goal = GoalConverter.toEntity(member, req);
+        // 내 계좌 + 활성 상태 검증
+        BankAccount account = bankAccountRepository.findByIdAndMemberId(req.accountId(), req.memberId())
+                .orElseThrow(() -> new GoalException(GoalErrorCode.ACCOUNT_NOT_FOUND));
+
+        // 이미 다른 목표가 이 계좌를 쓰고 있는지 검증
+        if (goalRepository.existsByBankAccount_Id(account.getId())) {
+            throw new GoalException(GoalErrorCode.ACCOUNT_ALREADY_LINKED_TO_GOAL);
+        }
+
+        // Goal 엔티티 생성 시 bankAccount 포함
+        Goal goal = GoalConverter.toEntity(member, account, req);
         Goal saved = goalRepository.save(goal);
 
-        return new GoalCreateResponseDto(saved.getId());
+        return GoalConverter.toCreateDto(saved);
     }
 
     // 목표 수정
