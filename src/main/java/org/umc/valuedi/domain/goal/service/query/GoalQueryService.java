@@ -52,7 +52,7 @@ public class GoalQueryService {
 
     // 주요 목표 조회
     public GoalPrimaryListResponseDto getPrimaryGoals(Long memberId) {
-        var goals = goalRepository.findAllByMember_IdAndStatus(
+        var goals = goalRepository.findAllByMember_IdAndStatusOrderByCreatedAtDesc(
                 memberId, GoalStatus.ACTIVE
         );
         return GoalConverter.toPrimaryListResponse(goals);

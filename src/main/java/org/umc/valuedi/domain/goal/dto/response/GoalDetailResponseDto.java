@@ -24,7 +24,7 @@ public record GoalDetailResponseDto(
         @Schema(description = "달성률(0~100)", example = "30")
         Integer achievementRate, // 0~100
 
-        @Schema(description = "연결 계좌 정보(없을 수 있음)")
+        @Schema(description = "연결 계좌 정보")
         AccountDto account,
 
         @Schema(description = "목표 상태", example = "ACTIVE")

@@ -68,7 +68,7 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Long> 
     JOIN ba.codefConnection cc
     WHERE ba.id = :accountId
       AND cc.member.id = :memberId
-      AND ba.isActive = TRUE
+      AND ba.isActive = true
 """)
     Optional<BankAccount> findByIdAndMemberId(
             @Param("accountId") Long accountId,

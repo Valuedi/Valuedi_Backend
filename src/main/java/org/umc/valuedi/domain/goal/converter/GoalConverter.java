@@ -55,17 +55,28 @@ public class GoalConverter {
         if (req.iconId() != null)
             goal.changeIcon(req.iconId());
     }
+
+    private record AccountInfo(String bankName, String accountNumber) {}
+
+    private static AccountInfo extractAccountInfo(BankAccount bankAccount) {
+        if (bankAccount == null) return null;
+
+        String bankName = null;
+        if (bankAccount.getCodefConnection() != null) {
+            bankName = bankAccount.getCodefConnection().getOrganization();
+        }
+        String accountNumber = bankAccount.getAccountDisplay();
+        return new AccountInfo(bankName, accountNumber);
+    }
+
+
     public static GoalCreateResponseDto toCreateDto(Goal goal) {
         long remainingDays = calcRemainingDays(goal.getEndDate());
 
         GoalCreateResponseDto.AccountDto accountDto = null;
-        if (goal.getBankAccount() != null) {
-            String bankName = null;
-            if (goal.getBankAccount().getCodefConnection() != null) {
-                bankName = goal.getBankAccount().getCodefConnection().getOrganization();
-            }
-            String accountNumber = goal.getBankAccount().getAccountDisplay();
-            accountDto = new GoalCreateResponseDto.AccountDto(bankName, accountNumber);
+        var info = extractAccountInfo(goal.getBankAccount());
+        if (info != null) {
+            accountDto = new GoalCreateResponseDto.AccountDto(info.bankName(), info.accountNumber());
         }
 
         return new GoalCreateResponseDto(
@@ -100,12 +111,14 @@ public class GoalConverter {
         );
     }
 
-    public static GoalDetailResponseDto toDetailDto(
-            Goal goal,
-            Long savedAmount,
-            int achievementRate
-    ) {
+    public static GoalDetailResponseDto toDetailDto(Goal goal, Long savedAmount, int achievementRate) {
         long remainingDays = calcRemainingDays(goal.getEndDate());
+
+        GoalDetailResponseDto.AccountDto accountDto = null;
+        var info = extractAccountInfo(goal.getBankAccount());
+        if (info != null) {
+            accountDto = new GoalDetailResponseDto.AccountDto(info.bankName(), info.accountNumber());
+        }
 
         return new GoalDetailResponseDto(
                 goal.getId(),
@@ -114,26 +127,11 @@ public class GoalConverter {
                 goal.getTargetAmount(),
                 remainingDays,
                 achievementRate,
-                toAccountDto(goal.getBankAccount()),
+                accountDto,
                 goal.getStatus(),
                 goal.getColor(),
                 goal.getIcon()
         );
-    }
-
-    private static GoalDetailResponseDto.AccountDto toAccountDto(BankAccount bankAccount) {
-        if (bankAccount == null) {
-            return null;
-        }
-
-        String bankName = null;
-        if (bankAccount.getCodefConnection() != null) {
-            bankName = bankAccount.getCodefConnection().getOrganization();
-        }
-
-        String accountNumber = bankAccount.getAccountDisplay();
-
-        return new GoalDetailResponseDto.AccountDto(bankName, accountNumber);
     }
 
     private static long calcRemainingDays(LocalDate endDate) {
@@ -141,8 +139,6 @@ public class GoalConverter {
         long days = ChronoUnit.DAYS.between(today, endDate);
         return Math.max(days, 0);
     }
-
-
 
     public static GoalPrimaryListResponseDto toPrimaryListResponse(List<Goal> goals) {
         return new GoalPrimaryListResponseDto(

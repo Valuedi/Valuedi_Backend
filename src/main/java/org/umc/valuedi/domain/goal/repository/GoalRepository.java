@@ -1,6 +1,6 @@
 package org.umc.valuedi.domain.goal.repository;
 
-import feign.Param;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.umc.valuedi.domain.goal.entity.Goal;
@@ -25,6 +25,7 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     List<Goal> findAllByMember_IdAndStatusIn(Long memberId, List<GoalStatus> statuses, Pageable pageable);
 
 
+    List<Goal> findAllByMember_IdAndStatusOrderByCreatedAtDesc(Long memberId, GoalStatus status);
     @Query("""
         SELECT g.bankAccount.id
         FROM Goal g
