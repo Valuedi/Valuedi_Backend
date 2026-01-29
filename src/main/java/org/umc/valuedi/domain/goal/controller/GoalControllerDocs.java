@@ -151,4 +151,19 @@ public interface GoalControllerDocs {
 
             @Valid @RequestBody GoalLinkAccountRequestDto req
     );
+
+    @Operation(
+            summary = "홈화면 목표 목록 조회 API",
+            description = "사용자의 진행 중(ACTIVE) 목표를 생성일 최신순으로 전체 조회합니다. " +
+                    "간단 조회용으로 goalId, title, targetAmount, iconId만 반환합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "회원이 존재하지 않음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    org.umc.valuedi.global.apiPayload.ApiResponse<GoalPrimaryListResponseDto> getPrimaryGoals(
+            @Parameter(description = "회원 ID", example = "1", required = true)
+            @RequestParam Long memberId
+    );
 }

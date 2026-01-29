@@ -103,6 +103,7 @@ public class GoalController implements GoalControllerDocs{
     }
 
 
+    // 목표 없는 계좌 조회
     @GetMapping("/accounts")
     public ApiResponse<GoalAccountResDto.UnlinkedBankAccountListDTO> getUnlinkedAccounts(
             @RequestParam Long memberId
@@ -114,6 +115,7 @@ public class GoalController implements GoalControllerDocs{
         );
     }
 
+    // 목표에 계좌 재연결
     @PutMapping("/{goalId}/linked-accounts")
     public ApiResponse<Void> linkAccountToGoal(
             @RequestParam Long memberId,
@@ -124,6 +126,17 @@ public class GoalController implements GoalControllerDocs{
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_ACCOUNT_LINKED,
                 null
+        );
+    }
+
+    // 주요 목표 조회(홈화면)
+    @GetMapping("/primary")
+    public ApiResponse<GoalPrimaryListResponseDto> getPrimaryGoals(
+            @RequestParam Long memberId
+    ) {
+        return ApiResponse.onSuccess(
+                GoalSuccessCode.GOAL_LIST_FETCHED,
+                goalQueryService.getPrimaryGoals(memberId)
         );
     }
 }

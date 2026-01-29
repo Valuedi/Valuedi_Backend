@@ -7,12 +7,14 @@ import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
+import org.umc.valuedi.domain.goal.dto.response.GoalPrimaryListResponseDto;
 import org.umc.valuedi.domain.goal.entity.Goal;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.member.entity.Member;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class GoalConverter {
 
@@ -138,6 +140,21 @@ public class GoalConverter {
         LocalDate today = LocalDate.now();
         long days = ChronoUnit.DAYS.between(today, endDate);
         return Math.max(days, 0);
+    }
+
+
+
+    public static GoalPrimaryListResponseDto toPrimaryListResponse(List<Goal> goals) {
+        return new GoalPrimaryListResponseDto(
+                goals.stream()
+                        .map(goal -> new GoalPrimaryListResponseDto.GoalPrimarySummaryDto(
+                                goal.getId(),              // goalId
+                                goal.getTitle(),
+                                goal.getTargetAmount(),
+                                goal.getIcon()
+                        ))
+                        .toList()
+        );
     }
 
 }
