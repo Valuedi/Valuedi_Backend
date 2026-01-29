@@ -88,8 +88,7 @@ public class AssetSyncService {
     private List<BankAccount> saveNewBankAccounts(CodefConnection connection, List<BankAccount> accountsFromApi) {
         if (accountsFromApi.isEmpty()) return new ArrayList<>();
 
-        List<BankAccount> existingAccounts = bankAccountRepository.findAllByMemberIdAndOrganization(
-                connection.getMember().getId(), connection.getOrganization());
+        List<BankAccount> existingAccounts = bankAccountRepository.findByCodefConnectionAndIsActiveTrue(connection);
 
         Set<String> existingNumbers = existingAccounts.stream()
                 .map(BankAccount::getAccountDisplay)
@@ -175,6 +174,8 @@ public class AssetSyncService {
             if (resCardNo != null && cardMap.containsKey(resCardNo)) {
                 approval.assignCard(cardMap.get(resCardNo));
                 matchedApprovals.add(approval);
+            } else {
+                log.warn("승인내역의 카드번호와 일치하는 카드를 찾을 수 없어 스킵합니다. 카드번호: {}, 승인번호: {}", resCardNo, approval.getApprovalNo());
             }
         }
 

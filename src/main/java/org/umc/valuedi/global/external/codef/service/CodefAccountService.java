@@ -177,7 +177,7 @@ public class CodefAccountService {
     private Map<String, Object> createDeleteRequestBody(String connectedId, String organization, BusinessType businessType) {
         Map<String, Object> accountMap = new HashMap<>();
         accountMap.put("organization", organization);
-        accountMap.put("businessType", businessType.toString());
+        accountMap.put("businessType", businessType.name());
         accountMap.put("countryCode", "KR");
         accountMap.put("clientType", "P");
         accountMap.put("loginType", "1");
