@@ -79,4 +79,14 @@ public class Member extends BaseEntity {
         this.codefConnectionList.add(connection);
         connection.assignMember(this);
     }
+
+    public void withdraw(WithdrawalReason reason) {
+        this.username = null;
+        this.email = null;
+        this.realName = "탈퇴회원";
+        this.birth = LocalDate.of(1, 1, 1);
+        this.gender = Gender.UNKNOWN;
+        this.passwordHash = null;
+        this.withdrawalReason = reason;
+    }
 }
