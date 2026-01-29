@@ -3,7 +3,6 @@ package org.umc.valuedi.domain.ledger.converter;
 import org.springframework.stereotype.Component;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
-import org.umc.valuedi.domain.asset.enums.CancelStatus;
 import org.umc.valuedi.domain.ledger.dto.response.CategoryStatResponse;
 import org.umc.valuedi.domain.ledger.dto.response.DailyStatResponse;
 import org.umc.valuedi.domain.ledger.dto.response.LedgerListResponse;
@@ -25,6 +24,14 @@ public class LedgerConverter {
         TransactionType type = entry.getTransactionType(); // String 필드를 그대로 사용
         Long amount = 0L;
 
+        if (entry.getTransactionType().equals(TransactionType.INCOME)) {
+            type = TransactionType.INCOME;
+        } else if (entry.getTransactionType().equals(TransactionType.REFUND)) {
+            type = TransactionType.REFUND;
+        } else {
+            type = TransactionType.EXPENSE;
+        }
+
         // 금액은 여전히 원천 테이블에서 가져옴
         if (entry.getBankTransaction() != null) {
             BankTransaction bt = entry.getBankTransaction();
@@ -35,12 +42,8 @@ public class LedgerConverter {
             }
         } else if (entry.getCardApproval() != null) {
             CardApproval ca = entry.getCardApproval();
-            if (ca.getCancelYn() == CancelStatus.NORMAL) { // 정상 승인
-                amount = ca.getUsedAmount();
-            } else if (ca.getCancelYn() == CancelStatus.CANCEL || ca.getCancelYn() == CancelStatus.PARTIAL_CANCEL) { // 취소 또는 부분 취소
-                // 환불의 경우 금액을 음수로 표시하여 지출에서 상계되도록 처리
-                amount = -ca.getUsedAmount();
-            }
+            // 카드 금액은 항상 양수로 가져옴 (취소 건도 입금으로 처리되므로 양수)
+            amount = ca.getUsedAmount();
         }
 
         return LedgerListResponse.LedgerDetail.builder()

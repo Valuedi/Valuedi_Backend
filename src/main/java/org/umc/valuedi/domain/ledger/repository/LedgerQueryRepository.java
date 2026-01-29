@@ -17,6 +17,7 @@ import org.umc.valuedi.domain.ledger.dto.response.DailyStatResponse;
 import org.umc.valuedi.domain.ledger.dto.response.TrendResponse;
 import org.umc.valuedi.domain.ledger.entity.LedgerEntry;
 import org.umc.valuedi.domain.ledger.enums.LedgerSortType;
+import org.umc.valuedi.domain.ledger.enums.TransactionType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -125,7 +126,8 @@ public class LedgerQueryRepository {
                 .join(ledgerEntry.bankTransaction, bankTransaction)
                 .where(
                         ledgerEntry.member.id.eq(memberId),
-                        yearMonthEq(yearMonth)
+                        yearMonthEq(yearMonth),
+                        ledgerEntry.transactionType.eq(TransactionType.INCOME)
                 )
                 .fetchOne();
     }
@@ -217,10 +219,11 @@ public class LedgerQueryRepository {
                 .collect(Collectors.toList());
     }
 
+    // 카드 금액 계산 로직 (승인 +, 취소 -)
     private NumberExpression<Long> getCardAmountExpression() {
         return new CaseBuilder()
-                .when(cardApproval.cancelYn.eq(CancelStatus.NORMAL)).then(cardApproval.usedAmount)
-                .when(cardApproval.cancelYn.in(CancelStatus.CANCEL, CancelStatus.PARTIAL_CANCEL)).then(cardApproval.usedAmount.negate())
+                .when(ledgerEntry.transactionType.eq(TransactionType.EXPENSE)).then(cardApproval.usedAmount)
+                .when(ledgerEntry.transactionType.eq(TransactionType.REFUND)).then(cardApproval.usedAmount.negate()) // REFUND는 차감
                 .otherwise(0L);
     }
 
