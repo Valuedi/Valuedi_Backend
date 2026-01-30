@@ -5,39 +5,28 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.Card;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
-import org.umc.valuedi.domain.asset.event.AssetRawDataSavedEvent;
-import org.umc.valuedi.domain.asset.exception.AssetException;
-import org.umc.valuedi.domain.asset.exception.code.AssetErrorCode;
 import org.umc.valuedi.domain.asset.repository.bank.BankAccountRepository;
 import org.umc.valuedi.domain.asset.repository.bank.BankTransactionRepository;
 import org.umc.valuedi.domain.asset.repository.card.CardApprovalRepository;
 import org.umc.valuedi.domain.asset.repository.card.CardRepository;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
-import org.umc.valuedi.domain.connection.exception.ConnectionException;
-import org.umc.valuedi.domain.connection.exception.code.ConnectionErrorCode;
-import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
-import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AssetSyncService {
 
     private final CodefAssetService codefAssetService;
@@ -46,150 +35,137 @@ public class AssetSyncService {
     private final CardRepository cardRepository;
     private final CardApprovalRepository cardApprovalRepository;
     private final ObjectMapper objectMapper;
-    private final CodefConnectionRepository codefConnectionRepository;
-    private final ApplicationEventPublisher eventPublisher;
 
-    @Transactional
-    public void syncAssets(Long connectionId) {
-        CodefConnection connection = codefConnectionRepository.findById(connectionId)
-                .orElseThrow(() -> new ConnectionException(ConnectionErrorCode.CONNECTION_NOT_FOUND));
-
-        log.info("자산 동기화 시작 - Connection ID: {}", connection.getId());
-        try {
-            if (connection.getBusinessType() == BusinessType.BK) {
-                syncBankAssets(connection);
-            } else if (connection.getBusinessType() == BusinessType.CD) {
-                syncCardAssets(connection);
-            }
-        } catch (CodefException e) {
-            // 목록 조회 자체가 실패하면 전체 에러 처리
-            log.error("자산 목록 조회 실패 - Connection ID: {}", connection.getId(), e);
-            throw new AssetException(AssetErrorCode.ASSET_SYNC_FAILED);
+    /**
+     * 금융사 종류에 따라 자산 동기화 분기
+     */
+    public void syncAssets(CodefConnection connection) {
+        if (connection.getBusinessType() == BusinessType.BK) {
+            syncBankAssets(connection);
+        } else if (connection.getBusinessType() == BusinessType.CD) {
+            syncCardAssets(connection);
         }
     }
 
+    /**
+     * 은행 관련 자산 동기화 (계좌 목록, 거래 내역)
+     */
     private void syncBankAssets(CodefConnection connection) {
-        // 계좌 목록 조회 및 저장
-        List<BankAccount> accountsFromApi = codefAssetService.getBankAccounts(connection);
-        List<BankAccount> savedAccounts = saveNewBankAccounts(connection, accountsFromApi);
-
-        // 계좌별 거래내역 동기화 (부분 성공 허용)
-        for (BankAccount account : savedAccounts) {
-            try {
-                syncBankTransactions(connection, account);
-            } catch (Exception e) {
-                // 이 계좌가 실패해도 다른 계좌는 계속 진행
-                log.error("[Partial Fail] 거래내역 동기화 실패 - Account: {}, Error: {}",
-                        account.getAccountDisplay(), e.getMessage());
+        log.info("은행 자산 동기화 시작 - Connection ID: {}", connection.getId());
+        
+        // 보유 계좌 목록 조회 및 저장
+        List<BankAccount> accounts = codefAssetService.getBankAccounts(connection);
+        
+        try {
+            bankAccountRepository.saveAll(accounts);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("계좌 저장 중 중복 발생 - 개별 저장 시도");
+            for (BankAccount account : accounts) {
+                try {
+                    bankAccountRepository.save(account);
+                } catch (DataIntegrityViolationException ex) {
+                    // 이미 존재하는 계좌는 무시
+                }
             }
         }
-    }
+        log.info("보유 계좌 목록 동기화 완료 - {}개 계좌", accounts.size());
 
-    private List<BankAccount> saveNewBankAccounts(CodefConnection connection, List<BankAccount> accountsFromApi) {
-        if (accountsFromApi.isEmpty()) return new ArrayList<>();
-
-        List<BankAccount> existingAccounts = bankAccountRepository.findByCodefConnectionAndIsActiveTrue(connection);
-
-        Set<String> existingNumbers = existingAccounts.stream()
-                .map(BankAccount::getAccountDisplay)
-                .collect(Collectors.toSet());
-
-        List<BankAccount> newAccounts = accountsFromApi.stream()
-                .filter(acc -> !existingNumbers.contains(acc.getAccountDisplay()))
-                .collect(Collectors.toList());
-
-        if (!newAccounts.isEmpty()) {
-            bankAccountRepository.saveAll(newAccounts);
-            log.info("새로운 은행 계좌 {}건 저장 - Connection ID: {}", newAccounts.size(), connection.getId());
+        // 각 계좌별 거래 내역 조회 및 저장
+        for (BankAccount account : accounts) {
+            syncBankTransactions(connection, account);
         }
-
-        existingAccounts.addAll(newAccounts);
-        return existingAccounts;
+        log.info("은행 자산 동기화 완료 - Connection ID: {}", connection.getId());
     }
 
+    /**
+     * 카드 관련 자산 동기화 (카드 목록, 승인 내역)
+     */
+    private void syncCardAssets(CodefConnection connection) {
+        log.info("카드사 자산 동기화 시작 - Connection ID: {}", connection.getId());
+        
+        // 보유 카드 목록 조회 및 저장
+        List<Card> cards = codefAssetService.getCards(connection);
+        
+        try {
+            cardRepository.saveAll(cards);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("카드 저장 중 중복 발생 - 개별 저장 시도");
+            for (Card card : cards) {
+                try {
+                    cardRepository.save(card);
+                } catch (DataIntegrityViolationException ex) {
+                    // 이미 존재하는 카드는 무시
+                }
+            }
+        }
+        log.info("보유 카드 목록 동기화 완료 - {}개 카드", cards.size());
+
+        // 전체 승인 내역 조회 및 카드 매칭 후 저장
+        syncCardApprovals(connection);
+        
+        log.info("카드사 자산 동기화 완료 - Connection ID: {}", connection.getId());
+    }
+
+    /**
+     * 특정 계좌의 거래 내역 동기화
+     */
     private void syncBankTransactions(CodefConnection connection, BankAccount account) {
-        // 최초 연동이므로 startDate는 null로 전달 (CodefAssetService에서 기본값 3개월 사용)
-        List<BankTransaction> transactions = codefAssetService.getBankTransactions(connection, account, null);
+        log.info("계좌 거래내역 동기화 시작 - Account: {}", account.getAccountDisplay());
+        
+        List<BankTransaction> transactions = codefAssetService.getBankTransactions(connection, account);
+        
         if (transactions.isEmpty()) {
             return;
         }
+
         bankTransactionRepository.bulkInsert(transactions);
-        log.info("거래내역 저장 완료 - Account: {}, Count: {}", account.getAccountDisplay(), transactions.size());
-
-        // 데이터 저장 후 이벤트 발행
-        eventPublisher.publishEvent(new AssetRawDataSavedEvent(connection.getId(), "BK"));
-
-        // 성공 시 해당 계좌의 마지막 동기화 시각 업데이트 (더티 체킹)
-        account.updateLastSyncedAt(LocalDateTime.now());
+        log.info("계좌 거래내역 Bulk Insert 완료 - {}건", transactions.size());
     }
 
-    private void syncCardAssets(CodefConnection connection) {
-        // 카드 목록 조회 및 저장
-        List<Card> cardsFromApi = codefAssetService.getCards(connection);
-        List<Card> savedCards = saveNewCards(connection, cardsFromApi);
+    /**
+     * 카드 승인 내역 동기화 (전체 조회 후 매칭)
+     */
+    private void syncCardApprovals(CodefConnection connection) {
+        log.info("카드 승인내역 동기화 시작 - Connection ID: {}", connection.getId());
 
-        // 승인내역 동기화 (부분 성공 허용)
-        try {
-            syncCardApprovals(connection, savedCards);
-        } catch (Exception e) {
-            log.error("[Partial Fail] 카드 승인내역 동기화 실패 - Connection: {}", connection.getId(), e);
-        }
-    }
-
-    private List<Card> saveNewCards(CodefConnection connection, List<Card> cardsFromApi) {
-        if (cardsFromApi.isEmpty()) return new ArrayList<>();
-
-        List<Card> existingCards = cardRepository.findByCodefConnection(connection);
-        Set<String> existingNumbers = existingCards.stream()
-                .map(Card::getCardNoMasked)
-                .collect(Collectors.toSet());
-
-        List<Card> newCards = cardsFromApi.stream()
-                .filter(card -> !existingNumbers.contains(card.getCardNoMasked()))
-                .collect(Collectors.toList());
-
-        if (!newCards.isEmpty()) {
-            cardRepository.saveAll(newCards);
-            log.info("새로운 카드 {}건 저장 - Connection ID: {}", newCards.size(), connection.getId());
+        // 해당 연동의 모든 카드 목록 조회 (DB)
+        List<Card> cards = cardRepository.findByCodefConnection(connection);
+        if (cards.isEmpty()) {
+            log.warn("연동된 카드가 없어 승인내역 동기화를 건너뜁니다.");
+            return;
         }
 
-        existingCards.addAll(newCards);
-        return existingCards;
-    }
-
-    private void syncCardApprovals(CodefConnection connection, List<Card> cards) {
-        if (cards.isEmpty()) return;
-
-        // 최초 연동이므로 startDate는 null로 전달 (CodefAssetService에서 기본값 3개월 사용)
-        List<CardApproval> approvals = codefAssetService.getCardApprovals(connection, null);
-        if (approvals.isEmpty()) return;
-
-        // 카드 매칭을 위한 Map 최적화
-        Map<String, Card> cardMap = cards.stream()
-                .collect(Collectors.toMap(Card::getCardNoMasked, Function.identity(), (p1, p2) -> p1));
+        // 전체 승인 내역 조회 (API)
+        List<CardApproval> approvals = codefAssetService.getCardApprovals(connection);
+        if (approvals.isEmpty()) {
+            log.info("조회된 승인내역이 없습니다.");
+            return;
+        }
 
         List<CardApproval> matchedApprovals = new ArrayList<>();
+
+        // 매칭 로직
         for (CardApproval approval : approvals) {
             String resCardNo = extractResCardNo(approval);
-            if (resCardNo != null && cardMap.containsKey(resCardNo)) {
-                approval.assignCard(cardMap.get(resCardNo));
+            if (resCardNo == null) {
+                log.warn("승인내역에서 카드번호를 찾을 수 없어 스킵합니다. ApprovalNo: {}", approval.getApprovalNo());
+                continue;
+            }
+
+            Card matchedCard = findMatchingCard(cards, resCardNo);
+            if (matchedCard != null) {
+                approval.assignCard(matchedCard);
                 matchedApprovals.add(approval);
             } else {
-                log.warn("승인내역의 카드번호와 일치하는 카드를 찾을 수 없어 스킵합니다. 카드번호: {}, 승인번호: {}", resCardNo, approval.getApprovalNo());
+                log.warn("승인내역의 카드번호({})와 일치하는 카드를 찾을 수 없어 스킵합니다.", resCardNo);
             }
         }
 
+        // 저장
         if (!matchedApprovals.isEmpty()) {
             cardApprovalRepository.bulkInsert(matchedApprovals);
-            log.info("카드 승인내역 저장 완료 - Connection ID: {}, Count: {}", connection.getId(), matchedApprovals.size());
-
-            // 데이터 저장 후 이벤트 발행
-            eventPublisher.publishEvent(new AssetRawDataSavedEvent(connection.getId(), "CD"));
+            log.info("카드 승인내역 Bulk Insert 완료 - {}건 저장 (총 조회: {}건)", matchedApprovals.size(), approvals.size());
         }
-
-        // 성공 시 모든 카드의 동기화 시각 업데이트
-        LocalDateTime now = LocalDateTime.now();
-        cards.forEach(card -> card.updateLastSyncedAt(now));
     }
 
     private String extractResCardNo(CardApproval approval) {
@@ -199,8 +175,30 @@ public class AssetSyncService {
                 return root.get("resCardNo").asText();
             }
         } catch (JsonProcessingException e) {
-            throw new AssetException(AssetErrorCode.ASSET_JSON_PARSING_ERROR);
+            log.error("JSON 파싱 실패: {}", e.getMessage());
         }
+        return null;
+    }
+
+    private Card findMatchingCard(List<Card> cards, String resCardNo) {
+        // 1순위: 정확히 일치
+        for (Card card : cards) {
+            if (resCardNo.equals(card.getCardNoMasked())) {
+                return card;
+            }
+        }
+
+        // 2순위: 뒤 4자리 일치
+        if (resCardNo.length() >= 4) {
+            String last4 = resCardNo.substring(resCardNo.length() - 4);
+            for (Card card : cards) {
+                String cardNo = card.getCardNoMasked();
+                if (cardNo != null && cardNo.length() >= 4 && cardNo.endsWith(last4)) {
+                    return card;
+                }
+            }
+        }
+
         return null;
     }
 }

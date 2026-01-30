@@ -69,7 +69,7 @@ public class BankAccount extends BaseEntity {
     private Boolean isOverdraft = false;
 
     // 마지막 동기화 시각
-    @Column(name = "last_synced_at")
+    @Column(name = "last_synced_at", nullable = false)
     private LocalDateTime lastSyncedAt;
 
     // 활성 여부
@@ -91,9 +91,5 @@ public class BankAccount extends BaseEntity {
 
     public void deactivate() {
         this.isActive = false;
-    }
-
-    public void updateLastSyncedAt(LocalDateTime time) {
-        this.lastSyncedAt = time;
     }
 }

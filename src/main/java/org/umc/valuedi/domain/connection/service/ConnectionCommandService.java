@@ -21,6 +21,14 @@ public class ConnectionCommandService {
     private final CodefConnectionRepository codefConnectionRepository;
 
     /**
+     * 금융사 계정 연동
+     */
+    public void connect(Long memberId, ConnectionReqDTO.Connect request) {
+        codefAccountService.connectAccount(memberId, request);
+        log.info("금융사 연동 완료 - memberId: {}, organization: {}", memberId, request.getOrganization());
+    }
+
+    /**
      * 금융사 연동 해제
      */
     public void disconnect(Long memberId, Long connectionId) {

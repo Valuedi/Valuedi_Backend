@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
-import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -59,7 +58,6 @@ public interface ConnectionControllerDocs {
             )
     })
     ApiResponse<Void> connect(
-            @CurrentMember Long memberId,
             @RequestBody(description = "연동할 금융사 정보 및 인증 정보") ConnectionReqDTO.Connect request
     );
 
@@ -97,7 +95,7 @@ public interface ConnectionControllerDocs {
                     )
             )
     })
-    ApiResponse<List<ConnectionResDTO.Connection>> getAllConnections(@CurrentMember Long memberId);
+    ApiResponse<List<ConnectionResDTO.Connection>> getAllConnections();
 
     @Operation(summary = "금융사 연동 해제 API", description = "특정 금융사(은행/카드사)와의 연동을 해제합니다. 연동 해제 시 해당 금융사에 속한 모든 계좌 및 카드가 비활성화됩니다.")
     @ApiResponses({
@@ -139,7 +137,6 @@ public interface ConnectionControllerDocs {
             )
     })
     ApiResponse<Void> disconnect(
-            @Parameter(description = "해제할 연동 ID (connectionId)") @PathVariable Long connectionId,
-            @CurrentMember Long memberId
+            @Parameter(description = "해제할 연동 ID (connectionId)") @PathVariable Long connectionId
     );
 }
