@@ -13,17 +13,12 @@ import org.umc.valuedi.domain.mbti.exception.MbtiException;
 import org.umc.valuedi.domain.mbti.exception.code.MbtiErrorCode;
 import org.umc.valuedi.domain.mbti.repository.MemberMbtiTestRepository;
 import org.umc.valuedi.domain.mbti.service.FinanceMbtiProvider;
-import org.umc.valuedi.domain.member.entity.Member;
-import org.umc.valuedi.domain.member.exception.MemberException;
-import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.domain.savings.converter.SavingsConverter;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
-import org.umc.valuedi.domain.savings.entity.RecommendationReason;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.entity.SavingsOption;
-import org.umc.valuedi.domain.savings.enums.ReasonCode;
 import org.umc.valuedi.domain.savings.exception.SavingsException;
 import org.umc.valuedi.domain.savings.exception.code.SavingsErrorCode;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
@@ -34,10 +29,7 @@ import org.umc.valuedi.global.external.genai.dto.response.GeminiSavingsResponseD
 import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,7 +41,6 @@ public class RecommendationService {
 
     private static final int CANDIDATE_LIMIT = 40;
 
-    private final MemberRepository memberRepository;
     private final MemberMbtiTestRepository memberMbtiTestRepository;
     private final FinanceMbtiProvider financeMbtiProvider;
 
@@ -60,14 +51,12 @@ public class RecommendationService {
     private final GeminiClient geminiClient;
     private final ObjectMapper objectMapper;
 
+    private final RecommendationTxService recommendationTxService;
+
     @Transactional
     public SavingsResponseDTO.RecommendResponse recommend(
             Long memberId
     ) {
-        // Member 엔티티 조회
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
-
         // 금융 mbti 최신 결과 조회
         MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
@@ -76,24 +65,7 @@ public class RecommendationService {
 
         boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTestId);
         if (exists) {
-            PageRequest pageable = PageRequest.of(0, RECOMMEND_COUNT);
-            List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, memberMbtiTestId, pageable);
-
-            List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
-                    .map(r -> new SavingsResponseDTO.RecommendedProduct(
-                            r.getSavings().getKorCoNm(),
-                            r.getSavings().getFinPrdtCd(),
-                            r.getSavings().getFinPrdtNm(),
-                            r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvType(),
-                            r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvTypeNm(),
-                            r.getScore()
-                    ))
-                    .toList();
-
-            return SavingsResponseDTO.RecommendResponse.builder()
-                    .products(products)
-                    .rationale(null)
-                    .build();
+            return recommendationTxService.buildCachedResponse(memberId, memberMbtiTestId);
         }
 
         MbtiType mbtiType = memberMbtiTest.getResultType();
@@ -148,65 +120,7 @@ public class RecommendationService {
                     .build();
         }
 
-        List<SavingsOption> pickedOptions = savingsOptionRepository.findAllByIdInFetchSavings(optionIds);
-        Map<Long, SavingsOption> optionById = pickedOptions.stream()
-                .collect(Collectors.toMap(SavingsOption::getId, Function.identity()));
-
-        // 추천 상품 저장
-        LocalDateTime now = LocalDateTime.now();
-        List<Recommendation> toSave = new ArrayList<>();
-        List<SavingsResponseDTO.RecommendedProduct> responseProducts = new ArrayList<>();
-
-        for (GeminiSavingsResponseDTO.Item item : items) {
-            SavingsOption savingsOption = optionById.get(item.optionId());
-            
-            if (savingsOption == null) continue;
-
-            Savings savings = savingsOption.getSavings();
-            BigDecimal score = nullSafe(item.score());
-
-            Recommendation recommendation = Recommendation.builder()
-                    .member(member)
-                    .savings(savings)
-                    .savingsOption(savingsOption)
-                    .memberMbtiTestId(memberMbtiTest.getId())
-                    .score(score)
-                    .createdAt(now)
-                    .expiresAt(null)
-                    .build();
-
-            // 추천 상품 근거 저장
-            List<RecommendationReason> reasons = safeList(item.reasons()).stream()
-                    .map(reason -> RecommendationReason.builder()
-                            .recommendation(recommendation)
-                            .reasonCode(ReasonCode.from(reason.reasonCode()))
-                            .reasonText(reason.reasonText())
-                            .delta(nullSafe(reason.delta()))
-                            .createdAt(now)
-                            .build())
-                    .toList();
-
-            recommendation.replaceReasons(reasons);
-
-            toSave.add(recommendation);
-
-            responseProducts.add(new SavingsResponseDTO.RecommendedProduct(
-                    savings.getKorCoNm(),
-                    savings.getFinPrdtCd(),
-                    savings.getFinPrdtNm(),
-                    savingsOption.getRsrvType(),
-                    savingsOption.getRsrvTypeNm(),
-                    score
-            ));
-        }
-
-        recommendationRepository.saveAll(toSave);
-
-        // DTO 변환 후 반환
-        return SavingsResponseDTO.RecommendResponse.builder()
-                .products(responseProducts)
-                .rationale(parsed.rationale())
-                .build();
+        return recommendationTxService.saveRecommendations(memberId, memberMbtiTest, parsed, items);
     }
 
     // 추천 상품 15개 조회
@@ -376,6 +290,7 @@ public class RecommendationService {
     }
 
     // 추천 상품 상세 조회
+    @Transactional(readOnly = true)
     public SavingsResponseDTO.SavingsDetailResponse getSavingsDetail(String finPrdtCd) {
         // Savings 엔티티 조회
         Savings savings = savingsRepository.findByFinPrdtCd(finPrdtCd)
