@@ -2,6 +2,7 @@ package org.umc.valuedi.global.external.codef.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.global.external.codef.client.CodefAuthClient;
 import org.umc.valuedi.global.external.codef.config.CodefProperties;
@@ -11,6 +12,7 @@ import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -19,30 +21,21 @@ public class CodefTokenService {
 
     private final CodefProperties codefProperties;
     private final CodefAuthClient codefAuthClient;
-
-    private String accessToken;
-    private LocalDateTime tokenExpirationTime;
+    private final StringRedisTemplate redisTemplate;
+    private static final String CODEF_ACCESS_TOKEN_KEY = "codef_access_token";
 
     /**
      * 유효한 Access Token 반환
      */
     public synchronized String getAccessToken() {
-        // 토큰이 없거나, 만료 시간이 지났거나(혹은 만료 5분 전이면) 재발급 수행
-        if (this.accessToken == null || isTokenExpired()) {
-            this.accessToken = fetchNewToken();
-        }
-        return this.accessToken;
-    }
+        // Redis에서 Access Token 조회
+        String accessToken = redisTemplate.opsForValue().get(CODEF_ACCESS_TOKEN_KEY);
 
-    /**
-     * 토큰 만료 여부 확인
-     */
-    private boolean isTokenExpired() {
-        if (tokenExpirationTime == null) {
-            return true;
+        // 토큰이 없으면 재발급 수행
+        if (accessToken == null) {
+            accessToken = fetchNewToken();
         }
-        // 현재 시간이 (만료시간 - 5분) 보다 뒤에 있으면 만료로 간주
-        return LocalDateTime.now().isAfter(tokenExpirationTime.minusMinutes(5));
+        return accessToken;
     }
 
     /**
@@ -73,9 +66,13 @@ public class CodefTokenService {
                         expiresIn = Long.parseLong((String) expiresInObj);
                     }
                 }
-                // 만료 시간 설정 (현재 시간 + 유효기간)
-                this.tokenExpirationTime = LocalDateTime.now().plusSeconds(expiresIn);
-                return (String) response.get("access_token");
+
+                String newAccessToken = (String) response.get("access_token");
+
+                // Redis에 토큰 저장 (만료 시간 - 5분으로 설정하여 미리 만료되도록 함)
+                redisTemplate.opsForValue().set(CODEF_ACCESS_TOKEN_KEY, newAccessToken, expiresIn - 300, TimeUnit.SECONDS);
+
+                return newAccessToken;
             }
             throw new CodefException(CodefErrorCode.CODEF_TOKEN_ERROR);
 
