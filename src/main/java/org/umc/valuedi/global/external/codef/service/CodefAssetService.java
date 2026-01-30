@@ -1,7 +1,5 @@
 package org.umc.valuedi.global.external.codef.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +15,7 @@ import org.umc.valuedi.global.external.codef.dto.res.CodefAssetResDTO;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.exception.code.CodefErrorCode;
 import org.umc.valuedi.global.external.codef.util.EncryptUtil;
+import org.umc.valuedi.global.external.codef.util.CodefApiExecutor;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -24,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -32,20 +32,22 @@ public class CodefAssetService {
 
     private final CodefApiClient codefApiClient;
     private final CodefAssetConverter codefAssetConverter;
-    private final ObjectMapper objectMapper;
     private final EncryptUtil encryptUtil;
+    private final CodefApiExecutor codefApiExecutor;
+
+    // 기본 조회 기간 (최초 연동 시): 3개월
+    private static final int DEFAULT_SEARCH_MONTHS = 3;
+    private static final DateTimeFormatter CODEF_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     public List<BankAccount> getBankAccounts(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
-
-        CodefApiResponse<Object> response = codefApiClient.getBankAccounts(requestBody);
+        CodefApiResponse<CodefAssetResDTO.BankAccountList> response = codefApiExecutor.execute(() -> codefApiClient.getBankAccounts(requestBody));
 
         if (!response.isSuccess()) {
-            log.error("CODEF 보유 계좌 목록 조회 실패: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_BANK_ACCOUNT_LIST_FAILED);
         }
 
-        CodefAssetResDTO.BankAccountList listResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankAccountList.class);
+        CodefAssetResDTO.BankAccountList listResponse = response.getData();
         List<CodefAssetResDTO.BankAccount> allAccounts = new ArrayList<>();
 
         if (listResponse.getResDepositTrust() != null) allAccounts.addAll(listResponse.getResDepositTrust());
@@ -57,94 +59,73 @@ public class CodefAssetService {
         return codefAssetConverter.toBankAccountList(allAccounts, connection);
     }
 
-    public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account) {
-        Map<String, Object> requestBody = createAssetRequestBody(connection);
-        
+    public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account, String startDate) {
         String originalAccountNo = encryptUtil.decryptAES(account.getAccountNoEnc());
-        requestBody.put("account", originalAccountNo);
-        
-        LocalDate now = LocalDate.now();
-        requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("orderBy", "0");
-        requestBody.put("inquiryType", "1");
+        Map<String, Object> requestBody = createTransactionRequestBody(connection, originalAccountNo, startDate);
 
-        CodefApiResponse<Object> response = codefApiClient.getBankTransactions(requestBody);
+        CodefApiResponse<CodefAssetResDTO.BankTransactionList> response =
+                codefApiExecutor.execute(() -> codefApiClient.getBankTransactions(requestBody));
 
         if (!response.isSuccess()) {
             String msg = response.getResult().getMessage();
-
             if (msg.contains("일치하는 정보가 없습니다") || msg.contains("존재하지 않습니다") || msg.contains("보유계좌")) {
-                // 경고 레벨로 낮춤 (정상적인 예외 상황)
-                log.warn("거래내역 조회 불가 계좌 (건너뜀) - 계좌명: {}, 메시지: {}", account.getAccountName(), msg);
-            } else {
-                log.error("CODEF 계좌 거래 내역 조회 API 오류 - 계좌: {}, 에러: {}", account.getAccountDisplay(), msg);
+                log.warn("계좌 거래내역 없음 (정상 처리) - Account: {}, Message: {}", account.getAccountDisplay(), msg);
+                return List.of();
             }
-
-            return List.of();
+            throw new CodefException(CodefErrorCode.CODEF_API_INTERNAL_ERROR);
         }
 
-        CodefAssetResDTO.BankTransactionList transactionResponse = objectMapper.convertValue(response.getData(), CodefAssetResDTO.BankTransactionList.class);
+        CodefAssetResDTO.BankTransactionList transactionResponse = response.getData();
         if (transactionResponse.getResTrHistoryList() == null) {
             return List.of();
         }
-
         return codefAssetConverter.toBankTransactionList(transactionResponse.getResTrHistoryList(), account);
     }
 
     public List<Card> getCards(CodefConnection connection) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
-
-        CodefApiResponse<Object> response = codefApiClient.getCardList(requestBody);
+        CodefApiResponse<CodefAssetResDTO.CardList> response = codefApiExecutor.execute(() -> codefApiClient.getCardList(requestBody));
 
         if (!response.isSuccess()) {
-            log.error("CODEF 보유 카드 목록 조회 실패: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
 
-        Object responseData = response.getData();
-        List<CodefAssetResDTO.Card> cardList = new ArrayList<>();
-        
-        if (responseData instanceof Map) {
-            CodefAssetResDTO.Card card = objectMapper.convertValue(responseData, CodefAssetResDTO.Card.class);
-            cardList.add(card);
-        } else if (responseData instanceof List) {
-             List<CodefAssetResDTO.Card> cards = objectMapper.convertValue(responseData, new TypeReference<List<CodefAssetResDTO.Card>>() {});
-             cardList.addAll(cards);
-        } else {
-            log.error("CODEF 보유 카드 목록 응답 형식이 예상과 다릅니다. Data: {}", responseData);
-            throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
+        CodefAssetResDTO.CardList cardListResponse = response.getData();
+        List<CodefAssetResDTO.Card> allCards = new ArrayList<>();
+
+        if (cardListResponse.getResCardList() != null && !cardListResponse.getResCardList().isEmpty()) {
+            allCards.addAll(cardListResponse.getResCardList());
+        } else if (cardListResponse.getResCardName() != null) {
+            CodefAssetResDTO.Card singleCard = CodefAssetResDTO.Card.builder()
+                    .resCardName(cardListResponse.getResCardName())
+                    .resCardNo(cardListResponse.getResCardNo())
+                    .resCardType(cardListResponse.getResCardType())
+                    .resUserNm(cardListResponse.getResUserNm())
+                    .resSleepYN(cardListResponse.getResSleepYN())
+                    .resTrafficYN(cardListResponse.getResTrafficYN())
+                    .resValidPeriod(cardListResponse.getResValidPeriod())
+                    .resIssueDate(cardListResponse.getResIssueDate())
+                    .resState(cardListResponse.getResState())
+                    .resImageLink(cardListResponse.getResImageLink())
+                    .build();
+            allCards.add(singleCard);
         }
-        
-        return codefAssetConverter.toCardList(cardList, connection);
+
+        return codefAssetConverter.toCardList(allCards, connection);
     }
 
-    public List<CardApproval> getCardApprovals(CodefConnection connection) {
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("connectedId", connection.getConnectedId());
-        requestBody.put("organization", connection.getOrganization());
-        
-        LocalDate now = LocalDate.now();
-        requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("orderBy", "0");
-        requestBody.put("inquiryType", "1");
-        requestBody.put("memberStoreInfoType", "1"); // 가맹점 상세 정보 조회 옵션
-
-        CodefApiResponse<Object> response = codefApiClient.getCardApprovals(requestBody);
+    public List<CardApproval> getCardApprovals(CodefConnection connection, String startDate) {
+        Map<String, Object> requestBody = createApprovalRequestBody(connection, startDate);
+        CodefApiResponse<List<CodefAssetResDTO.CardApproval>> response = codefApiExecutor.execute(() -> codefApiClient.getCardApprovals(requestBody));
 
         if (!response.isSuccess()) {
-            log.error("CODEF 카드 승인 내역 조회 실패: {}", response.getResult().getMessage());
+            throw new CodefException(CodefErrorCode.CODEF_API_INTERNAL_ERROR);
+        }
+
+        List<CodefAssetResDTO.CardApproval> approvalList = response.getData();
+        if (approvalList == null) {
             return List.of();
         }
-
-        List<CodefAssetResDTO.CardApproval> approvalList;
-        if (response.getData() instanceof List) {
-             approvalList = objectMapper.convertValue(response.getData(), new TypeReference<List<CodefAssetResDTO.CardApproval>>() {});
-        } else {
-             return List.of();
-        }
-
         return codefAssetConverter.toCardApprovalList(approvalList);
     }
 
@@ -152,6 +133,33 @@ public class CodefAssetService {
         Map<String, Object> body = new HashMap<>();
         body.put("connectedId", connection.getConnectedId());
         body.put("organization", connection.getOrganization());
+        return body;
+    }
+
+    private void addDateParameters(Map<String, Object> body, String startDate) {
+        String finalStartDate = Optional.ofNullable(startDate)
+                .filter(s -> !s.isEmpty())
+                .orElse(LocalDate.now().minusMonths(DEFAULT_SEARCH_MONTHS).format(CODEF_DATE_FMT));
+
+        body.put("startDate", finalStartDate);
+        body.put("endDate", LocalDate.now().format(CODEF_DATE_FMT));
+    }
+
+    private Map<String, Object> createTransactionRequestBody(CodefConnection connection, String originalAccountNo, String startDate) {
+        Map<String, Object> body = createAssetRequestBody(connection);
+        body.put("account", originalAccountNo);
+        addDateParameters(body, startDate);
+        body.put("orderBy", "0");
+        body.put("inquiryType", "1");
+        return body;
+    }
+
+    private Map<String, Object> createApprovalRequestBody(CodefConnection connection, String startDate) {
+        Map<String, Object> body = createAssetRequestBody(connection);
+        addDateParameters(body, startDate);
+        body.put("orderBy", "0");
+        body.put("inquiryType", "1");
+        body.put("memberStoreInfoType", "1");
         return body;
     }
 }

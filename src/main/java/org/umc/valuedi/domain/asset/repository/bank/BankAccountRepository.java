@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
+import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
 import java.util.List;
 
@@ -20,7 +21,15 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Long> 
     List<BankAccount> findAllByMemberId(@Param("memberId") Long memberId);
 
     /**
-     * 특정 은행별 활성 계좌 목록 조회
+     * 특정 은행별 활성 계좌 목록 조회 (CodefConnection 기준)
+     */
+    @Query("SELECT ba FROM BankAccount ba " +
+            "WHERE ba.codefConnection = :codefConnection " +
+            "AND ba.isActive = true")
+    List<BankAccount> findByCodefConnectionAndIsActiveTrue(@Param("codefConnection") CodefConnection codefConnection);
+
+    /**
+     * 특정 은행별 활성 계좌 목록 조회 (MemberId, Organization 기준)
      */
     @Query("SELECT ba FROM BankAccount ba " +
             "JOIN FETCH ba.codefConnection cc " +

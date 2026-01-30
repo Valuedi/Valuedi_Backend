@@ -2,9 +2,7 @@ package org.umc.valuedi.global.external.codef.dto.res;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
 
@@ -14,7 +12,9 @@ public class CodefAssetResDTO {
      * 보유 계좌 목록 조회 응답
      */
     @Getter
-    @NoArgsConstructor
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BankAccountList {
         @JsonProperty("resDepositTrust")
@@ -33,7 +33,9 @@ public class CodefAssetResDTO {
      * 개별 계좌 정보
      */
     @Getter
-    @NoArgsConstructor
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BankAccount {
         @JsonProperty("resAccount")
@@ -74,7 +76,9 @@ public class CodefAssetResDTO {
      * 계좌 거래 내역 조회 응답
      */
     @Getter
-    @NoArgsConstructor
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BankTransactionList {
         @JsonProperty("resTrHistoryList")
@@ -117,7 +121,9 @@ public class CodefAssetResDTO {
      * 개별 거래 내역 정보
      */
     @Getter
-    @NoArgsConstructor
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BankTransaction {
         @JsonProperty("resAccountTrDate")
@@ -141,10 +147,46 @@ public class CodefAssetResDTO {
     }
 
     /**
-     * 보유 카드 정보
+     * 보유 카드 목록 조회 응답 (단일 카드 또는 리스트)
      */
     @Getter
-    @NoArgsConstructor
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CardList {
+        @JsonProperty("resCardList")
+        private List<Card> resCardList;
+        // 단일 카드 응답의 경우를 대비하여 추가
+        @JsonProperty("resCardName")
+        private String resCardName;
+        @JsonProperty("resCardNo")
+        private String resCardNo;
+        @JsonProperty("resCardType")
+        private String resCardType;
+        @JsonProperty("resUserNm")
+        private String resUserNm;
+        @JsonProperty("resSleepYN")
+        private String resSleepYN;
+        @JsonProperty("resTrafficYN")
+        private String resTrafficYN;
+        @JsonProperty("resValidPeriod")
+        private String resValidPeriod;
+        @JsonProperty("resIssueDate")
+        private String resIssueDate;
+        @JsonProperty("resState")
+        private String resState;
+        @JsonProperty("resImageLink")
+        private String resImageLink;
+    }
+
+    /**
+     * 개별 카드 정보
+     */
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Card {
         @JsonProperty("resCardName")
@@ -170,10 +212,12 @@ public class CodefAssetResDTO {
     }
 
     /**
-     * 카드 승인 내역 정보
+     * 개별 카드 승인 내역 정보
      */
     @Getter
-    @NoArgsConstructor
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @ToString
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CardApproval {

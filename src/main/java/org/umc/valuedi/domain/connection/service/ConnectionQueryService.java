@@ -11,10 +11,9 @@ import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
-import org.umc.valuedi.global.external.codef.service.CodefCardService;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 @Slf4j
 @Service
@@ -28,30 +27,14 @@ public class ConnectionQueryService {
      * 연동된 은행 목록 조회
      */
     public List<BankResDTO.BankConnection> getConnectedBanks(Long memberId) {
-        List<CodefConnection> connections =
-                connectionRepository.findByMemberIdAndBusinessType(
-                        memberId,
-                        BusinessType.BK
-                );
-
-        return connections.stream()
-                .map(connectionConverter::toBankConnectionDTO)
-                .toList();
+        return getConnectionsAndConvert(memberId, BusinessType.BK, connectionConverter::toBankConnectionDTO);
     }
 
     /**
      * 연동된 카드사 목록 조회
      */
     public List<CardResDTO.CardIssuerConnection> getConnectedCardIssuers(Long memberId) {
-        List<CodefConnection> connections =
-                connectionRepository.findByMemberIdAndBusinessType(
-                        memberId,
-                        BusinessType.CD
-                );
-
-        return connections.stream()
-                .map(connectionConverter::toCardIssuerConnectionDTO)
-                .toList();
+        return getConnectionsAndConvert(memberId, BusinessType.CD, connectionConverter::toCardIssuerConnectionDTO);
     }
 
     /**
@@ -63,6 +46,13 @@ public class ConnectionQueryService {
 
         return connections.stream()
                 .map(connectionConverter::toConnectionDTO)
+                .toList();
+    }
+
+    private <T> List<T> getConnectionsAndConvert(Long memberId, BusinessType businessType, Function<CodefConnection, T> converter) {
+        return connectionRepository.findByMemberIdAndBusinessType(memberId, businessType)
+                .stream()
+                .map(converter)
                 .toList();
     }
 }
