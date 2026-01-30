@@ -43,7 +43,7 @@ public enum Organization {
     JEONBUK_CARD("0315", "전북카드", BusinessType.CD),
     GWANGJU_CARD("0316", "광주카드", BusinessType.CD),
     SUHYUP_CARD("0320", "수협카드", BusinessType.CD),
-    JEJU_CARD("0321", "제주카드", BusinessType.CD);
+    JEJU_CARD("0321", "제주카드", BusinessType.CD)
 
     ;
 
