@@ -277,20 +277,46 @@ public class LedgerSyncService {
         String normBankDesc = normalizeText(bankDesc);
         String normMerchant = normalizeText(ca.getMerchantName());
 
-        // 한쪽이 비어있으면 매칭 불가
-        if (normBankDesc.isEmpty() || normMerchant.isEmpty()) return false;
+        // 한쪽이 너무 짧으면 매칭 위험하므로 스킵 (예: 2자 미만)
+        if (normBankDesc.length() < 2 || normMerchant.length() < 2) return false;
 
-        // 부분 포함 여부로 판단 (더 정교한 알고리즘 적용 가능)
-        return normBankDesc.contains(normMerchant) || normMerchant.contains(normBankDesc);
+        // LCS 길이 계산
+        int lcsLength = getLongestCommonSubstringLength(normBankDesc, normMerchant);
+
+
+        // 기준: 짧은 문자열 길이의 60% 이상 겹치거나, 4글자 이상 겹치면 일치로 판단
+        int minLength = Math.min(normBankDesc.length(), normMerchant.length());
+        return lcsLength >= 4 || (double) lcsLength / minLength >= 0.6;
     }
 
     private String normalizeText(String text) {
         if (text == null) return "";
         return text.replaceAll("[^a-zA-Z0-9가-힣]", "") // 특수문자, 공백 제거
                 .replace("주식회사", "")
-                .replace("주", "")
                 .replace("유한회사", "")
+                .replace("체크", "") // "체크우리" 등에서 제거
+                .replace("카드", "") // "카드" 제거
                 .toUpperCase();
+    }
+
+    // LCS (Longest Common Substring) 길이 계산
+    private int getLongestCommonSubstringLength(String s1, String s2) {
+        int m = s1.length();
+        int n = s2.length();
+        int[][] dp = new int[m + 1][n + 1];
+        int maxLength = 0;
+
+        for (int i = 1; i <= m; i++) {
+            for (int j = 1; j <= n; j++) {
+                if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                    maxLength = Math.max(maxLength, dp[i][j]);
+                } else {
+                    dp[i][j] = 0;
+                }
+            }
+        }
+        return maxLength;
     }
 
 
