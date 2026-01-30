@@ -1,6 +1,5 @@
 package org.umc.valuedi.global.external.codef.converter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +58,7 @@ public class CodefAssetConverter {
                     .rawJson(objectMapper.writeValueAsString(item))
                     .build();
         } catch (Exception e) {
-            log.error("BankAccount 변환 실패: {}", e.getMessage(), e);
+            log.error("BankAccount 변환 실패: {}", e.getMessage());
             return null;
         }
     }
@@ -75,11 +74,6 @@ public class CodefAssetConverter {
         try {
             LocalDate trDate = parseDate(item.getResAccountTrDate());
             LocalTime trTime = parseTime(item.getResAccountTrTime());
-
-            if (trDate == null || trTime == null) {
-                log.warn("거래일시 파싱 실패로 BankTransaction 변환을 건너뜁니다. Date: {}, Time: {}", item.getResAccountTrDate(), item.getResAccountTrTime());
-                return null;
-            }
             LocalDateTime trDatetime = LocalDateTime.of(trDate, trTime);
 
             Long inAmount = parseAmount(item.getResAccountIn());
@@ -103,7 +97,7 @@ public class CodefAssetConverter {
                     .rawJson(objectMapper.writeValueAsString(item))
                     .build();
         } catch (Exception e) {
-            log.error("BankTransaction 변환 실패: {}", e.getMessage(), e);
+            log.error("BankTransaction 변환 실패: {}", e.getMessage());
             return null;
         }
     }
@@ -126,7 +120,7 @@ public class CodefAssetConverter {
                     .rawJson(objectMapper.writeValueAsString(item))
                     .build();
         } catch (Exception e) {
-            log.error("Card 변환 실패: {}", e.getMessage(), e);
+            log.error("Card 변환 실패: {}", e.getMessage());
             return null;
         }
     }
@@ -142,14 +136,6 @@ public class CodefAssetConverter {
         try {
             LocalDate usedDate = parseDate(item.getResUsedDate());
             LocalTime usedTime = parseTime(item.getResUsedTime());
-
-            if (usedDate == null || usedTime == null) {
-                log.warn("사용일시 파싱 실패로 CardApproval 변환을 건너뜁니다. Date: {}, Time: {}", item.getResUsedDate(), item.getResUsedTime());
-                return null;
-            }
-
-            LocalDate commStartDate = parseDate(item.getCommStartDate());
-            LocalDate commEndDate = parseDate(item.getCommEndDate());
 
             return CardApproval.builder()
                     .usedDate(usedDate)
@@ -167,13 +153,13 @@ public class CodefAssetConverter {
                     .merchantName(item.getResMemberStoreName())
                     .merchantType(item.getResMemberStoreType())
                     .merchantNo(item.getResMemberStoreNo())
-                    .commStartDate(commStartDate != null ? commStartDate.atStartOfDay() : null)
-                    .commEndDate(commEndDate != null ? commEndDate.atStartOfDay() : null)
+                    .commStartDate(parseDate(item.getCommStartDate()).atStartOfDay())
+                    .commEndDate(parseDate(item.getCommEndDate()).atStartOfDay())
                     .syncedAt(LocalDateTime.now())
                     .rawJson(objectMapper.writeValueAsString(item))
                     .build();
         } catch (Exception e) {
-            log.error("CardApproval 변환 실패: {}", e.getMessage(), e);
+            log.error("CardApproval 변환 실패: {}", e.getMessage());
             return null;
         }
     }
@@ -197,27 +183,16 @@ public class CodefAssetConverter {
     }
 
     private LocalDate parseDate(String dateStr) {
-        if (dateStr == null || dateStr.length() != 8 || "00000000".equals(dateStr)) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(dateStr, DateTimeFormatter.BASIC_ISO_DATE);
-        } catch (Exception e) {
-            log.warn("날짜 파싱 실패: '{}'", dateStr, e);
-            return null;
-        }
+        if (dateStr == null || dateStr.length() != 8) return LocalDate.now();
+        return LocalDate.parse(dateStr, DateTimeFormatter.BASIC_ISO_DATE);
     }
 
     private LocalTime parseTime(String timeStr) {
-        if (timeStr == null || timeStr.length() != 6) {
-            return null;
-        }
-        try {
+        if (timeStr == null) return LocalTime.MIN;
+        if (timeStr.length() == 6) {
             return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HHmmss"));
-        } catch (Exception e) {
-            log.warn("시간 파싱 실패: '{}'", timeStr, e);
-            return null;
         }
+        return LocalTime.MIN;
     }
 
     private PaymentType parsePaymentType(String type) {

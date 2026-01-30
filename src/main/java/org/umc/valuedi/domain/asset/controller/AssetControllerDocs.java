@@ -11,7 +11,6 @@ import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
-import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -57,7 +56,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<CardResDTO.CardListDTO> getCards(@CurrentMember Long memberId);
+    ApiResponse<CardResDTO.CardListDTO> getCards();
 
     @Operation(summary = "연동된 카드사 목록 조회 API", description = "현재 사용자가 연동한 카드사 리스트를 조회합니다.")
     @ApiResponses({
@@ -95,7 +94,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<List<CardResDTO.CardIssuerConnection>> getCardIssuers(@CurrentMember Long memberId);
+    ApiResponse<List<CardResDTO.CardIssuerConnection>> getCardIssuers();
 
     @Operation(summary = "카드사별 카드 목록 조회", description = "특정 카드사에 연동된 카드 목록을 조회합니다.")
     @ApiResponses({
@@ -129,10 +128,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<CardResDTO.CardListDTO> getCardsByIssuer(
-            @Parameter(description = "카드사 코드 (예: 0301)") String issuerCode,
-            @CurrentMember Long memberId
-    );
+    ApiResponse<CardResDTO.CardListDTO> getCardsByIssuer(@Parameter(description = "카드사 코드 (예: 0301)") String issuerCode);
 
     @Operation(summary = "연동된 은행 목록 조회 API", description = "현재 사용자가 연동한 은행 리스트를 조회합니다.")
     @ApiResponses({
@@ -170,7 +166,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<List<BankResDTO.BankConnection>> getBanks(@CurrentMember Long memberId);
+    ApiResponse<List<BankResDTO.BankConnection>> getBanks();
 
     @Operation(summary = "전체 계좌 목록 조회", description = "등록 최신순으로 정렬된 모든 은행 계좌 목록을 조회합니다.")
     @ApiResponses({
@@ -203,7 +199,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<BankResDTO.BankAccountListDTO> getAllBankAccounts(@CurrentMember Long memberId);
+    ApiResponse<BankResDTO.BankAccountListDTO> getAllBankAccounts();
 
     @Operation(summary = "은행별 계좌 목록 조회", description = "특정 은행에 연동된 계좌 목록을 조회합니다.")
     @ApiResponses({
@@ -236,10 +232,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
-            @Parameter(description = "은행 코드 (예: 004)") String organization,
-            @CurrentMember Long memberId
-    );
+    ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(@Parameter(description = "은행 코드 (예: 004)") String organization);
 
     @Operation(summary = "연동 자산 개수 조회", description = "홈화면용 자산(계좌/카드) 개수를 조회합니다.")
     @ApiResponses({
@@ -266,5 +259,5 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount(@CurrentMember Long memberId);
+    ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount();
 }

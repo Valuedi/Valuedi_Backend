@@ -60,8 +60,4 @@ public class Card extends BaseEntity {
     public void deactivate() {
         this.isActive = false;
     }
-
-    public void updateLastSyncedAt(LocalDateTime time) {
-        this.lastSyncedAt = time;
-    }
 }

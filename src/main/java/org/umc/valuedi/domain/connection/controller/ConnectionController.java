@@ -8,8 +8,6 @@ import org.umc.valuedi.domain.connection.service.ConnectionCommandService;
 import org.umc.valuedi.domain.connection.service.ConnectionQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
-import org.umc.valuedi.global.external.codef.service.CodefAccountService;
-import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -20,30 +18,32 @@ public class ConnectionController implements ConnectionControllerDocs {
 
     private final ConnectionCommandService connectionCommandService;
     private final ConnectionQueryService connectionQueryService;
-    private final CodefAccountService codefAccountService;
 
     @PostMapping
     public ApiResponse<Void> connect(
-            @CurrentMember Long memberId,
+            // @CurrentMember Long memberId,
             @RequestBody ConnectionReqDTO.Connect request
     ) {
-        codefAccountService.connectAccount(memberId, request);
+        Long memberId = 1L;
+        connectionCommandService.connect(memberId, request);
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_SUCCESS, null);
     }
 
     @GetMapping
     public ApiResponse<List<ConnectionResDTO.Connection>> getAllConnections(
-            @CurrentMember Long memberId
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L;
         List<ConnectionResDTO.Connection> connections = connectionQueryService.getAllConnections(memberId);
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_LIST_FETCH_SUCCESS, connections);
     }
 
     @DeleteMapping("/{connectionId}")
     public ApiResponse<Void> disconnect(
-            @CurrentMember Long memberId,
+            // @CurrentMember Long memberId,
             @PathVariable Long connectionId
     ) {
+        Long memberId = 1L;
         connectionCommandService.disconnect(memberId, connectionId);
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_DELETE_SUCCESS, null);
     }

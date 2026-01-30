@@ -13,7 +13,6 @@ import org.umc.valuedi.domain.asset.service.AssetQueryService;
 import org.umc.valuedi.domain.connection.service.ConnectionQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
-import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -29,54 +28,61 @@ public class AssetController implements AssetControllerDocs {
 
     @GetMapping("/cards")
     public ApiResponse<CardResDTO.CardListDTO> getCards(
-            @CurrentMember Long memberId
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L; // 임시
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllCards(memberId));
     }
 
     @GetMapping("/cardIssuers")
     public ApiResponse<List<CardResDTO.CardIssuerConnection>> getCardIssuers(
-            @CurrentMember Long memberId
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L;
         List<CardResDTO.CardIssuerConnection> cardIssuers = connectionQueryService.getConnectedCardIssuers(memberId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, cardIssuers);
     }
 
     @GetMapping("/cardIssuers/{issuerCode}/cards")
     public ApiResponse<CardResDTO.CardListDTO> getCardsByIssuer(
-            @PathVariable String issuerCode,
-            @CurrentMember Long memberId
+            @PathVariable String issuerCode
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L;
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getCardsByIssuer(memberId, issuerCode));
     }
 
     @GetMapping("/banks")
     public ApiResponse<List<BankResDTO.BankConnection>> getBanks( // TODO: List 객체 래핑으로 변경
-            @CurrentMember Long memberId
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L; // 임시
         List<BankResDTO.BankConnection> banks = connectionQueryService.getConnectedBanks(memberId);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, banks);
     }
 
     @GetMapping("/accounts")
     public ApiResponse<BankResDTO.BankAccountListDTO> getAllBankAccounts(
-            @CurrentMember Long memberId
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L;
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllBankAccounts(memberId));
     }
 
     @GetMapping("/banks/{bankCode}/accounts")
     public ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
-            @PathVariable String bankCode,
-            @CurrentMember Long memberId
+            @PathVariable String bankCode
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L;
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getBankAccountsByOrganization(memberId, bankCode));
     }
 
     @GetMapping("/summary")
     public ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount(
-            @CurrentMember Long memberId
+            // @CurrentMember Long memberId
     ) {
+        Long memberId = 1L;
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAssetSummaryCount(memberId));
     }
 }
