@@ -1,4 +1,4 @@
-package org.umc.valuedi.infra.fss.dto.response;
+package org.umc.valuedi.global.external.fss.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

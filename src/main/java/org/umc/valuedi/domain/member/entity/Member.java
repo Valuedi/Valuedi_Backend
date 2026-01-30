@@ -4,6 +4,11 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.umc.valuedi.domain.member.enums.Gender;
+import org.umc.valuedi.domain.member.enums.Role;
+import org.umc.valuedi.domain.member.enums.SignupType;
+import org.umc.valuedi.domain.member.enums.Status;
+import org.umc.valuedi.domain.savings.entity.Recommendation;
 import org.umc.valuedi.domain.member.enums.*;
 import org.umc.valuedi.domain.terms.entity.MemberTerms;
 import org.umc.valuedi.global.entity.BaseEntity;
@@ -70,6 +75,10 @@ public class Member extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberTerms> memberTermsList = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Recommendation> recommendationList = new ArrayList<>();
   
     @Builder.Default
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
