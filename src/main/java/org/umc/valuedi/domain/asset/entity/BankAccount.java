@@ -96,4 +96,10 @@ public class BankAccount extends BaseEntity {
     public void updateLastSyncedAt(LocalDateTime time) {
         this.lastSyncedAt = time;
     }
+
+    public void updateLastTranDate(LocalDate date) {
+        if (this.lastTranDate == null || date.isAfter(this.lastTranDate)) {
+            this.lastTranDate = date;
+        }
+    }
 }

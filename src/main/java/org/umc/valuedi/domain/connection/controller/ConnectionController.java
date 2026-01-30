@@ -47,4 +47,13 @@ public class ConnectionController implements ConnectionControllerDocs {
         connectionCommandService.disconnect(memberId, connectionId);
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_DELETE_SUCCESS, null);
     }
+
+    @PostMapping("/{connectionId}/sync")
+    public ApiResponse<Void> sync(
+            @CurrentMember Long memberId,
+            @PathVariable Long connectionId
+    ) {
+        connectionCommandService.syncConnection(memberId, connectionId);
+        return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_SYNC_REQUEST_SUCCESS, null);
+    }
 }

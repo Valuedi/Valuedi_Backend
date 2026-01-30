@@ -82,4 +82,8 @@ public class CodefConnection extends BaseEntity {
         this.cardList.add(card);
         card.assignConnection(this);
     }
+
+    public void updateLastSyncedAt(LocalDateTime time) {
+        this.lastSyncedAt = time;
+    }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
@@ -27,7 +28,9 @@ import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.global.external.codef.exception.CodefException;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +52,8 @@ public class AssetSyncService {
     private final CodefConnectionRepository codefConnectionRepository;
     private final ApplicationEventPublisher eventPublisher;
 
+    private static final DateTimeFormatter CODEF_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+
     @Transactional
     public void syncAssets(Long connectionId) {
         CodefConnection connection = codefConnectionRepository.findById(connectionId)
@@ -68,6 +73,31 @@ public class AssetSyncService {
         }
     }
 
+    @Async("assetSyncExecutor")
+    @Transactional
+    public void syncAssetsIncrementally(Long connectionId) {
+        CodefConnection connection = codefConnectionRepository.findById(connectionId)
+                .orElseThrow(() -> new ConnectionException(ConnectionErrorCode.CONNECTION_NOT_FOUND));
+
+        log.info("자산 증분 동기화 시작 - Connection ID: {}", connection.getId());
+        try {
+            if (connection.getBusinessType() == BusinessType.BK) {
+                syncBankAssetsIncrementally(connection);
+            } else if (connection.getBusinessType() == BusinessType.CD) {
+                syncCardAssetsIncrementally(connection);
+            }
+            connection.updateLastSyncedAt(LocalDateTime.now()); // Connection의 마지막 동기화 시각 업데이트
+            codefConnectionRepository.save(connection); // 변경사항 저장
+        } catch (CodefException e) {
+            log.error("자산 증분 동기화 실패 - Connection ID: {}", connection.getId(), e);
+            // 비동기 메서드이므로 예외를 던져도 호출자에게 전달되지 않음. 로그만 남김.
+            // TODO: 실패 시 Connection 상태 업데이트 로직 추가 고려
+        } catch (Exception e) {
+            log.error("자산 증분 동기화 중 예상치 못한 오류 발생 - Connection ID: {}", connection.getId(), e);
+            // TODO: 실패 시 Connection 상태 업데이트 로직 추가 고려
+        }
+    }
+
     private void syncBankAssets(CodefConnection connection) {
         // 계좌 목록 조회 및 저장
         List<BankAccount> accountsFromApi = codefAssetService.getBankAccounts(connection);
@@ -76,11 +106,27 @@ public class AssetSyncService {
         // 계좌별 거래내역 동기화 (부분 성공 허용)
         for (BankAccount account : savedAccounts) {
             try {
-                syncBankTransactions(connection, account);
+                syncBankTransactions(connection, account, null); // 최초 연동이므로 startDate는 null로 전달
             } catch (Exception e) {
                 // 이 계좌가 실패해도 다른 계좌는 계속 진행
                 log.error("[Partial Fail] 거래내역 동기화 실패 - Account: {}, Error: {}",
                         account.getAccountDisplay(), e.getMessage());
+            }
+        }
+    }
+
+    private void syncBankAssetsIncrementally(CodefConnection connection) {
+        List<BankAccount> accounts = bankAccountRepository.findByCodefConnectionAndIsActiveTrue(connection);
+        for (BankAccount account : accounts) {
+            try {
+                String startDate = null;
+                if (account.getLastTranDate() != null) {
+                    // 마지막 거래일 다음 날부터 조회 (CODEF API가 시작일 포함하는 경우 중복 방지)
+                    startDate = account.getLastTranDate().plusDays(1).format(CODEF_DATE_FMT);
+                }
+                syncBankTransactions(connection, account, startDate);
+            } catch (Exception e) {
+                log.error("[Partial Fail] 거래내역 증분 동기화 실패 - Account: {}, Error: {}", account.getAccountDisplay(), e.getMessage());
             }
         }
     }
@@ -107,9 +153,8 @@ public class AssetSyncService {
         return existingAccounts;
     }
 
-    private void syncBankTransactions(CodefConnection connection, BankAccount account) {
-        // 최초 연동이므로 startDate는 null로 전달 (CodefAssetService에서 기본값 3개월 사용)
-        List<BankTransaction> transactions = codefAssetService.getBankTransactions(connection, account, null);
+    private void syncBankTransactions(CodefConnection connection, BankAccount account, String startDate) {
+        List<BankTransaction> transactions = codefAssetService.getBankTransactions(connection, account, startDate);
         if (transactions.isEmpty()) {
             return;
         }
@@ -121,6 +166,12 @@ public class AssetSyncService {
 
         // 성공 시 해당 계좌의 마지막 동기화 시각 업데이트 (더티 체킹)
         account.updateLastSyncedAt(LocalDateTime.now());
+
+        // 가장 최근 거래일로 lastTranDate 업데이트
+        transactions.stream()
+                .map(BankTransaction::getTrDate)
+                .max(LocalDate::compareTo)
+                .ifPresent(account::updateLastTranDate);
     }
 
     private void syncCardAssets(CodefConnection connection) {
@@ -130,9 +181,33 @@ public class AssetSyncService {
 
         // 승인내역 동기화 (부분 성공 허용)
         try {
-            syncCardApprovals(connection, savedCards);
+            syncCardApprovals(connection, savedCards, null); // 최초 연동이므로 startDate는 null로 전달
         } catch (Exception e) {
             log.error("[Partial Fail] 카드 승인내역 동기화 실패 - Connection: {}", connection.getId(), e);
+        }
+    }
+
+    private void syncCardAssetsIncrementally(CodefConnection connection) {
+        List<Card> cards = cardRepository.findByCodefConnection(connection);
+        if (cards.isEmpty()) return;
+
+        // 모든 카드 중 가장 최근 승인일자를 조회하여 증분 동기화 시작일로 사용
+        LocalDate maxUsedDate = cards.stream()
+                .map(card -> cardApprovalRepository.findMaxUsedDateByCardId(card.getId()))
+                .filter(date -> date != null)
+                .max(LocalDate::compareTo)
+                .orElse(null);
+
+        String startDate = null;
+        if (maxUsedDate != null) {
+            // 마지막 사용일 다음 날부터 조회
+            startDate = maxUsedDate.plusDays(1).format(CODEF_DATE_FMT);
+        }
+
+        try {
+            syncCardApprovals(connection, cards, startDate);
+        } catch (Exception e) {
+             log.error("[Partial Fail] 카드 승인내역 증분 동기화 실패 - Connection: {}", connection.getId(), e);
         }
     }
 
@@ -157,11 +232,10 @@ public class AssetSyncService {
         return existingCards;
     }
 
-    private void syncCardApprovals(CodefConnection connection, List<Card> cards) {
+    private void syncCardApprovals(CodefConnection connection, List<Card> cards, String startDate) {
         if (cards.isEmpty()) return;
 
-        // 최초 연동이므로 startDate는 null로 전달 (CodefAssetService에서 기본값 3개월 사용)
-        List<CardApproval> approvals = codefAssetService.getCardApprovals(connection, null);
+        List<CardApproval> approvals = codefAssetService.getCardApprovals(connection, startDate);
         if (approvals.isEmpty()) return;
 
         // 카드 매칭을 위한 Map 최적화
