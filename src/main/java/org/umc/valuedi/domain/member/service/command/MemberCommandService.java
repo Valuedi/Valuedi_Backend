@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.auth.exception.AuthException;
+import org.umc.valuedi.domain.auth.exception.code.AuthErrorCode;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.enums.WithdrawalReason;
 import org.umc.valuedi.domain.member.exception.MemberException;
@@ -22,9 +24,16 @@ public class MemberCommandService {
     private final MemberRepository memberRepository;
     private final StringRedisTemplate redisTemplate;
     private final JwtUtil jwtUtil;
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String REFRESH_TOKEN_PREFIX = "RT:";
+    private static final String BLACKLIST_PREFIX = "BL:";
 
     public void withdraw(Long memberId, String accessToken, WithdrawalReason withdrawalReason) {
-        String resolveToken = accessToken.substring(7);
+        if(accessToken == null || !accessToken.startsWith(BEARER_PREFIX)){
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN_FORMAT);
+        }
+        String resolveToken = accessToken.substring(BEARER_PREFIX.length());
+
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
@@ -38,7 +47,7 @@ public class MemberCommandService {
         memberRepository.saveAndFlush(member);
         memberRepository.delete(member);
 
-        redisTemplate.delete("RT:" + memberId);
+        redisTemplate.delete(REFRESH_TOKEN_PREFIX + memberId);
 
         long expiration = jwtUtil.getExpiration(resolveToken);
         long diff = expiration - System.currentTimeMillis();
@@ -46,7 +55,7 @@ public class MemberCommandService {
         // 0보다 작거나 같으면 이미 만료된 토큰
         if(diff > 0) {
             redisTemplate.opsForValue().set(
-                    "BL:" + resolveToken,
+                    BLACKLIST_PREFIX + resolveToken,
                     "withdraw",
                     diff,
                     TimeUnit.MILLISECONDS

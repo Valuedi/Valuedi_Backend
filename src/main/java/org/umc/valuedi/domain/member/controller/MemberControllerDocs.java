@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.umc.valuedi.domain.member.dto.req.MemberReqDTO;
 import org.umc.valuedi.domain.member.dto.res.MemberResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -71,6 +72,6 @@ public interface MemberControllerDocs {
     public ApiResponse<Void> deleteMember(
             @Parameter(hidden = true) Long memberId,
             @Parameter(hidden = true) String accessToken,
-            @Valid MemberReqDTO.MemberWithdrawDTO memberWithdrawDTO
+            @RequestBody @Valid MemberReqDTO.MemberWithdrawDTO memberWithdrawDTO
     );
 }

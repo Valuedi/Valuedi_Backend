@@ -21,6 +21,9 @@ import java.util.UUID;
 @SQLRestriction("unlinked_at IS NULL")
 @EntityListeners(AuditingEntityListener.class)
 public class MemberAuthProvider {
+
+    private static final String ANONYMIZED_ID_PREFIX = "deleted_";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -47,7 +50,7 @@ public class MemberAuthProvider {
     private LocalDateTime unlinkedAt;
 
     public void anonymize() {
-        this.providerUserId = "deleted_" + UUID.randomUUID().toString().substring(0, 8);
+        this.providerUserId = ANONYMIZED_ID_PREFIX + UUID.randomUUID().toString().substring(0, 8);
         this.providerEmail = null;
     }
 }

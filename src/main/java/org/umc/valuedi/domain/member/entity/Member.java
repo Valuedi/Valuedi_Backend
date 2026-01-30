@@ -23,6 +23,10 @@ import java.util.List;
 @SQLDelete(sql = "UPDATE member SET deleted_at = CURRENT_TIMESTAMP, status = 'DELETED' WHERE id = ?")
 @SQLRestriction("status <> 'DELETED'")
 public class Member extends BaseEntity {
+
+    private static final String WITHDRAWN_MEMBER_NAME = "탈퇴회원";
+    private static final LocalDate WITHDRAWN_MEMBER_BIRTH = LocalDate.of(1, 1, 1);
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -83,8 +87,8 @@ public class Member extends BaseEntity {
     public void withdraw(WithdrawalReason reason) {
         this.username = null;
         this.email = null;
-        this.realName = "탈퇴회원";
-        this.birth = LocalDate.of(1, 1, 1);
+        this.realName = WITHDRAWN_MEMBER_NAME;
+        this.birth = WITHDRAWN_MEMBER_BIRTH;
         this.gender = Gender.UNKNOWN;
         this.passwordHash = null;
         this.withdrawalReason = reason;
