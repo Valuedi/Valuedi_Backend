@@ -158,4 +158,12 @@ public class AuthController implements AuthControllerDocs {
 
         return ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null);
     }
+
+    @Override
+    @GetMapping("/status")
+    public ApiResponse<AuthResDTO.AuthStatusDTO> getAuthStatus(
+            @CurrentMember Long memberId
+    ) {
+        return ApiResponse.onSuccess(AuthSuccessCode.AUTH_STATUS_GET_SUCCESS, authQueryService.getAuthStatus(memberId));
+    }
 }

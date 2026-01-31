@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.umc.valuedi.domain.member.enums.Provider;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Builder
@@ -20,6 +21,9 @@ import java.time.LocalDateTime;
 @SQLRestriction("unlinked_at IS NULL")
 @EntityListeners(AuditingEntityListener.class)
 public class MemberAuthProvider {
+
+    private static final String ANONYMIZED_ID_PREFIX = "deleted_";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -44,4 +48,9 @@ public class MemberAuthProvider {
 
     @Column(name = "unlinked_at")
     private LocalDateTime unlinkedAt;
+
+    public void anonymize() {
+        this.providerUserId = ANONYMIZED_ID_PREFIX + UUID.randomUUID().toString().substring(0, 8);
+        this.providerEmail = null;
+    }
 }

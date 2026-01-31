@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 @Tag(name = "Auth", description = "Auth 관련 API (로그인, 회원가입 등)")
@@ -441,7 +442,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "토큰 재발급 API",
-            description = "쿠키에 저장된 리프레시 토큰으로 새로운 엑세스 토큰과 리프레시 토큰을 발급합니다.  \n요청 헤더에 만료되지 않은 엑세스 토큰이 있다면 이를 무효화하며, 새로 발급된 리프레시 토큰은 쿠키에 저장됩니다.")
+            description = "쿠키에 저장된 리프레시 토큰으로 새로운 액세스 토큰과 리프레시 토큰을 발급합니다.  \n요청 헤더에 만료되지 않은 액세스 토큰이 있다면 이를 무효화하며, 새로 발급된 리프레시 토큰은 쿠키에 저장됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -475,7 +476,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "로그아웃 API",
-            description = "카카오/로컬로 로그인한 계정을 로그아웃 시킵니다.  \n요청 시 헤더에 포함된 엑세스 토큰을 이용해 엑세스/리프레시 토큰을 무효화합니다.")
+            description = "카카오/로컬로 로그인한 계정을 로그아웃 시킵니다.  \n요청 시 헤더에 포함된 액세스 토큰을 이용해 액세스/리프레시 토큰을 무효화합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -501,5 +502,51 @@ public interface AuthControllerDocs {
             @Parameter(hidden = true)
             String accessToken,
             HttpServletResponse response
+    );
+
+    @Operation(
+            summary = "로그인 상태 조회 API",
+            description = "현재 접속 중인 사용자의 로그인 상태를 조회합니다.  \n요청 헤더의 액세스 토큰이 유효하지 않거나 없는 경우 비로그인 상태이며, 액세스 토큰이 유효할 경우 로그인 상태입니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 로그인 상태 조회(로그인/비로그인)",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "로그인 상태 예시",
+                                            value = """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "AUTH200_8",
+                                              "message": "로그인 상태 조회에 성공했습니다.",
+                                              "result": {
+                                                "isLogin": true,
+                                                "memberId": 9
+                                              }
+                                            }
+                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "비로그인 상태 예시",
+                                            value = """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "AUTH200_8",
+                                              "message": "로그인 상태 조회에 성공했습니다.",
+                                              "result": {
+                                                "isLogin": false,
+                                                "memberId": null
+                                              }
+                                            }
+                                    """
+                                    )
+                            }
+                    )
+            )
+    })
+    public ApiResponse<AuthResDTO.AuthStatusDTO> getAuthStatus(
+            @Parameter(hidden = true) Long memberId
     );
 }

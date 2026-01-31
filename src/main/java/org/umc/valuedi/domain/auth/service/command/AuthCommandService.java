@@ -50,8 +50,13 @@ public class AuthCommandService {
     private final ApplicationEventPublisher eventPublisher;
     private final PasswordEncoder passwordEncoder;
     private final MemberAuthProviderRepository memberAuthProviderRepository;
-    private static final SecureRandom sr = new SecureRandom();
     private final MemberTermsService memberTermsService;
+
+    private static final SecureRandom sr = new SecureRandom();
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String REFRESH_TOKEN_PREFIX = "RT:";
+    private static final String BLACKLIST_PREFIX = "BL:";
+
 
     // 카카오 로그인
     public AuthResDTO.LoginResultDTO loginKakao(String code) {
@@ -74,7 +79,7 @@ public class AuthCommandService {
         String refreshToken = jwtUtil.createRefreshToken(userDetails);
 
         redisTemplate.opsForValue().set(
-                "RT:" + member.getId(),
+                REFRESH_TOKEN_PREFIX + member.getId(),
                 refreshToken,
                 jwtUtil.getRefreshTokenExpiration(),
                 TimeUnit.MILLISECONDS
@@ -190,7 +195,7 @@ public class AuthCommandService {
         String refreshToken = jwtUtil.createRefreshToken(userDetails);
 
         redisTemplate.opsForValue().set(
-                "RT:" + member.getId(),
+                REFRESH_TOKEN_PREFIX + member.getId(),
                 refreshToken,
                 jwtUtil.getRefreshTokenExpiration(),
                 TimeUnit.MILLISECONDS
@@ -213,8 +218,8 @@ public class AuthCommandService {
         }
 
         // 기존 엑세스 토큰이 만료되지 않았다면 무효화
-        if(accessToken != null && accessToken.startsWith("Bearer ")) {
-            accessToken = accessToken.replace("Bearer ", "");
+        if(accessToken != null && accessToken.startsWith(BEARER_PREFIX)) {
+            accessToken = accessToken.substring(BEARER_PREFIX.length());
 
             long expiration = jwtUtil.getExpiration(accessToken);
             long diff = expiration - System.currentTimeMillis();
@@ -222,7 +227,7 @@ public class AuthCommandService {
             // 0보다 작거나 같으면 이미 만료된 토큰
             if(diff > 0) {
                 redisTemplate.opsForValue().set(
-                        "BL:" + accessToken,
+                        BLACKLIST_PREFIX + accessToken,
                         "reissue_waste",
                         diff,
                         TimeUnit.MILLISECONDS
@@ -234,7 +239,7 @@ public class AuthCommandService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        String redisKey = "RT:" + member.getId();
+        String redisKey = REFRESH_TOKEN_PREFIX + member.getId();
         String savedRefreshToken = redisTemplate.opsForValue().get(redisKey);
 
         // Redis에 저장된 토큰인지 확인
@@ -259,9 +264,12 @@ public class AuthCommandService {
     // 로그아웃
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void logout(Long memberId, String accessToken) {
-        String resolveToken = accessToken.substring(7);
+        if(accessToken == null || !accessToken.startsWith(BEARER_PREFIX)){
+            throw new AuthException(AuthErrorCode.INVALID_TOKEN_FORMAT);
+        }
+        String resolveToken = accessToken.substring(BEARER_PREFIX.length());
 
-        String redisKey = "RT:" + memberId;
+        String redisKey = REFRESH_TOKEN_PREFIX + memberId;
         redisTemplate.delete(redisKey);
 
         long expiration = jwtUtil.getExpiration(resolveToken);
@@ -270,7 +278,7 @@ public class AuthCommandService {
         // 0보다 작거나 같으면 이미 만료된 토큰
         if(diff > 0) {
             redisTemplate.opsForValue().set(
-                    "BL:" + resolveToken,
+                    BLACKLIST_PREFIX + resolveToken,
                     "logout",
                     diff,
                     TimeUnit.MILLISECONDS

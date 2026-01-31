@@ -70,6 +70,14 @@ public class AuthConverter {
                 .build();
     }
 
+    // 로그인 상태를 DTO로 변환
+    public static AuthResDTO.AuthStatusDTO toAuthStatusDTO(Boolean authStatus, Long memberId) {
+        return AuthResDTO.AuthStatusDTO.builder()
+                .isLogin(authStatus)
+                .memberId(memberId)
+                .build();
+    }
+
     // 카카오에서 넘어온 정보에서 필수 필드가 모두 있는지 검증
     private static void validateRequiredFields(KakaoResDTO.UserInfoDTO.KakaoAccount account) {
         if (account.getName() == null || account.getGender() == null ||
