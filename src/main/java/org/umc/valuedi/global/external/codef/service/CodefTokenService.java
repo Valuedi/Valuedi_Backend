@@ -19,10 +19,13 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class CodefTokenService {
 
+    private static final String CODEF_ACCESS_TOKEN_KEY = "codef_access_token";
+    private static final long TOKEN_EXPIRATION_BUFFER_SECONDS = 300L;
+    private static final long DEFAULT_EXPIRES_IN_SECONDS = 3600L;
+
     private final CodefProperties codefProperties;
     private final CodefAuthClient codefAuthClient;
     private final StringRedisTemplate redisTemplate;
-    private static final String CODEF_ACCESS_TOKEN_KEY = "codef_access_token";
 
     /**
      * 유효한 Access Token 반환
@@ -57,7 +60,7 @@ public class CodefTokenService {
             if (response != null && response.containsKey("access_token")) {
                 log.info("CODEF Access Token 발급 성공");
 
-                long expiresIn = 3600; // 기본값 1시간
+                long expiresIn = DEFAULT_EXPIRES_IN_SECONDS; // 기본값 1시간
                 if (response.containsKey("expires_in")) {
                     Object expiresInObj = response.get("expires_in");
                     if (expiresInObj instanceof Number) {
@@ -69,8 +72,8 @@ public class CodefTokenService {
 
                 String newAccessToken = (String) response.get("access_token");
 
-                // Redis에 토큰 저장 (만료 시간 - 5분으로 설정하여 미리 만료되도록 함)
-                redisTemplate.opsForValue().set(CODEF_ACCESS_TOKEN_KEY, newAccessToken, expiresIn - 300, TimeUnit.SECONDS);
+                long ttl = Math.max(expiresIn - TOKEN_EXPIRATION_BUFFER_SECONDS, 60L);
+                redisTemplate.opsForValue().set(CODEF_ACCESS_TOKEN_KEY, newAccessToken, ttl, TimeUnit.SECONDS);
 
                 return newAccessToken;
             }

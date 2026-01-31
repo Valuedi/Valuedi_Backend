@@ -237,7 +237,7 @@ public interface AssetControllerDocs {
             )
     })
     ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
-            @Parameter(description = "은행 코드 (예: 004)") String organization,
+            @Parameter(description = "은행 코드 (예: 0020)") String organization,
             @CurrentMember Long memberId
     );
 
