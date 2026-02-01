@@ -46,12 +46,6 @@ public class BankResDTO {
 
         @Schema(description = "목표명", example = "푸꾸옥여행가고싶어요")
         private String title;
-
-        @Schema(description = "목표 금액", example = "3000000")
-        private Long targetAmount;
-
-        @Schema(description = "달성률", example = "50")
-        private Integer achievementRate;
     }
 
     @Getter

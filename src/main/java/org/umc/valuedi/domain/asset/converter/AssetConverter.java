@@ -22,18 +22,9 @@ public class AssetConverter {
         if (account.getGoal() != null) {
             Goal goal = account.getGoal();
             
-            // 달성률 계산 (현재 잔액 / 목표 금액 * 100)
-            int achievementRate = 0;
-            if (goal.getTargetAmount() > 0 && account.getBalanceAmount() != null) {
-                double rate = (double) account.getBalanceAmount() / goal.getTargetAmount() * 100;
-                achievementRate = (int) Math.min(rate, 100); // 최대 100%로 제한
-            }
-
             goalInfo = BankResDTO.GoalInfo.builder()
                     .goalId(goal.getId())
                     .title(goal.getTitle())
-                    .targetAmount(goal.getTargetAmount())
-                    .achievementRate(achievementRate)
                     .build();
         }
 
