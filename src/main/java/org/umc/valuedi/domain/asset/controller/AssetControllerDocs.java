@@ -205,7 +205,7 @@ public interface AssetControllerDocs {
     })
     ApiResponse<BankResDTO.BankAccountListDTO> getAllBankAccounts(@CurrentMember Long memberId);
 
-    @Operation(summary = "은행별 계좌 목록 조회", description = "특정 은행에 연동된 계좌 목록을 조회합니다.")
+    @Operation(summary = "은행별 계좌 및 목표 목록 조회", description = "특정 은행에 연동된 계좌와 목표 목록을 조회합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -236,7 +236,7 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
+    ApiResponse<BankResDTO.BankAssetResponse> getAccountsByBank(
             @Parameter(description = "은행 코드 (예: 0020)") String organization,
             @CurrentMember Long memberId
     );

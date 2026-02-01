@@ -6,8 +6,11 @@ import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.Card;
+import org.umc.valuedi.domain.connection.enums.Organization;
+import org.umc.valuedi.domain.goal.entity.Goal;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -15,11 +18,32 @@ public class AssetConverter {
 
     // 개별 BankAccount 엔티티 -> BankAccountInfo 변환
     public static BankResDTO.BankAccountInfo toBankAccountInfo(BankAccount account) {
+        BankResDTO.GoalInfo goalInfo = null;
+        if (account.getGoal() != null) {
+            Goal goal = account.getGoal();
+            
+            // 달성률 계산 (현재 잔액 / 목표 금액 * 100)
+            int achievementRate = 0;
+            if (goal.getTargetAmount() > 0 && account.getBalanceAmount() != null) {
+                double rate = (double) account.getBalanceAmount() / goal.getTargetAmount() * 100;
+                achievementRate = (int) Math.min(rate, 100); // 최대 100%로 제한
+            }
+
+            goalInfo = BankResDTO.GoalInfo.builder()
+                    .goalId(goal.getId())
+                    .title(goal.getTitle())
+                    .targetAmount(goal.getTargetAmount())
+                    .achievementRate(achievementRate)
+                    .build();
+        }
+
         return BankResDTO.BankAccountInfo.builder()
+                .accountId(account.getId())
                 .accountName(account.getAccountName())
                 .balanceAmount(account.getBalanceAmount())
                 .organization(account.getCodefConnection().getOrganization()) // 기관코드 추출
                 .createdAt(account.getCreatedAt())
+                .goalInfo(goalInfo)
                 .build();
     }
 
@@ -64,6 +88,43 @@ public class AssetConverter {
                 .totalAccountCount(accountCount)
                 .totalCardCount(cardCount)
                 .totalAssetCount(accountCount + cardCount)
+                .build();
+    }
+
+    public static BankResDTO.BankAssetResponse toBankAssetResponse(String organizationCode, List<BankAccount> accounts) {
+        String bankName = Organization.getNameByCode(organizationCode);
+
+        // 총 잔액 계산
+        long totalBalance = accounts.stream()
+                .mapToLong(account -> account.getBalanceAmount() != null ? account.getBalanceAmount() : 0L)
+                .sum();
+
+        // 계좌 목록 변환
+        List<BankResDTO.AccountInfo> accountList = accounts.stream()
+                .map(account -> BankResDTO.AccountInfo.builder()
+                        .accountId(account.getId())
+                        .accountName(account.getAccountName())
+                        .balanceAmount(account.getBalanceAmount())
+                        .connectedGoalId(account.getGoal() != null ? account.getGoal().getId() : null)
+                        .build())
+                .collect(Collectors.toList());
+
+        // 목표 목록 추출
+        List<BankResDTO.GoalSimpleInfo> goalList = accounts.stream()
+                .map(BankAccount::getGoal)
+                .filter(Objects::nonNull)
+                .map(goal -> BankResDTO.GoalSimpleInfo.builder()
+                        .goalId(goal.getId())
+                        .title(goal.getTitle())
+                        .linkedAccountId(goal.getBankAccount().getId())
+                        .build())
+                .collect(Collectors.toList());
+
+        return BankResDTO.BankAssetResponse.builder()
+                .bankName(bankName)
+                .totalBalance(totalBalance)
+                .accountList(accountList)
+                .goalList(goalList)
                 .build();
     }
 }

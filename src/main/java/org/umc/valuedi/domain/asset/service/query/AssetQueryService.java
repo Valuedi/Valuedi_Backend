@@ -32,11 +32,11 @@ public class AssetQueryService {
     }
 
     /**
-     * 은행별 연동된 계좌 목록 조회
+     * 은행별 연동된 계좌 및 목표 목록 조회
      */
-    public BankResDTO.BankAccountListDTO getBankAccountsByOrganization(Long memberId, String organization) {
+    public BankResDTO.BankAssetResponse getBankAccountsByOrganization(Long memberId, String organization) {
         List<BankAccount> accounts = bankAccountRepository.findAllByMemberIdAndOrganization(memberId, organization);
-        return AssetConverter.toBankAccountListDTO(accounts);
+        return AssetConverter.toBankAssetResponse(organization, accounts);
     }
 
     /**

@@ -11,9 +11,11 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Long> 
 
     /**
      * 전체 활성 계좌 목록 조회 (최신순)
+     * Goal과 Left Join Fetch하여 N+1 문제 방지
      */
     @Query("SELECT ba FROM BankAccount ba " +
             "JOIN FETCH ba.codefConnection cc " +
+            "LEFT JOIN FETCH Goal g ON g.bankAccount = ba " +
             "WHERE cc.member.id = :memberId " +
             "AND ba.isActive = true " +
             "ORDER BY ba.createdAt DESC")
@@ -21,9 +23,11 @@ public interface BankAccountRepository extends JpaRepository<BankAccount, Long> 
 
     /**
      * 특정 은행별 활성 계좌 목록 조회
+     * Goal과 Left Join Fetch하여 N+1 문제 방지
      */
     @Query("SELECT ba FROM BankAccount ba " +
             "JOIN FETCH ba.codefConnection cc " +
+            "LEFT JOIN FETCH Goal g ON g.bankAccount = ba " +
             "WHERE cc.member.id = :memberId " +
             "AND cc.organization = :organization " +
             "AND ba.isActive = true")

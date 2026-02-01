@@ -39,8 +39,30 @@ public class BankResDTO {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @Schema(description = "목표 정보")
+    public static class GoalInfo {
+        @Schema(description = "목표 ID", example = "1")
+        private Long goalId;
+
+        @Schema(description = "목표명", example = "푸꾸옥여행가고싶어요")
+        private String title;
+
+        @Schema(description = "목표 금액", example = "3000000")
+        private Long targetAmount;
+
+        @Schema(description = "달성률", example = "50")
+        private Integer achievementRate;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     @Schema(description = "개별 계좌 정보")
     public static class BankAccountInfo {
+
+        @Schema(description = "계좌 ID", example = "1")
+        private Long accountId;
 
         @Schema(description = "계좌명", example = "KB국민ONE통장")
         private String accountName;
@@ -53,6 +75,9 @@ public class BankResDTO {
 
         @Schema(description = "계좌 등록일시 (정렬 기준 확인용)", example = "2026-01-19T10:00:00")
         private LocalDateTime createdAt;
+
+        @Schema(description = "연결된 목표 정보 (없으면 null)")
+        private GoalInfo goalInfo;
     }
 
     @Getter
@@ -67,5 +92,60 @@ public class BankResDTO {
 
         @Schema(description = "총 계좌 개수", example = "1")
         private Integer totalCount;
+    }
+
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "은행별 자산 조회 응답")
+    public static class BankAssetResponse {
+        @Schema(description = "은행명", example = "우리은행")
+        private String bankName;
+
+        @Schema(description = "총 잔액", example = "240732")
+        private Long totalBalance;
+
+        @Schema(description = "계좌 목록")
+        private List<AccountInfo> accountList;
+
+        @Schema(description = "목표 목록")
+        private List<GoalSimpleInfo> goalList;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "간략한 계좌 정보")
+    public static class AccountInfo {
+        @Schema(description = "계좌 ID", example = "1")
+        private Long accountId;
+
+        @Schema(description = "계좌명", example = "저축예금")
+        private String accountName;
+
+        @Schema(description = "잔액", example = "220732")
+        private Long balanceAmount;
+
+        @Schema(description = "연결된 목표 ID (없으면 null)", example = "1")
+        private Long connectedGoalId;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "간략한 목표 정보")
+    public static class GoalSimpleInfo {
+        @Schema(description = "목표 ID", example = "1")
+        private Long goalId;
+
+        @Schema(description = "목표명", example = "여행")
+        private String title;
+
+        @Schema(description = "연결된 계좌 ID", example = "1")
+        private Long linkedAccountId;
     }
 }

@@ -65,8 +65,8 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllBankAccounts(memberId));
     }
 
-    @GetMapping("/banks/{bankCode}/accounts")
-    public ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
+    @GetMapping("/banks/{bankCode}")
+    public ApiResponse<BankResDTO.BankAssetResponse> getAccountsByBank(
             @PathVariable String bankCode,
             @CurrentMember Long memberId
     ) {
