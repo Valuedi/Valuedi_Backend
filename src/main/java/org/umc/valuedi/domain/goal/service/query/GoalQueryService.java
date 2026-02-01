@@ -30,8 +30,8 @@ public class GoalQueryService {
     private final GoalAchievementRateService achievementRateService;
 
     // 목표 상세 조회
-    public GoalDetailResponseDto getGoalDetail(Long goalId) {
-        Goal goal = goalRepository.findById(goalId)
+    public GoalDetailResponseDto getGoalDetail(Long memberId, Long goalId) {
+        Goal goal = goalRepository.findByIdAndMemberId(goalId, memberId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
         BankAccount account = goal.getBankAccount();
@@ -40,7 +40,7 @@ public class GoalQueryService {
             throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
         }
 
-        long savedAmount = account.getBalanceAmount() - goal.getStartAmount(); // 계좌 연동 후 수정
+        long savedAmount = account.getBalanceAmount() - goal.getStartAmount();
         int rate = achievementRateService.calculateRate(savedAmount, goal.getTargetAmount());
 
         return GoalConverter.toDetailDto(goal, savedAmount, rate);

@@ -7,8 +7,6 @@ import java.util.List;
 
 public class GoalAccountConverter {
 
-    private GoalAccountConverter() {}
-
     public static GoalAccountResDto.UnlinkedBankAccountListDTO toUnlinkedListDTO(List<BankAccount> accounts) {
         List<GoalAccountResDto.UnlinkedBankAccountDTO> items = accounts.stream()
                 .map(a -> new GoalAccountResDto.UnlinkedBankAccountDTO(

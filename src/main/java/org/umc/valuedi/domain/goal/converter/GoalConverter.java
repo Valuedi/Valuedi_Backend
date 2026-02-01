@@ -18,8 +18,6 @@ import java.util.List;
 
 public class GoalConverter {
 
-    private GoalConverter() {}
-
     public static Goal toEntity(Member member,BankAccount bankAccount, GoalCreateRequestDto req) {
         return Goal.builder()
                 .member(member)

@@ -17,6 +17,7 @@ import org.umc.valuedi.domain.goal.service.query.GoalAccountQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalListQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 @RestController
 @RequiredArgsConstructor
@@ -44,7 +45,7 @@ public class GoalController implements GoalControllerDocs{
     // 전체 목표 조회 (진행/완료/취소 분리)
     @GetMapping
     public ApiResponse<GoalListResponseDto> getGoals(
-            @RequestParam Long memberId,
+            @CurrentMember Long memberId,
             @RequestParam(defaultValue = "ACTIVE") GoalStatus status,
             @RequestParam(defaultValue = "TIME_DESC") GoalSort sort,
             @RequestParam(required = false) Integer limit
@@ -58,11 +59,12 @@ public class GoalController implements GoalControllerDocs{
     // 목표 상세 조회
     @GetMapping("/{goalId}")
     public ApiResponse<GoalDetailResponseDto> getGoalDetail(
+            @CurrentMember Long memberId,
             @PathVariable Long goalId
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_DETAIL_FETCHED,
-                goalQueryService.getGoalDetail(goalId)
+                goalQueryService.getGoalDetail(memberId, goalId)
         );
     }
 
@@ -94,7 +96,7 @@ public class GoalController implements GoalControllerDocs{
     // 목표 개수 조회
     @GetMapping("/count")
     public ApiResponse<GoalActiveCountResponseDto> getActiveGoalCount(
-            @RequestParam Long memberId
+            @CurrentMember Long memberId
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_ACTIVE_COUNT_FETCHED,
@@ -106,7 +108,7 @@ public class GoalController implements GoalControllerDocs{
     // 목표 없는 계좌 조회
     @GetMapping("/accounts")
     public ApiResponse<GoalAccountResDto.UnlinkedBankAccountListDTO> getUnlinkedAccounts(
-            @RequestParam Long memberId
+            @CurrentMember Long memberId
 
     ) {
         return ApiResponse.onSuccess(
@@ -118,7 +120,7 @@ public class GoalController implements GoalControllerDocs{
     // 목표에 계좌 재연결
     @PutMapping("/{goalId}/linked-accounts")
     public ApiResponse<Void> linkAccountToGoal(
-            @RequestParam Long memberId,
+            @CurrentMember Long memberId,
             @PathVariable Long goalId,
             @RequestBody @Valid GoalLinkAccountRequestDto req
     ) {
@@ -132,7 +134,7 @@ public class GoalController implements GoalControllerDocs{
     // 주요 목표 조회(홈화면)
     @GetMapping("/primary")
     public ApiResponse<GoalPrimaryListResponseDto> getPrimaryGoals(
-            @RequestParam Long memberId
+            @CurrentMember Long memberId
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_LIST_FETCHED,
