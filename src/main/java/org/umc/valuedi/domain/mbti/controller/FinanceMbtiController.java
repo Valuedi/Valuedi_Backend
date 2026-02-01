@@ -10,6 +10,7 @@ import org.umc.valuedi.domain.mbti.exception.code.MbtiSuccessCode;
 import org.umc.valuedi.domain.mbti.service.FinanceMbtiService;
 import org.umc.valuedi.domain.mbti.service.query.FinanceMbtiQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -38,10 +39,11 @@ public class FinanceMbtiController implements FinanceControllerDocs {
     @PostMapping("/test")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<FinanceMbtiTestResultResponseDto> submitTest(
+            @CurrentMember Long memberId,
             @Valid
             @RequestBody FinanceMbtiTestRequestDto req
     ) {
-        MemberMbtiTest saved = financeMbtiCommandService.submitTest(req);
+        MemberMbtiTest saved = financeMbtiCommandService.submitTest(memberId, req);
 
         return ApiResponse.onSuccess(
                 MbtiSuccessCode.MBTI_TEST_SUBMITTED,
@@ -52,7 +54,7 @@ public class FinanceMbtiController implements FinanceControllerDocs {
     // 3) 결과 조회 (대표 결과)
     @GetMapping("/result")
     public ApiResponse<FinanceMbtiTestResultResponseDto> getResult(
-            @RequestParam Long memberId
+            @CurrentMember Long memberId
     ) {
         return ApiResponse.onSuccess(
                 MbtiSuccessCode.MBTI_RESULT_FETCHED,

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.validation.Valid;
 import org.umc.valuedi.domain.mbti.dto.*;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -38,6 +39,7 @@ public interface FinanceControllerDocs {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     org.umc.valuedi.global.apiPayload.ApiResponse<FinanceMbtiTestResultResponseDto> submitTest(
+            @CurrentMember Long memberId,
             @Valid @RequestBody FinanceMbtiTestRequestDto req
     );
 
@@ -52,8 +54,7 @@ public interface FinanceControllerDocs {
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
     org.umc.valuedi.global.apiPayload.ApiResponse<FinanceMbtiTestResultResponseDto> getResult(
-            @Parameter(description = "회원 ID", example = "1", required = true)
-            @RequestParam Long memberId
+            @CurrentMember Long memberId
     );
 
 
