@@ -10,8 +10,6 @@ import java.util.List;
 
 @Schema(description = "금융 MBTI 테스트 제출 요청 DTO")
 public record FinanceMbtiTestRequestDto(
-        @Schema(description = "회원 ID", example = "1")
-        @NotNull Long memberId,
         @Schema(
                 description = "문항 답변 리스트",
                 example = """

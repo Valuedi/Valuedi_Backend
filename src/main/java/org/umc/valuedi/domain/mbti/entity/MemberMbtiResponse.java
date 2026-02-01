@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.umc.valuedi.global.entity.BaseEntity;
 
-import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "member_mbti_response")
 @Getter
