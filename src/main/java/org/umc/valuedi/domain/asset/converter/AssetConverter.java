@@ -1,6 +1,5 @@
 package org.umc.valuedi.domain.asset.converter;
 
-import org.springframework.stereotype.Component;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
@@ -9,11 +8,10 @@ import org.umc.valuedi.domain.asset.entity.Card;
 import org.umc.valuedi.domain.connection.enums.Organization;
 import org.umc.valuedi.domain.goal.entity.Goal;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
-@Component
 public class AssetConverter {
 
     // 개별 BankAccount 엔티티 -> BankAccountInfo 변환
@@ -82,34 +80,35 @@ public class AssetConverter {
                 .build();
     }
 
+    // 특정 은행의 자산 현황 응답 DTO 변환
     public static BankResDTO.BankAssetResponse toBankAssetResponse(String organizationCode, List<BankAccount> accounts) {
         String bankName = Organization.getNameByCode(organizationCode);
 
-        // 총 잔액 계산
-        long totalBalance = accounts.stream()
-                .mapToLong(account -> account.getBalanceAmount() != null ? account.getBalanceAmount() : 0L)
-                .sum();
+        long totalBalance = 0L;
+        List<BankResDTO.AccountInfo> accountList = new ArrayList<>(accounts.size());
+        List<BankResDTO.GoalSimpleInfo> goalList = new ArrayList<>();
 
-        // 계좌 목록 변환
-        List<BankResDTO.AccountInfo> accountList = accounts.stream()
-                .map(account -> BankResDTO.AccountInfo.builder()
-                        .accountId(account.getId())
-                        .accountName(account.getAccountName())
-                        .balanceAmount(account.getBalanceAmount())
-                        .connectedGoalId(account.getGoal() != null ? account.getGoal().getId() : null)
-                        .build())
-                .collect(Collectors.toList());
+        for (BankAccount account : accounts) {
+            totalBalance += (account.getBalanceAmount() != null ? account.getBalanceAmount() : 0L);
 
-        // 목표 목록 추출
-        List<BankResDTO.GoalSimpleInfo> goalList = accounts.stream()
-                .map(BankAccount::getGoal)
-                .filter(Objects::nonNull)
-                .map(goal -> BankResDTO.GoalSimpleInfo.builder()
+            Goal goal = account.getGoal();
+            Long connectedGoalId = (goal != null) ? goal.getId() : null;
+
+            accountList.add(BankResDTO.AccountInfo.builder()
+                    .accountId(account.getId())
+                    .accountName(account.getAccountName())
+                    .balanceAmount(account.getBalanceAmount())
+                    .connectedGoalId(connectedGoalId)
+                    .build());
+
+            if (goal != null) {
+                goalList.add(BankResDTO.GoalSimpleInfo.builder()
                         .goalId(goal.getId())
                         .title(goal.getTitle())
-                        .linkedAccountId(goal.getBankAccount().getId())
-                        .build())
-                .collect(Collectors.toList());
+                        .linkedAccountId(account.getId())
+                        .build());
+            }
+        }
 
         return BankResDTO.BankAssetResponse.builder()
                 .bankName(bankName)
