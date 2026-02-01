@@ -27,19 +27,19 @@ public class GoalCommandService {
 
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
-
     private final BankAccountRepository bankAccountRepository;
 
     // 목표 생성
-    public GoalCreateResponseDto createGoal(GoalCreateRequestDto req) {
-        Member member = memberRepository.findById(req.memberId())
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    public GoalCreateResponseDto createGoal(Long memberId, GoalCreateRequestDto req) {
 
         GoalValidator.validateDateRange(req.startDate(), req.endDate());
         GoalValidator.validateStyle(req.colorCode(), req.iconId());
 
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+
         // 내 계좌 + 활성 상태 검증
-        BankAccount account = bankAccountRepository.findByIdAndMemberId(req.accountId(), req.memberId())
+        BankAccount account = bankAccountRepository.findByIdAndMemberId(req.accountId(), memberId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.ACCOUNT_NOT_FOUND));
 
         // 이미 다른 목표가 이 계좌를 쓰고 있는지 검증
@@ -55,8 +55,8 @@ public class GoalCommandService {
     }
 
     // 목표 수정
-    public void updateGoal(Long goalId, GoalUpdateRequestDto req) {
-        Goal goal = goalRepository.findById(goalId)
+    public void updateGoal(Long memberId, Long goalId, GoalUpdateRequestDto req) {
+        Goal goal = goalRepository.findByIdAndMemberId(goalId, memberId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
         if (goal.getStatus() != GoalStatus.ACTIVE) {
@@ -76,8 +76,8 @@ public class GoalCommandService {
     }
 
     // 목표 삭제
-    public void deleteGoal(Long goalId) {
-        Goal goal = goalRepository.findById(goalId)
+    public void deleteGoal(Long memberId, Long goalId) {
+        Goal goal = goalRepository.findByIdAndMemberId(goalId, memberId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
         goalRepository.delete(goal);

@@ -11,8 +11,6 @@ import java.time.LocalDate;
 @Schema(description = "목표 추가")
 public record GoalCreateRequestDto(
 
-        @Schema(description = "회원 ID", example = "1")
-        @NotNull Long memberId,
         @Schema(description = "연결할 계좌 ID", example = "1")
         @NotNull
         Long accountId,

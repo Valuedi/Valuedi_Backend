@@ -34,11 +34,12 @@ public class GoalController implements GoalControllerDocs{
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<GoalCreateResponseDto> createGoal(
+            @CurrentMember Long memberId,
             @RequestBody @Valid GoalCreateRequestDto req
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_CREATED,
-                goalService.createGoal(req)
+                goalService.createGoal(memberId, req)
         );
     }
 
@@ -71,10 +72,11 @@ public class GoalController implements GoalControllerDocs{
     // 목표 수정
     @PatchMapping("/{goalId}")
     public ApiResponse<Void> updateGoal(
+            @CurrentMember Long memberId,
             @PathVariable Long goalId,
             @RequestBody @Valid GoalUpdateRequestDto req
     ) {
-        goalService.updateGoal(goalId, req);
+        goalService.updateGoal(memberId, goalId, req);
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_UPDATED,
                 null
@@ -84,9 +86,10 @@ public class GoalController implements GoalControllerDocs{
     // 목표 삭제
     @DeleteMapping("/{goalId}")
     public ApiResponse<Void> deleteGoal(
+            @CurrentMember Long memberId,
             @PathVariable Long goalId
     ) {
-        goalService.deleteGoal(goalId);
+        goalService.deleteGoal(memberId, goalId);
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_DELETED,
                 null
