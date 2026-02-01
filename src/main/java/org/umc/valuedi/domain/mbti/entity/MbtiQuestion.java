@@ -2,10 +2,8 @@ package org.umc.valuedi.domain.mbti.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.umc.valuedi.domain.mbti.enums.MbtiQuestionCategory;
 import org.umc.valuedi.global.entity.BaseEntity;
 

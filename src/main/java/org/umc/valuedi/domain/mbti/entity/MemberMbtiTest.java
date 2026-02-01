@@ -2,7 +2,6 @@ package org.umc.valuedi.domain.mbti.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import org.umc.valuedi.domain.mbti.enums.MbtiType;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.entity.BaseEntity;
