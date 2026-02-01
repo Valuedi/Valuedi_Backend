@@ -9,8 +9,8 @@ import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.Card;
-import org.umc.valuedi.domain.asset.repository.bank.BankAccountRepository;
-import org.umc.valuedi.domain.asset.repository.card.CardRepository;
+import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
+import org.umc.valuedi.domain.asset.repository.card.card.CardRepository;
 
 import java.util.List;
 

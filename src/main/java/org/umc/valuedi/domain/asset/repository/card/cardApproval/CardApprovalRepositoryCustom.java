@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.repository.card;
+package org.umc.valuedi.domain.asset.repository.card.cardApproval;
 
 import org.umc.valuedi.domain.asset.entity.CardApproval;
 import java.util.List;
