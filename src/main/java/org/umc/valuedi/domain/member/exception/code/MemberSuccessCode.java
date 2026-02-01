@@ -9,7 +9,8 @@ import org.umc.valuedi.global.apiPayload.code.BaseSuccessCode;
 @AllArgsConstructor
 public enum MemberSuccessCode implements BaseSuccessCode {
 
-    USERNAME_CHECK_OK(HttpStatus.OK, "MEMBER200_1", "사용 가능한 아이디입니다.")
+    MEMBER_INFO_GET_SUCCESS(HttpStatus.OK, "MEMBER200_1", "회원 기본 정보 조회에 성공했습니다."),
+    WITHDRAWAL_SUCCESS(HttpStatus.OK, "MEMBER200_2", "회원 탈퇴가 완료되었습니다."),
     ;
 
     private final HttpStatus status;

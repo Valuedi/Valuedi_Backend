@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: valuedi-backend
+
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:valuedi
+    username: sa
+  # password:
+  data:
+    redis:
+      host: mock
+      port: 12345
+  jpa:
+    database: h2
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 5678
+    username: test@gmail.com
+    password: testpassword
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        connetiontimeout: 5000
+        time: 5000
+        writetimeout: 5000
+
+codef:
+  client-id: test-codef-client-id
+  client-secret: test-codef-client-secret
+  public-key: test-codef-public-key
+  api-url: https://development.codef.io
+
+kakao:
+  client-id: dummy
+  redirect-uri: http://localhost:8080/auth/oauth/kakao/callback
+  client-secret: dummy
+
+jwt:
+  token:
+    secretKey: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmn # 더미 값
+    expiration:
+      access: 3600000
+      refresh: 1209600000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+fss:
+  base-url: https://finlife.fss.or.kr/finlifeapi
+  auth-key: dummy
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  querydsl:
+    enabled: false # 테스트 환경에서 QueryDSL 충돌 방지
+
+genai:
+  gemini:
+    api-key: dummy-api-key
+    model: dummy-model

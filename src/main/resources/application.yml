@@ -4,22 +4,54 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${DB_URL:jdbc:mysql://localhost:3306/valuedi?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
-    username: ${DB_USERNAME:test}
-    password: ${DB_PASSWORD:test}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
   jpa:
     database: mysql
     database-platform: org.hibernate.dialect.MySQLDialect
-    show-sql: ${SHOW_SQL:false}
+    show-sql: ${SHOW_SQL}
     hibernate:
-      ddl-auto: ${DDL_AUTO:none}
+      ddl-auto: ${DDL_AUTO}
     properties:
       hibernate:
         format_sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+codef:
+  client-id: ${CODEF_CLIENT_ID}
+  client-secret: ${CODEF_CLIENT_SECRET}
+  public-key: ${CODEF_PUBLIC_KEY}
+  api-url: ${CODEF_API_URL:https://development.codef.io}
+  aes-secret: ${CODEF_AES_SECRET}
+
+kakao:
+  client-id: ${KAKAO_CLIENT_ID}
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+  client-secret: ${KAKAO_CLIENT_SECRET}
+jwt:
+  token:
+    secretKey: ${JWT_TOKEN_SECRET_KEY}
+    expiration:
+      access: 3600000  # 1시간
+      refresh: 1209600000 # 14일
 management:
   endpoints:
     web:
@@ -28,3 +60,16 @@ management:
   endpoint:
     health:
       show-details: never
+
+fss:
+  base-url: ${FSS_BASE_URL:https://finlife.fss.or.kr/finlifeapi}
+  auth-key: ${FSS_AUTH_KEY}
+
+genai:
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: gemini-3-flash-preview
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
