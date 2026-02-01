@@ -1,12 +1,10 @@
 package org.umc.valuedi.domain.mbti.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.validation.Valid;
 import org.umc.valuedi.domain.mbti.dto.*;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
