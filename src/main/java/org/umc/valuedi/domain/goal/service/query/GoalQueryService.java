@@ -3,6 +3,7 @@ package org.umc.valuedi.domain.goal.service.query;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
@@ -33,7 +34,13 @@ public class GoalQueryService {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.GOAL_NOT_FOUND));
 
-        long savedAmount = 0; // 계좌 연동 후 수정
+        BankAccount account = goal.getBankAccount();
+
+        if (!account.getIsActive()) {
+            throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
+        }
+
+        long savedAmount = account.getBalanceAmount() - goal.getStartAmount(); // 계좌 연동 후 수정
         int rate = achievementRateService.calculateRate(savedAmount, goal.getTargetAmount());
 
         return GoalConverter.toDetailDto(goal, savedAmount, rate);

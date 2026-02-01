@@ -96,13 +96,12 @@ public class GoalConverter {
             Long savedAmount,
             int achievementRate
     ) {
-        Long remainingAmount = Math.max(goal.getTargetAmount() - savedAmount, 0);
         Long remainingDays = calcRemainingDays(goal.getEndDate());
 
         return new GoalListResponseDto.GoalSummaryDto(
                 goal.getId(),
                 goal.getTitle(),
-                remainingAmount,
+                savedAmount,
                 remainingDays,
                 achievementRate,
                 goal.getStatus(),

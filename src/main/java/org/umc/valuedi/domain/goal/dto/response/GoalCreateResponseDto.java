@@ -25,7 +25,7 @@ public record GoalCreateResponseDto(
         @Schema(description = "남은 일수", example = "30")
         Long remainingDays,
 
-        @Schema(description = "연결 계좌 정보(없을 수 있음)")
+        @Schema(description = "연결 계좌 정보")
         AccountDto account,
 
         @Schema(description = "아이콘 ID", example = "3")

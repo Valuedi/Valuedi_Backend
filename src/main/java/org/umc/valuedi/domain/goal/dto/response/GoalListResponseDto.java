@@ -21,8 +21,8 @@ public record GoalListResponseDto(
             @Schema(description = "목표 제목", example = "여행 자금 모으기")
             String title,
 
-            @Schema(description = "남은 금액", example = "700000")
-            Long remainingAmount,
+            @Schema(description = "모은 금액", example = "700000")
+            Long savedAmount,
 
             @Schema(description = "남은 일수", example = "30")
             Long remainingDays,
