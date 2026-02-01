@@ -189,13 +189,26 @@ public interface AssetControllerDocs {
                                               "result": {
                                                 "accountList": [
                                                   {
+                                                    "accountId": 1,
                                                     "accountName": "KB나라사랑우대통장",
                                                     "balanceAmount": 150000,
                                                     "organization": "0004",
-                                                    "createdAt": "2024-05-20T10:00:00"
+                                                    "createdAt": "2024-05-20T10:00:00",
+                                                    "goalInfo": null
+                                                  },
+                                                  {
+                                                    "accountId": 2,
+                                                    "accountName": "KB국민ONE통장",
+                                                    "balanceAmount": 300000,
+                                                    "organization": "0004",
+                                                    "createdAt": "2024-05-21T10:00:00",
+                                                    "goalInfo": {
+                                                      "goalId": 2,
+                                                      "title": "여행"
+                                                    }
                                                   }
                                                 ],
-                                                "totalCount": 1
+                                                "totalCount": 2
                                               }
                                             }
                                     """
@@ -212,27 +225,66 @@ public interface AssetControllerDocs {
                     description = "성공 - 은행별 계좌 목록 반환",
                     content = @Content(
                             schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    name = "성공 예시",
-                                    value = """
-                                            {
-                                              "isSuccess": true,
-                                              "code": "COMMON200",
-                                              "message": "성공입니다.",
-                                              "result": {
-                                                "accountList": [
-                                                  {
-                                                    "accountName": "KB나라사랑우대통장",
-                                                    "balanceAmount": 150000,
-                                                    "organization": "0004",
-                                                    "createdAt": "2024-05-20T10:00:00"
-                                                  }
-                                                ],
-                                                "totalCount": 1
-                                              }
-                                            }
-                                    """
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "목표가 있는 경우",
+                                            value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "COMMON200",
+                                                      "message": "요청이 성공적으로 처리되었습니다.",
+                                                      "result": {
+                                                        "bankName": "우리은행",
+                                                        "totalBalance": 240732,
+                                                        "accountList": [
+                                                          {
+                                                            "accountId": 2,
+                                                            "accountName": "저축예금",
+                                                            "balanceAmount": 220732,
+                                                            "connectedGoalId": null
+                                                          },
+                                                          {
+                                                            "accountId": 3,
+                                                            "accountName": "청약저축",
+                                                            "balanceAmount": 20000,
+                                                            "connectedGoalId": 101
+                                                          }
+                                                        ],
+                                                        "goalList": [
+                                                          {
+                                                            "goalId": 2,
+                                                            "title": "여행행",
+                                                            "linkedAccountId": 2
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "목표가 없는 경우",
+                                            value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "COMMON200",
+                                                      "message": "요청이 성공적으로 처리되었습니다.",
+                                                      "result": {
+                                                        "bankName": "우리은행",
+                                                        "totalBalance": 100000,
+                                                        "accountList": [
+                                                          {
+                                                            "accountId": 2,
+                                                            "accountName": "저축예금",
+                                                            "balanceAmount": 100000,
+                                                            "connectedGoalId": null
+                                                          }
+                                                        ],
+                                                        "goalList": []
+                                                      }
+                                                    }
+                                            """
+                                    )
+                            }
                     )
             )
     })
