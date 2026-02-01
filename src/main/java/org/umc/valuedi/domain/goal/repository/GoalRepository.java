@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface GoalRepository extends JpaRepository<Goal, Long> {
+public interface GoalRepository extends JpaRepository<Goal, Long>, GoalRepositoryCustom {
 
     List<Goal> findAllByMember_Id( Long memberId);
 
