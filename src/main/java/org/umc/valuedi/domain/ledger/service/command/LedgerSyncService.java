@@ -27,9 +27,11 @@ import org.umc.valuedi.domain.member.repository.MemberRepository;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,9 +68,7 @@ public class LedgerSyncService {
 
     public void refreshKeywordCache() {
         List<CategoryKeyword> keywords = categoryKeywordRepository.findAllWithCategory();
-        Map<String, Category> newCache = keywords.stream()
-                .collect(Collectors.toMap(CategoryKeyword::getKeyword, CategoryKeyword::getCategory, (existing, replacement) -> existing));
-        this.keywordCache = Collections.unmodifiableMap(newCache);
+        this.keywordCache = keywords.stream().collect(Collectors.toMap(CategoryKeyword::getKeyword, CategoryKeyword::getCategory, (e, r) -> e));
     }
 
     @Transactional
@@ -82,25 +82,11 @@ public class LedgerSyncService {
         member.updateLastSyncedAt();
     }
 
-    @Transactional(readOnly = true) // 읽기 전용 트랜잭션으로 변경
+    @Transactional
     public void syncTransactions(Long memberId, LedgerSyncRequest request) {
-        if (ObjectUtils.isEmpty(request.getYearMonth()) && (ObjectUtils.isEmpty(request.getFromDate()) || ObjectUtils.isEmpty(request.getToDate()))) {
-            throw new LedgerException(LedgerErrorCode.INVALID_SYNC_REQUEST);
-        }
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
-
-        LocalDate from;
-        LocalDate to;
-
-        if (ObjectUtils.isNotEmpty(request.getYearMonth())) {
-            from = request.getYearMonth().atDay(1);
-            to = request.getYearMonth().atEndOfMonth();
-        } else {
-            from = request.getFromDate();
-            to = ObjectUtils.isEmpty(request.getToDate()) ? LocalDate.now() : request.getToDate();
-        }
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
+        LocalDate from = request.getFromDate();
+        LocalDate to = request.getToDate();
         syncTransactions(member, from, to);
     }
 
@@ -117,68 +103,49 @@ public class LedgerSyncService {
 
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from.minusDays(1), to.plusDays(1));
 
-        syncCardApprovals(member, from, to, defaultCategory);
-        syncBankTransactions(member, from, to, cards, defaultCategory, transferCategory);
+        List<LedgerEntry> allNewEntries = new ArrayList<>();
+        syncCardApprovals(member, from, to, defaultCategory, allNewEntries);
+        syncBankTransactions(member, from, to, cards, defaultCategory, transferCategory, allNewEntries);
+
+        if (!allNewEntries.isEmpty()) {
+            ledgerEntryRepository.bulkInsert(allNewEntries);
+        }
     }
 
-    private void syncCardApprovals(Member member, LocalDate from, LocalDate to, Category defaultCategory) {
+    private void syncCardApprovals(Member member, LocalDate from, LocalDate to, Category defaultCategory, List<LedgerEntry> allNewEntries) {
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
 
         for (CardApproval ca : cards) {
             if (ledgerEntryRepository.existsByCardApprovalId(ca.getId())) continue;
-            if (ObjectUtils.isEmpty(ca.getUsedDatetime())) continue;
+            if (ca.getUsedDatetime() == null) continue;
 
             String merchantName = ca.getMerchantName();
-            String merchantType = ca.getMerchantType();
+            Category category = mapCategoryByKeyword(ca.getMerchantType(), null);
+            if (category == null) category = mapCategoryByKeyword(merchantName, defaultCategory);
+            if (category == null) category = defaultCategory;
 
-            Category category = null;
-            TransactionType transactionType;
+            TransactionType transactionType = ca.getCancelYn() == CancelStatus.NORMAL ? TransactionType.EXPENSE : TransactionType.INCOME;
 
-            if (!ObjectUtils.isEmpty(merchantType)) {
-                category = mapCategoryByKeyword(merchantType, null);
-            }
-
-            if (ObjectUtils.isEmpty(category) && !ObjectUtils.isEmpty(merchantName)) {
-                category = mapCategoryByKeyword(merchantName, defaultCategory);
-            }
-
-            if (ObjectUtils.isEmpty(category)) {
-                category = defaultCategory;
-            }
-
-            transactionType = ca.getCancelYn().equals(CancelStatus.NORMAL) ? TransactionType.EXPENSE : TransactionType.INCOME;
-
-            LedgerEntry entry = LedgerEntry.builder()
-                    .member(member)
-                    .cardApproval(ca)
-                    .category(category)
+            allNewEntries.add(LedgerEntry.builder()
+                    .member(member).cardApproval(ca).category(category)
                     .title(ObjectUtils.isEmpty(merchantName) ? "카드 승인" : merchantName)
-                    .transactionAt(ca.getUsedDatetime())
-                    .transactionType(transactionType)
-                    .build();
-            ledgerEntryRepository.save(entry);
+                    .transactionAt(ca.getUsedDatetime()).transactionType(transactionType).build());
         }
     }
 
-    public void syncBankTransactions(Member member, LocalDate from, LocalDate to, List<CardApproval> cards, Category defaultCategory, Category transferCategory) {
+    private void syncBankTransactions(Member member, LocalDate from, LocalDate to, List<CardApproval> cards, Category defaultCategory, Category transferCategory, List<LedgerEntry> allNewEntries) {
         List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
-
         for (BankTransaction bt : banks) {
             if (ledgerEntryRepository.existsByBankTransactionId(bt.getId())) continue;
             if (ObjectUtils.isEmpty(bt.getTrDatetime())) continue;
 
-            String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4())
-                    .filter(s -> !ObjectUtils.isEmpty(s))
-                    .collect(Collectors.joining(" "));
-
+            String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4()).filter(Objects::nonNull).collect(Collectors.joining(" "));
             if (isDuplicateOfCardApproval(bt, combinedDesc, cards)) continue;
 
             Category category;
             TransactionType transactionType;
-            String title = ObjectUtils.isEmpty(combinedDesc) ? "은행 거래" : combinedDesc;
-            if (title.length() > 50) {
-                title = title.substring(0, 50);
-            }
+            String title = combinedDesc.isEmpty() ? "은행 거래" : combinedDesc;
+            if (title.length() > 50) title = title.substring(0, 50);
 
             if (isCardSettlement(combinedDesc)) {
                 category = transferCategory;
@@ -188,37 +155,26 @@ public class LedgerSyncService {
                 transactionType = bt.getDirection() == TransactionDirection.IN ? TransactionType.INCOME : TransactionType.EXPENSE;
             }
 
-            LedgerEntry entry = LedgerEntry.builder()
-                    .member(member)
-                    .bankTransaction(bt)
-                    .category(category)
-                    .title(title)
-                    .transactionAt(bt.getTrDatetime())
-                    .transactionType(transactionType)
-                    .build();
-            ledgerEntryRepository.save(entry);
+            allNewEntries.add(LedgerEntry.builder()
+                    .member(member).bankTransaction(bt).category(category)
+                    .title(title).transactionAt(bt.getTrDatetime()).transactionType(transactionType).build());
         }
     }
 
     private boolean isCardSettlement(String text) {
-        if (ObjectUtils.isEmpty(text)) return false;
-        return CARD_SETTLEMENT_KEYWORDS.stream().anyMatch(text::contains);
+        return text != null && CARD_SETTLEMENT_KEYWORDS.stream().anyMatch(text::contains);
     }
 
     private Category mapCategoryByKeyword(String text, Category defaultCategory) {
-        if (ObjectUtils.isEmpty(text)) return defaultCategory;
+        if (text == null || text.isEmpty()) return defaultCategory;
         for (Map.Entry<String, Category> entry : keywordCache.entrySet()) {
-            if (text.contains(entry.getKey())) {
-                return entry.getValue();
-            }
+            if (text.contains(entry.getKey())) return entry.getValue();
         }
         return defaultCategory;
     }
 
     private boolean isDuplicateOfCardApproval(BankTransaction bt, String combinedDesc, List<CardApproval> cards) {
-        if (bt.getDirection() != TransactionDirection.OUT || isCardSettlement(combinedDesc) || !hasCardPaymentKeyword(combinedDesc)) {
-            return false;
-        }
+        if (bt.getDirection() != TransactionDirection.OUT || isCardSettlement(combinedDesc) || !hasCardPaymentKeyword(combinedDesc)) return false;
         return cards.stream().anyMatch(ca -> isMatch(bt, combinedDesc, ca));
     }
 
@@ -232,13 +188,11 @@ public class LedgerSyncService {
         if (normBankDesc.length() < 2 || normMerchant.length() < 2) return false;
 
         int lcsLength = getLongestCommonSubstringLength(normBankDesc, normMerchant);
-        int minLength = Math.min(normBankDesc.length(), normMerchant.length());
-        return lcsLength >= 4 || (double) lcsLength / minLength >= 0.6;
+        return lcsLength >= 4 || (double) lcsLength / Math.min(normBankDesc.length(), normMerchant.length()) >= 0.6;
     }
 
     private String normalizeText(String text) {
-        if (text == null) return "";
-        return text.replaceAll("[^a-zA-Z0-9가-힣]", "").replace("주식회사", "").replace("유한회사", "").replace("체크", "").replace("카드", "").toUpperCase();
+        return text == null ? "" : text.replaceAll("[^a-zA-Z0-9가-힣]", "").replace("주식회사", "").replace("유한회사", "").replace("체크", "").replace("카드", "").toUpperCase();
     }
 
     private int getLongestCommonSubstringLength(String s1, String s2) {
@@ -260,7 +214,6 @@ public class LedgerSyncService {
     }
 
     private boolean hasCardPaymentKeyword(String text) {
-        if (ObjectUtils.isEmpty(text)) return false;
-        return CARD_PAYMENT_KEYWORDS.stream().anyMatch(text::contains);
+        return text != null && CARD_PAYMENT_KEYWORDS.stream().anyMatch(text::contains);
     }
 }

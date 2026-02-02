@@ -1,5 +1,6 @@
 package org.umc.valuedi.domain.asset.service.command;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AssetFetchService {
 
+    private final EntityManager entityManager;
     private final CodefConnectionRepository codefConnectionRepository;
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
@@ -81,7 +83,7 @@ public class AssetFetchService {
         if (!allFetchedBankTransactions.isEmpty()) {
             List<BankTransaction> newBankTransactions = filterNewBankTransactions(allFetchedBankTransactions);
             if (!newBankTransactions.isEmpty()) {
-                bankTransactionRepository.saveAll(newBankTransactions);
+                bankTransactionRepository.bulkInsert(newBankTransactions);
                 totalNewBankTransactions = newBankTransactions.size();
             }
         }
@@ -90,10 +92,14 @@ public class AssetFetchService {
         if (!allFetchedCardApprovals.isEmpty()) {
             List<CardApproval> newCardApprovals = filterNewCardApprovals(allFetchedCardApprovals);
             if (!newCardApprovals.isEmpty()) {
-                cardApprovalRepository.saveAll(newCardApprovals);
+                cardApprovalRepository.bulkInsert(newCardApprovals);
                 totalNewCardApprovals = newCardApprovals.size();
             }
         }
+
+        // JdbcTemplate 사용 후 영속성 컨텍스트 초기화
+        entityManager.flush();
+        entityManager.clear();
 
         return AssetResDTO.AssetSyncResult.builder()
                 .newBankTransactionCount(totalNewBankTransactions)
