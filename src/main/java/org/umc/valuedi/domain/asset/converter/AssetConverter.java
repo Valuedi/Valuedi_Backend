@@ -1,25 +1,38 @@
 package org.umc.valuedi.domain.asset.converter;
 
-import org.springframework.stereotype.Component;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.Card;
+import org.umc.valuedi.domain.connection.enums.Organization;
+import org.umc.valuedi.domain.goal.entity.Goal;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
 public class AssetConverter {
 
     // 개별 BankAccount 엔티티 -> BankAccountInfo 변환
     public static BankResDTO.BankAccountInfo toBankAccountInfo(BankAccount account) {
+        BankResDTO.GoalInfo goalInfo = null;
+        if (account.getGoal() != null) {
+            Goal goal = account.getGoal();
+            
+            goalInfo = BankResDTO.GoalInfo.builder()
+                    .goalId(goal.getId())
+                    .title(goal.getTitle())
+                    .build();
+        }
+
         return BankResDTO.BankAccountInfo.builder()
+                .accountId(account.getId())
                 .accountName(account.getAccountName())
                 .balanceAmount(account.getBalanceAmount())
                 .organization(account.getCodefConnection().getOrganization()) // 기관코드 추출
                 .createdAt(account.getCreatedAt())
+                .goalInfo(goalInfo)
                 .build();
     }
 
@@ -64,6 +77,44 @@ public class AssetConverter {
                 .totalAccountCount(accountCount)
                 .totalCardCount(cardCount)
                 .totalAssetCount(accountCount + cardCount)
+                .build();
+    }
+
+    // 특정 은행의 자산 현황 응답 DTO 변환
+    public static BankResDTO.BankAssetResponse toBankAssetResponse(String organizationCode, List<BankAccount> accounts) {
+        String bankName = Organization.getNameByCode(organizationCode);
+
+        long totalBalance = 0L;
+        List<BankResDTO.AccountInfo> accountList = new ArrayList<>(accounts.size());
+        List<BankResDTO.GoalSimpleInfo> goalList = new ArrayList<>();
+
+        for (BankAccount account : accounts) {
+            totalBalance += (account.getBalanceAmount() != null ? account.getBalanceAmount() : 0L);
+
+            Goal goal = account.getGoal();
+            Long connectedGoalId = (goal != null) ? goal.getId() : null;
+
+            accountList.add(BankResDTO.AccountInfo.builder()
+                    .accountId(account.getId())
+                    .accountName(account.getAccountName())
+                    .balanceAmount(account.getBalanceAmount())
+                    .connectedGoalId(connectedGoalId)
+                    .build());
+
+            if (goal != null) {
+                goalList.add(BankResDTO.GoalSimpleInfo.builder()
+                        .goalId(goal.getId())
+                        .title(goal.getTitle())
+                        .linkedAccountId(account.getId())
+                        .build());
+            }
+        }
+
+        return BankResDTO.BankAssetResponse.builder()
+                .bankName(bankName)
+                .totalBalance(totalBalance)
+                .accountList(accountList)
+                .goalList(goalList)
                 .build();
     }
 }

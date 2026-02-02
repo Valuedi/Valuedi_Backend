@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.service;
+package org.umc.valuedi.domain.asset.service.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,10 +12,10 @@ import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.Card;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
-import org.umc.valuedi.domain.asset.repository.bank.BankAccountRepository;
-import org.umc.valuedi.domain.asset.repository.bank.BankTransactionRepository;
-import org.umc.valuedi.domain.asset.repository.card.CardApprovalRepository;
-import org.umc.valuedi.domain.asset.repository.card.CardRepository;
+import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
+import org.umc.valuedi.domain.asset.repository.bank.bankTransaction.BankTransactionRepository;
+import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRepository;
+import org.umc.valuedi.domain.asset.repository.card.card.CardRepository;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;

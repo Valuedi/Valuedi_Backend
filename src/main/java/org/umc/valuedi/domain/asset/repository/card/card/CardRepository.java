@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.repository.card;
+package org.umc.valuedi.domain.asset.repository.card.card;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

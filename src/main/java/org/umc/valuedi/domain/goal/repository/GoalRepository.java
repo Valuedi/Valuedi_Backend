@@ -11,7 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-public interface GoalRepository extends JpaRepository<Goal, Long> {
+public interface GoalRepository extends JpaRepository<Goal, Long>, GoalRepositoryCustom {
 
     List<Goal> findAllByMember_Id( Long memberId);
 
