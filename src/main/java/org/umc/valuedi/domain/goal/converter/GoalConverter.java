@@ -19,7 +19,7 @@ public class GoalConverter {
     public static Goal toEntity(Member member, GoalCreateRequestDto req) {
         return Goal.builder()
                 .member(member)
-                .accountId(null)                 // 계좌 연동 되면 채우기
+                .bankAccountId(null)                 // 계좌 연동 되면 채우기
                 .title(req.title())
                 .startDate(req.startDate())
                 .endDate(req.endDate())
