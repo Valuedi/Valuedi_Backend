@@ -71,3 +71,8 @@ springdoc:
     path: /swagger-ui.html
   querydsl:
     enabled: false # 테스트 환경에서 QueryDSL 충돌 방지
+
+genai:
+  gemini:
+    api-key: dummy-api-key
+    model: dummy-model

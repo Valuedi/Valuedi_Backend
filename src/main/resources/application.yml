@@ -60,9 +60,16 @@ management:
   endpoint:
     health:
       show-details: never
+
 fss:
   base-url: ${FSS_BASE_URL:https://finlife.fss.or.kr/finlifeapi}
   auth-key: ${FSS_AUTH_KEY}
+
+genai:
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: gemini-3-flash-preview
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

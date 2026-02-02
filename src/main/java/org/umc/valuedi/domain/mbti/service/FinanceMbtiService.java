@@ -29,8 +29,7 @@ public class FinanceMbtiService {
     private final FinanceMbtiTestValidator financeMbtiTestValidator;
     private final FinanceMbtiTestConverter financeMbtiTestConverter;
 
-    public MemberMbtiTest submitTest(FinanceMbtiTestRequestDto req) {
-        Long memberId = req.memberId();
+    public MemberMbtiTest submitTest(Long memberId, FinanceMbtiTestRequestDto req) {
 
         Member member = memberRepository.getReferenceById(memberId);
 

@@ -1,14 +1,13 @@
 package org.umc.valuedi.domain.mbti.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import jakarta.validation.Valid;
 import org.umc.valuedi.domain.mbti.dto.*;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -24,7 +23,7 @@ public interface FinanceControllerDocs {
             @ApiResponse(responseCode = "404", description = "활성화된 문항이 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    List<MbtiQuestionResponseDto> getQuestions();
+    org.umc.valuedi.global.apiPayload.ApiResponse<List<MbtiQuestionResponseDto>> getQuestions();
 
 
     @Operation(
@@ -37,7 +36,8 @@ public interface FinanceControllerDocs {
             @ApiResponse(responseCode = "404", description = "활성화된 문항이 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    FinanceMbtiTestResultResponseDto submitTest(
+    org.umc.valuedi.global.apiPayload.ApiResponse<FinanceMbtiTestResultResponseDto> submitTest(
+            @CurrentMember Long memberId,
             @Valid @RequestBody FinanceMbtiTestRequestDto req
     );
 
@@ -51,9 +51,8 @@ public interface FinanceControllerDocs {
             @ApiResponse(responseCode = "404", description = "활성화된 결과가 없음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    FinanceMbtiTestResultResponseDto getResult(
-            @Parameter(description = "회원 ID", example = "1", required = true)
-            @RequestParam Long memberId
+    org.umc.valuedi.global.apiPayload.ApiResponse<FinanceMbtiTestResultResponseDto> getResult(
+            @CurrentMember Long memberId
     );
 
 
@@ -66,5 +65,5 @@ public interface FinanceControllerDocs {
             @ApiResponse(responseCode = "404", description = "유형 정보가 존재하지 않음"),
             @ApiResponse(responseCode = "500", description = "서버 오류")
     })
-    List<FinanceMbtiTypeInfoDto> getResultTypes();
+    org.umc.valuedi.global.apiPayload.ApiResponse<List<FinanceMbtiTypeInfoDto>> getResultTypes();
 }
