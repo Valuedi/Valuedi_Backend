@@ -5,7 +5,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
-import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepositoryCustom;
+import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
 import org.umc.valuedi.domain.goal.entity.Goal;
 import org.umc.valuedi.domain.goal.exception.GoalException;
 import org.umc.valuedi.domain.goal.exception.code.GoalErrorCode;
@@ -17,7 +17,7 @@ import org.umc.valuedi.domain.goal.repository.GoalRepository;
 public class GoalAccountCommandService {
 
     private final GoalRepository goalRepository;
-    private final BankAccountRepositoryCustom bankAccountRepository;
+    private final BankAccountRepository bankAccountRepository;
 
     public void setLinkedAccount(Long memberId, Long goalId, Long accountId) {
 

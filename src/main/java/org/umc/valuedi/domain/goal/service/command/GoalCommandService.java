@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
-import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepositoryCustom;
+import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
@@ -27,7 +27,7 @@ public class GoalCommandService {
 
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
-    private final BankAccountRepositoryCustom bankAccountRepository;
+    private final BankAccountRepository bankAccountRepository;
 
     // 목표 생성
     public GoalCreateResponseDto createGoal(Long memberId, GoalCreateRequestDto req) {

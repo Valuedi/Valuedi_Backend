@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
-import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepositoryCustom;
+import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
 import org.umc.valuedi.domain.goal.converter.GoalAccountConverter;
 import org.umc.valuedi.domain.goal.dto.response.GoalAccountResDto;
 import org.umc.valuedi.domain.goal.repository.GoalRepository;
@@ -17,7 +17,7 @@ import java.util.List;
 public class GoalAccountQueryService {
 
     private final GoalRepository goalRepository;
-    private final BankAccountRepositoryCustom bankAccountRepository;
+    private final BankAccountRepository bankAccountRepository;
 
     public GoalAccountResDto.UnlinkedBankAccountListDTO getUnlinkedAccounts(Long memberId) {
         List<Long> linkedAccountIds = goalRepository.findLinkedBankAccountIdsByMemberId(memberId);

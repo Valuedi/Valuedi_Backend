@@ -60,7 +60,6 @@ public class BankAccountRepositoryImpl implements BankAccountRepositoryCustom {
 
     @Override
     public List<BankAccount> findUnlinkedByMemberId(Long memberId, List<Long> excludeIds) {
-        // excludeIds가 null/empty면 NOT IN 조건을 빼는 방식이 제일 안전함
         boolean hasExcludeIds = (excludeIds != null && !excludeIds.isEmpty());
 
         var base = queryFactory
