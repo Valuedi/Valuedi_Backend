@@ -24,7 +24,10 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     List<Goal> findAllByMember_IdAndStatus(Long memberId, GoalStatus status, Pageable pageable);
     List<Goal> findAllByMember_IdAndStatusIn(Long memberId, List<GoalStatus> statuses, Pageable pageable);
 
+    List<Goal> findAllByBankAccountId(Long bankAccountId);
+
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE Goal g SET g.deletedAt = CURRENT_TIMESTAMP WHERE g.bankAccountId IN :bankAccountIds")
-    void deleteByBankAccountIdIn(@Param("bankAccountIds") List<Long> bankAccountIds);
+    @Query("UPDATE Goal g SET g.deletedAt = CURRENT_TIMESTAMP WHERE g.bankAccountId IN " +
+            "(SELECT ba.id FROM BankAccount ba WHERE ba.codefConnection.id = :connectionId)")
+    void softDeleteGoalsByConnectionId(@Param("connectionId") Long connectionId);
 }

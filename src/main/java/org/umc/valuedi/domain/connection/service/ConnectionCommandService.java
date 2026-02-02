@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
@@ -13,9 +12,6 @@ import org.umc.valuedi.domain.connection.exception.code.ConnectionErrorCode;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.domain.goal.repository.GoalRepository;
 import org.umc.valuedi.global.external.codef.service.CodefAccountService;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -52,18 +48,12 @@ public class ConnectionCommandService {
                 connection.getBusinessType()
         );
 
-        // Soft Delete (하위 계좌/카드도)
+        //하위 계좌/카드도 Soft Delete
         codefConnectionRepository.delete(connection);
 
         if (connection.getBusinessType() == BusinessType.BK) {
-            // 은행 계좌와 연결된 목표 Soft Delete 처리 (Bulk Update)
-            List<Long> bankAccountIds = connection.getBankAccountList().stream()
-                    .map(BankAccount::getId)
-                    .collect(Collectors.toList());
-
-            if (!bankAccountIds.isEmpty()) {
-                goalRepository.deleteByBankAccountIdIn(bankAccountIds);
-            }
+            // 은행 계좌와 연결된 목표 Soft Delete 처리 (서브쿼리 사용)
+            goalRepository.softDeleteGoalsByConnectionId(connection.getId());
         }
     }
 }
