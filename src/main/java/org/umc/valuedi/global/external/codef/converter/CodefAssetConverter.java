@@ -144,6 +144,11 @@ public class CodefAssetConverter {
                 return null;
             }
 
+            String merchantType = item.getResMemberStoreType();
+            if (merchantType == null || merchantType.isBlank()) {
+                merchantType = "기타"; // 기본값 설정
+            }
+
             return CardApproval.builder()
                     .card(card)
                     .usedDate(usedDate)
@@ -159,7 +164,7 @@ public class CodefAssetConverter {
                     .cancelAmount(parseAmount(item.getResCancelAmount()))
                     .merchantCorpNo(item.getResMemberStoreCorpNo())
                     .merchantName(item.getResMemberStoreName())
-                    .merchantType(item.getResMemberStoreType())
+                    .merchantType(merchantType) // 기본값이 설정된 변수 사용
                     .merchantNo(item.getResMemberStoreNo())
                     .commStartDate(parseDate(item.getCommStartDate()).atStartOfDay())
                     .commEndDate(parseDate(item.getCommEndDate()).atStartOfDay())

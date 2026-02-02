@@ -17,7 +17,15 @@ import static org.umc.valuedi.domain.asset.enums.TransactionDirection.OUT;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
-@Table(name = "bank_transaction")
+@Table(
+        name = "bank_transaction",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_bank_transaction_identity",
+                        columnNames = {"bank_account_id", "tr_datetime", "in_amount", "out_amount", "desc3"}
+                )
+        }
+)
 public class BankTransaction extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

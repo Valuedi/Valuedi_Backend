@@ -7,6 +7,7 @@ import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,4 +16,6 @@ public interface BankTransactionRepository extends JpaRepository<BankTransaction
 
     @Query("SELECT MAX(bt.trDate) FROM BankTransaction bt WHERE bt.bankAccount = :account")
     Optional<LocalDate> findLatestTransactionDateByAccount(@Param("account") BankAccount account);
+
+    List<BankTransaction> findByBankAccountAndTrDatetimeBetween(BankAccount account, LocalDateTime start, LocalDateTime end);
 }

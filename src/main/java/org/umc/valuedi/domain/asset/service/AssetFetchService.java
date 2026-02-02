@@ -18,6 +18,8 @@ import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,17 +44,39 @@ public class AssetFetchService {
         for (CodefConnection connection : connections) {
             try {
                 if (connection.getBusinessType() == BusinessType.BK) {
+                    // 은행 거래 내역 로직 (이전과 동일, 필요시 중복 제거 로직 추가)
                     List<BankAccount> accounts = connection.getBankAccountList();
                     for (BankAccount account : accounts) {
                         LocalDate startDate = bankTransactionRepository.findLatestTransactionDateByAccount(account)
                                 .orElse(today.withDayOfMonth(1));
+                        
+                        List<BankTransaction> fetchedTransactions = codefAssetService.getBankTransactions(connection, account, startDate, today);
+                        
+                        if (!fetchedTransactions.isEmpty()) {
+                            // DB에서 비교할 기존 거래내역 조회 (조회 기간을 최소화하여 성능 확보)
+                            List<BankTransaction> existingTransactionsInPeriod = bankTransactionRepository
+                                    .findByBankAccountAndTrDatetimeBetween(account, startDate.atStartOfDay(), today.atTime(23, 59, 59));
 
-                        List<BankTransaction> transactions = codefAssetService.getBankTransactions(connection, account, startDate, today);
-                        if (!transactions.isEmpty()) {
-                            bankTransactionRepository.saveAll(transactions);
-                            totalNewBankTransactions += transactions.size();
-                            if (startDate.isBefore(overallMinDate)) {
-                                overallMinDate = startDate;
+                            // 빠른 비교를 위해 기존 거래내역의 복합키를 Set으로 변환
+                            Set<String> existingTransactionKeys = existingTransactionsInPeriod.stream()
+                                    .map(tx -> tx.getTrDatetime().toString() + tx.getInAmount() + tx.getOutAmount() + tx.getDesc3())
+                                    .collect(Collectors.toSet());
+
+                            // 새로운 거래 내역만 필터링
+                            List<BankTransaction> newTransactions = fetchedTransactions.stream()
+                                    .filter(tx -> {
+                                        String key = tx.getTrDatetime().toString() + tx.getInAmount() + tx.getOutAmount() + tx.getDesc3();
+                                        return !existingTransactionKeys.contains(key);
+                                    })
+                                    .collect(Collectors.toList());
+
+                            // 새로운 내역이 있을 경우에만 저장
+                            if (!newTransactions.isEmpty()) {
+                                bankTransactionRepository.saveAll(newTransactions);
+                                totalNewBankTransactions += newTransactions.size();
+                                if (startDate.isBefore(overallMinDate)) {
+                                    overallMinDate = startDate;
+                                }
                             }
                         }
                     }
