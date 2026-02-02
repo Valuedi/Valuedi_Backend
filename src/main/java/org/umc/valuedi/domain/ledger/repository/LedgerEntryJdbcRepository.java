@@ -16,7 +16,7 @@ public class LedgerEntryJdbcRepository {
     private final JdbcTemplate jdbcTemplate;
 
     public void batchInsert(List<LedgerEntry> entries) {
-        String sql = "INSERT INTO ledger_entry " +
+        String sql = "INSERT IGNORE INTO ledger_entry " +
                 "(member_id, bank_transaction_id, card_approval_id, category_id, title, memo, is_user_modified, transaction_at, transaction_type) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 

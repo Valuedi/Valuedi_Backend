@@ -22,7 +22,6 @@ import org.umc.valuedi.domain.ledger.exception.code.LedgerErrorCode;
 import org.umc.valuedi.domain.ledger.repository.CategoryKeywordRepository;
 import org.umc.valuedi.domain.ledger.repository.CategoryRepository;
 import org.umc.valuedi.domain.ledger.repository.LedgerEntryJdbcRepository;
-import org.umc.valuedi.domain.ledger.repository.LedgerEntryRepository;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
@@ -42,7 +41,6 @@ import java.util.stream.Stream;
 @Transactional
 public class LedgerSyncService {
 
-    private final LedgerEntryRepository ledgerEntryRepository;
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
     private final CategoryRepository categoryRepository;
@@ -153,7 +151,6 @@ public class LedgerSyncService {
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
 
         for (CardApproval ca : cards) {
-            if (ledgerEntryRepository.existsByCardApprovalId(ca.getId())) continue;
             if (ObjectUtils.isEmpty(ca.getUsedDatetime())) continue;
 
             String merchantName = ca.getMerchantName();
@@ -207,8 +204,6 @@ public class LedgerSyncService {
         List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
 
         for (BankTransaction bt : banks) {
-            // 이미 동기화된 내역은 스킵 (CardApproval에서 이미 처리했을 가능성 포함)
-            if (ledgerEntryRepository.existsByBankTransactionId(bt.getId())) continue;
             // 필수 값 체크
             if (ObjectUtils.isEmpty(bt.getTrDatetime())) continue;
 
