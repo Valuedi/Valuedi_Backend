@@ -6,6 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Schema(description = "자산 통합 응답 DTO")
 public class AssetResDTO {
 
@@ -23,5 +26,31 @@ public class AssetResDTO {
 
         @Schema(description = "총 연동 자산 수 (계좌 + 카드)", example = "8")
         private Long totalAssetCount;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @Builder
+    public static class AssetSyncRefreshResponse {
+        @Schema(description = "새로 수집된 은행 거래내역 수")
+        private int newBankTransactionCount;
+        @Schema(description = "새로 수집된 카드 승인내역 수")
+        private int newCardApprovalCount;
+        @Schema(description = "데이터 수집에 성공한 기관 목록")
+        private List<String> successOrganizations;
+        @Schema(description = "데이터 수집에 실패한 기관 목록")
+        private List<String> failureOrganizations;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @Builder
+    public static class AssetSyncResult {
+        private int newBankTransactionCount;
+        private int newCardApprovalCount;
+        private List<String> successOrganizations;
+        private List<String> failureOrganizations;
+        private LocalDate fromDate;
+        private LocalDate toDate;
     }
 }
