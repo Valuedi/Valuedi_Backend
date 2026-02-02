@@ -20,6 +20,5 @@ public interface CardApprovalRepository extends JpaRepository<CardApproval, Long
     @Query("SELECT MAX(ca.usedDate) FROM CardApproval ca JOIN ca.card c WHERE c.codefConnection.member = :member")
     Optional<LocalDate> findLatestApprovalDateByMember(@Param("member") Member member);
 
-    @Query("SELECT ca.approvalNo FROM CardApproval ca WHERE ca.card = :card AND ca.approvalNo IN :approvalNos")
-    Set<String> findExistingApprovalNosByCard(@Param("card") Card card, @Param("approvalNos") List<String> approvalNos);
+    List<CardApproval> findByCardInAndApprovalNoIn(List<Card> cards, List<String> approvalNos);
 }

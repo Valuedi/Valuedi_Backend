@@ -17,5 +17,5 @@ public interface BankTransactionRepository extends JpaRepository<BankTransaction
     @Query("SELECT MAX(bt.trDate) FROM BankTransaction bt WHERE bt.bankAccount = :account")
     Optional<LocalDate> findLatestTransactionDateByAccount(@Param("account") BankAccount account);
 
-    List<BankTransaction> findByBankAccountAndTrDatetimeBetween(BankAccount account, LocalDateTime start, LocalDateTime end);
+    List<BankTransaction> findByBankAccountInAndTrDatetimeAfter(List<BankAccount> accounts, LocalDateTime startTime);
 }
