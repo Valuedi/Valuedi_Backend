@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.repository.card;
+package org.umc.valuedi.domain.asset.repository.card.cardApproval;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;

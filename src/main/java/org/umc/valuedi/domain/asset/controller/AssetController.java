@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
-import org.umc.valuedi.domain.asset.service.AssetQueryService;
+import org.umc.valuedi.domain.asset.service.query.AssetQueryService;
 import org.umc.valuedi.domain.connection.service.ConnectionQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
@@ -65,8 +65,8 @@ public class AssetController implements AssetControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAllBankAccounts(memberId));
     }
 
-    @GetMapping("/banks/{bankCode}/accounts")
-    public ApiResponse<BankResDTO.BankAccountListDTO> getAccountsByBank(
+    @GetMapping("/banks/{bankCode}")
+    public ApiResponse<BankResDTO.BankAssetResponse> getAccountsByBank(
             @PathVariable String bankCode,
             @CurrentMember Long memberId
     ) {
