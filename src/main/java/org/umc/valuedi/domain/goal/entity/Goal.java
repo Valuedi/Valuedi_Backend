@@ -29,8 +29,8 @@ public class Goal extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(name = "id2", nullable = true)
-    private Long accountId;
+    @Column(name = "bank_account_id", nullable = true)
+    private Long bankAccountId;
 
     @Column(name = "title", nullable = false, length = 20)
     private String title;
