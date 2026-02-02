@@ -82,11 +82,6 @@ public class LedgerSyncService {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        Category defaultCategory = categoryRepository.findByCode("ETC")
-                .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
-        Category transferCategory = categoryRepository.findByCode("TRANSFER")
-                .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
-
         // 2. 날짜 범위 설정 로직 개선
         LocalDate from;
         LocalDate to;
@@ -106,11 +101,19 @@ public class LedgerSyncService {
                 to = LocalDate.now();
             }
         }
+        syncTransactions(member, from, to);
+    }
 
+    public void syncTransactions(Member member, LocalDate from, LocalDate to) {
         // 유효성 검사: 종료일이 시작일보다 앞서면 안됨
         if (to.isBefore(from)) {
             throw new LedgerException(LedgerErrorCode.INVALID_DATE_RANGE); // 에러 코드 추가 필요
         }
+
+        Category defaultCategory = categoryRepository.findByCode("ETC")
+                .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
+        Category transferCategory = categoryRepository.findByCode("TRANSFER")
+                .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
 
         // 카드 승인 내역 미리 조회 (매칭 오차 고려 +-1일 버퍼)
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from.minusDays(1), to.plusDays(1));

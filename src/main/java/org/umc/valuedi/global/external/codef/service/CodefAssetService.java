@@ -57,15 +57,21 @@ public class CodefAssetService {
         return codefAssetConverter.toBankAccountList(allAccounts, connection);
     }
 
+    // 기존 메서드 (3개월 전부터 현재까지)
     public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account) {
+        LocalDate now = LocalDate.now();
+        return getBankTransactions(connection, account, now.minusMonths(3), now);
+    }
+
+    // 오버로딩된 메서드 (시작일, 종료일 지정)
+    public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
         
         String originalAccountNo = encryptUtil.decryptAES(account.getAccountNoEnc());
         requestBody.put("account", originalAccountNo);
         
-        LocalDate now = LocalDate.now();
-        requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("startDate", startDate.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("endDate", endDate.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
 
@@ -119,14 +125,20 @@ public class CodefAssetService {
         return codefAssetConverter.toCardList(cardList, connection);
     }
 
+    // 기존 메서드 (3개월 전부터 현재까지)
     public List<CardApproval> getCardApprovals(CodefConnection connection) {
+        LocalDate now = LocalDate.now();
+        return getCardApprovals(connection, now.minusMonths(3), now);
+    }
+
+    // 오버로딩된 메서드 (시작일, 종료일 지정)
+    public List<CardApproval> getCardApprovals(CodefConnection connection, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("connectedId", connection.getConnectedId());
         requestBody.put("organization", connection.getOrganization());
         
-        LocalDate now = LocalDate.now();
-        requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("startDate", startDate.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("endDate", endDate.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
         requestBody.put("memberStoreInfoType", "1"); // 가맹점 상세 정보 조회 옵션
