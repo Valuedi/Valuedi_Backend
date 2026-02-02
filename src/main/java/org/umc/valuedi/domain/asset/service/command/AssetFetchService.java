@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.service;
+package org.umc.valuedi.domain.asset.service.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +11,7 @@ import org.umc.valuedi.domain.asset.entity.Card;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
 import org.umc.valuedi.domain.asset.repository.bank.BankTransactionRepository;
 import org.umc.valuedi.domain.asset.repository.card.CardApprovalRepository;
+import org.umc.valuedi.domain.asset.service.command.worker.AssetFetchWorker;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;

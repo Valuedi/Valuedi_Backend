@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.service;
+package org.umc.valuedi.domain.asset.service.query;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

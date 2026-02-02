@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.service;
+package org.umc.valuedi.domain.asset.service.command.worker;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;

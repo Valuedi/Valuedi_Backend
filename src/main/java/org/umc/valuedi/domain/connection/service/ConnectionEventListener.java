@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.umc.valuedi.domain.asset.service.AssetSyncService;
+import org.umc.valuedi.domain.asset.service.command.AssetSyncService;
 import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 
 @Slf4j

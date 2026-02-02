@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.service;
+package org.umc.valuedi.domain.asset.service.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
