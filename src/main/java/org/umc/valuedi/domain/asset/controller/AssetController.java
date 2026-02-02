@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.umc.valuedi.domain.asset.exception.code.AssetSuccessCode;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
@@ -84,10 +85,10 @@ public class AssetController implements AssetControllerDocs {
     }
 
     @PostMapping("/sync/refresh")
-    public ApiResponse<AssetResDTO.AssetSyncRefreshResponse> refreshAssetSync(
+    public ApiResponse<Void> refreshAssetSync(
             @CurrentMember Long memberId
     ) {
-        AssetResDTO.AssetSyncRefreshResponse response = assetSyncFacadeService.refreshAssetSync(memberId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
+        assetSyncFacadeService.refreshAssetSync(memberId);
+        return ApiResponse.onSuccess(AssetSuccessCode.SYNC_REQUEST_SUCCESS, null);
     }
 }

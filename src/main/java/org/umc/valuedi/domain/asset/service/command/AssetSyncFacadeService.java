@@ -2,17 +2,14 @@ package org.umc.valuedi.domain.asset.service.command;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.exception.AssetException;
 import org.umc.valuedi.domain.asset.exception.code.AssetErrorCode;
-import org.umc.valuedi.domain.ledger.service.command.LedgerSyncService;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -20,39 +17,21 @@ import java.time.LocalDateTime;
 public class AssetSyncFacadeService {
 
     private final MemberRepository memberRepository;
-    private final AssetFetchService assetFetchService;
-    private final LedgerSyncService ledgerSyncService;
+    private final AssetSyncProcessor assetSyncProcessor; // 실제 비동기 작업을 수행할 서비스 주입
 
-    private static final long SYNC_COOL_DOWN_MINUTES = 10;
+    private static final long SYNC_COOL_DOWN_MINUTES = 0;
 
-    public AssetResDTO.AssetSyncRefreshResponse refreshAssetSync(Long memberId) {
+    /**
+     * 동기화 요청을 접수하고, 실제 작업은 백그라운드로 넘깁니다.
+     */
+    public void refreshAssetSync(Long memberId) {
         Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException((MemberErrorCode.MEMBER_NOT_FOUND)));
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         validateSyncCoolDown(member);
 
-        // 트랜잭션 1: 데이터 수집 및 저장
-        AssetResDTO.AssetSyncResult syncResult = assetFetchService.fetchAndSaveLatestData(member);
-
-        // 새로 수집된 데이터가 있을 경우에만 가계부 동기화 로직 수행
-        boolean hasNewData = syncResult.getNewBankTransactionCount() > 0 || syncResult.getNewCardApprovalCount() > 0;
-        if (hasNewData) {
-            LocalDate fromDate = syncResult.getFromDate();
-            LocalDate toDate = syncResult.getToDate();
-            
-            // 트랜잭션 2: 가계부 연동 및 최종 업데이트
-            ledgerSyncService.syncTransactionsAndUpdateMember(member, fromDate, toDate);
-        } else {
-            // 새로 수집된 데이터가 없어도 동기화 시간은 갱신
-            ledgerSyncService.updateMemberLastSyncedAt(member);
-        }
-
-        return AssetResDTO.AssetSyncRefreshResponse.builder()
-                .newBankTransactionCount(syncResult.getNewBankTransactionCount())
-                .newCardApprovalCount(syncResult.getNewCardApprovalCount())
-                .successOrganizations(syncResult.getSuccessOrganizations())
-                .failureOrganizations(syncResult.getFailureOrganizations())
-                .build();
+        // 실제 동기화 프로세스를 비동기적으로 호출
+        assetSyncProcessor.runSyncProcess(member);
     }
 
     private void validateSyncCoolDown(Member member) {

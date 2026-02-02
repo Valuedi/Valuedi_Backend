@@ -269,33 +269,28 @@ public interface AssetControllerDocs {
     ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount(@CurrentMember Long memberId);
 
     @Operation(
-            summary = "전체 자산 새로고침(동기화) API",
+            summary = "전체 자산 새로고침(동기화) 요청 API",
             description = """
-                    사용자가 연동한 모든 금융사의 최신 거래내역을 동기화합니다.  \n마지막 동기화 시간으로부터 10분 이내에는 재호출할 수 없습니다.
+                    사용자가 연동한 모든 금융사의 최신 거래내역 수집을 **백그라운드에서 시작**하도록 요청합니다.
+                    - **즉시 응답**: API는 동기화 작업을 백그라운드로 넘기고 즉시 '요청 성공' 응답을 반환합니다.
+                    - **결과 확인**: 실제 동기화 결과는 잠시 후 자산 관련 다른 API를 통해 확인해야 합니다.
+                    - **10분 쿨타임**: 마지막 동기화 시간으로부터 10분 이내에는 재호출할 수 없습니다.
                     """
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "성공 - 동기화 결과 반환",
+                    description = "성공 - 동기화 작업이 성공적으로 시작됨",
                     content = @Content(
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
-                                    name = "성공 예시 (신규 내역 존재)",
+                                    name = "성공 예시",
                                     value = """
                                             {
                                               "isSuccess": true,
-                                              "code": "COMMON200",
-                                              "message": "성공입니다.",
-                                              "result": {
-                                                "newBankTransactionCount": 5,
-                                                "newCardApprovalCount": 3,
-                                                "successOrganizations": [
-                                                  "0020",
-                                                  "0309"
-                                                ],
-                                                "failureOrganizations": []
-                                              }
+                                              "code": "ASSET200_1",
+                                              "message": "자산 동기화 요청이 성공적으로 접수되었습니다. 잠시 후 데이터를 확인해주세요.",
+                                              "result": null
                                             }
                                             """
                             )
@@ -319,5 +314,5 @@ public interface AssetControllerDocs {
                     )
             )
     })
-    ApiResponse<AssetResDTO.AssetSyncRefreshResponse> refreshAssetSync(@Parameter(hidden = true) @CurrentMember Long memberId);
+    ApiResponse<Void> refreshAssetSync(@Parameter(hidden = true) @CurrentMember Long memberId);
 }
