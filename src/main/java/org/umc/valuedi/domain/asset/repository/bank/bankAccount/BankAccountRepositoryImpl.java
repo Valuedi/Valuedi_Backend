@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.umc.valuedi.domain.asset.entity.QBankAccount.bankAccount;
 import static org.umc.valuedi.domain.connection.entity.QCodefConnection.codefConnection;
@@ -55,5 +56,44 @@ public class BankAccountRepositoryImpl implements BankAccountRepositoryCustom {
                 )
                 .fetchOne();
         return count != null ? count : 0;
+    }
+
+    @Override
+    public List<BankAccount> findUnlinkedByMemberId(Long memberId, List<Long> excludeIds) {
+        // excludeIds가 null/empty면 NOT IN 조건을 빼는 방식이 제일 안전함
+        boolean hasExcludeIds = (excludeIds != null && !excludeIds.isEmpty());
+
+        var base = queryFactory
+                .selectFrom(bankAccount)
+                .join(bankAccount.codefConnection, codefConnection).fetchJoin()
+                .leftJoin(bankAccount.goal, goal).fetchJoin()
+                .where(
+                        codefConnection.member.id.eq(memberId),
+                        bankAccount.isActive.isTrue()
+                );
+
+        if (hasExcludeIds) {
+            base.where(bankAccount.id.notIn(excludeIds));
+        }
+
+        return base
+                .orderBy(bankAccount.id.desc())
+                .fetch();
+    }
+
+    @Override
+    public Optional<BankAccount> findByIdAndMemberId(Long accountId, Long memberId) {
+        BankAccount result = queryFactory
+                .selectFrom(bankAccount)
+                .join(bankAccount.codefConnection, codefConnection).fetchJoin()
+                .leftJoin(bankAccount.goal, goal).fetchJoin()
+                .where(
+                        bankAccount.id.eq(accountId),
+                        codefConnection.member.id.eq(memberId),
+                        bankAccount.isActive.isTrue()
+                )
+                .fetchOne();
+
+        return Optional.ofNullable(result);
     }
 }
