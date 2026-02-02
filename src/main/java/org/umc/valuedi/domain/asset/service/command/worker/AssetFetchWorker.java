@@ -29,7 +29,6 @@ public class AssetFetchWorker {
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
 
-    // 비동기 작업 결과를 담을 내부 DTO
     public record FetchResult(
             CodefConnection connection,
             LocalDate startDate,
@@ -38,10 +37,11 @@ public class AssetFetchWorker {
             boolean isSuccess
     ) {}
 
-    @Async("assetFetchExecutor") // 위에서 설정한 스레드 풀을 사용
+    @Async("assetFetchExecutor")
     public CompletableFuture<FetchResult> fetchAndConvertData(CodefConnection connection, Member member) {
         LocalDate today = LocalDate.now();
-        LocalDate overallStartDate = today.withDayOfMonth(1); // 전체 기관의 시작일 기록용
+        LocalDate defaultStartDate = today.minusMonths(3); // 기본 시작일을 3개월 전으로 설정
+        LocalDate overallStartDate = today; // 전체 기관의 시작일 기록용
 
         try {
             if (connection.getBusinessType() == BusinessType.BK) {
@@ -50,9 +50,9 @@ public class AssetFetchWorker {
                 
                 for (BankAccount account : accounts) {
                     try {
-                        // 계좌별로 최적의 startDate 계산
+                        // 계좌별로 최적의 startDate 계산 (없으면 3개월 전)
                         LocalDate accountStartDate = bankTransactionRepository.findLatestTransactionDateByAccount(account)
-                                .orElse(today.withDayOfMonth(1));
+                                .orElse(defaultStartDate);
                         
                         // 계좌별로 API 호출
                         List<BankTransaction> fetched = codefAssetService.getBankTransactions(connection, account, accountStartDate, today);
@@ -63,27 +63,25 @@ public class AssetFetchWorker {
                             overallStartDate = accountStartDate;
                         }
                     } catch (Exception e) {
-                        // 특정 계좌에서 오류 발생 시, 로그만 남기고 다음 계좌로 계속 진행
                         log.warn("[ASSET-FETCH-WORKER] 은행 계좌 거래내역 수집 중 오류 발생. 계좌: {}, 기관: {}, 회원 ID: {}",
                                  account.getAccountDisplay(), connection.getOrganization(), member.getId(), e);
                     }
                 }
-                // 부분적으로 성공한 데이터라도 성공으로 간주하고 반환
                 return CompletableFuture.completedFuture(new FetchResult(connection, overallStartDate, allTransactions, Collections.emptyList(), true));
 
             } else if (connection.getBusinessType() == BusinessType.CD) {
+                // 카드사 startDate 계산 (없으면 3개월 전)
                 LocalDate cardStartDate = cardApprovalRepository.findLatestApprovalDateByMember(member)
-                        .orElse(today.withDayOfMonth(1));
+                        .orElse(defaultStartDate);
                 
                 List<CardApproval> fetched = codefAssetService.getCardApprovals(connection, cardStartDate, today);
                 return CompletableFuture.completedFuture(new FetchResult(connection, cardStartDate, Collections.emptyList(), fetched, true));
             }
         } catch (Exception e) {
-            // 전체 connection 단위에서 예측하지 못한 큰 오류 발생 시 실패 처리
             log.error("[ASSET-FETCH-WORKER] 자산 데이터 수집 비동기 작업 중 예측하지 못한 오류 발생. 기관: {}, 회원 ID: {}",
                       connection.getOrganization(), member.getId(), e);
-            return CompletableFuture.completedFuture(new FetchResult(connection, overallStartDate, Collections.emptyList(), Collections.emptyList(), false));
+            return CompletableFuture.completedFuture(new FetchResult(connection, defaultStartDate, Collections.emptyList(), Collections.emptyList(), false));
         }
-        return CompletableFuture.completedFuture(new FetchResult(connection, overallStartDate, Collections.emptyList(), Collections.emptyList(), true));
+        return CompletableFuture.completedFuture(new FetchResult(connection, defaultStartDate, Collections.emptyList(), Collections.emptyList(), true));
     }
 }
