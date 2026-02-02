@@ -16,6 +16,9 @@ public record GoalCreateResponseDto(
         @Schema(description = "목표 금액", example = "1000000")
         Long targetAmount,
 
+        @Schema(description = "시작 금액", example = "1000")
+        Long startAmount,
+
         @Schema(description = "시작일", example = "2026-01-01")
         LocalDate startDate,
 

@@ -32,6 +32,8 @@ public record GoalCreateRequestDto(
         @NotNull(message = "targetAmount는 필수입니다.")
         @Min(value = 1, message = "targetAmount는 1 이상이어야 합니다.") Long targetAmount,
 
+
+
         @Schema(description = "색상 코드(HEX)", example = "FF6363")
         @NotBlank(message = "colorCode는 필수입니다.")
         String colorCode,

@@ -18,7 +18,7 @@ import java.util.List;
 
 public class GoalConverter {
 
-    public static Goal toEntity(Member member,BankAccount bankAccount, GoalCreateRequestDto req) {
+    public static Goal toEntity(Member member,BankAccount bankAccount, GoalCreateRequestDto req, Long startAmount) {
         return Goal.builder()
                 .member(member)
                 .bankAccount(bankAccount)
@@ -26,6 +26,7 @@ public class GoalConverter {
                 .startDate(req.startDate())
                 .endDate(req.endDate())
                 .targetAmount(req.targetAmount())
+                .startAmount(startAmount)
                 .status(GoalStatus.ACTIVE)
                 .completedAt(null)
                 .color(GoalStyleCatalog.normalizeColor(req.colorCode()))
@@ -81,6 +82,7 @@ public class GoalConverter {
                 goal.getId(),
                 goal.getTitle(),
                 goal.getTargetAmount(),
+                goal.getStartAmount(),
                 goal.getStartDate(),
                 goal.getEndDate(),
                 remainingDays,

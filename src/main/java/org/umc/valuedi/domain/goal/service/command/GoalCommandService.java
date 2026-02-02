@@ -47,8 +47,10 @@ public class GoalCommandService {
             throw new GoalException(GoalErrorCode.ACCOUNT_ALREADY_LINKED_TO_GOAL);
         }
 
+        Long startAmount = account.getBalanceAmount();
+
         // Goal 엔티티 생성 시 bankAccount 포함
-        Goal goal = GoalConverter.toEntity(member, account, req);
+        Goal goal = GoalConverter.toEntity(member, account, req, startAmount);
         Goal saved = goalRepository.save(goal);
 
         return GoalConverter.toCreateDto(saved);

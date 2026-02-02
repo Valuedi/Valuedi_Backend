@@ -20,7 +20,8 @@ public enum GoalErrorCode implements BaseErrorCode {
     GOAL_ALREADY_LINKED_ACCOUNT(HttpStatus.BAD_REQUEST, "GOAL400_3", "해당 목표는 이미 계좌가 연결되어 있습니다."),
     ACCOUNT_ALREADY_LINKED_TO_GOAL(HttpStatus.BAD_REQUEST, "GOAL400_4", "해당 계좌는 이미 다른 목표에 연결되어 있습니다."),
     GOAL_FORBIDDEN(HttpStatus.FORBIDDEN, "GOAL403_1", "해당 목표에 대한 권한이 없습니다."),
-    GOAL_ACCOUNT_INACTIVE(HttpStatus.GONE, "GOAL_410_1", "연결된 계좌가 비활성화(삭제)되어 목표 상세를 조회할 수 없습니다.");
+    GOAL_ACCOUNT_INACTIVE(HttpStatus.GONE, "GOAL_410_1", "연결된 계좌가 비활성화(삭제)되어 목표 상세를 조회할 수 없습니다."),
+    GOAL_BANK_ACCOUNT_NOT_LINKED(HttpStatus.GONE, "GOAL_400_5", "해당 목표에 연결 된 계좌가 없습니다.");
 
 
 

@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @SQLRestriction("deleted_at IS NULL")
-@SQLDelete(sql = "UPDATE goal SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE goal SET deleted_at = NOW(), bank_account_id = NULL WHERE id = ?")
 public class Goal extends BaseEntity {
 
     @Id

@@ -14,8 +14,10 @@ import org.umc.valuedi.domain.goal.exception.code.GoalSuccessCode;
 import org.umc.valuedi.domain.goal.service.command.GoalAccountCommandService;
 import org.umc.valuedi.domain.goal.service.command.GoalCommandService;
 import org.umc.valuedi.domain.goal.service.query.GoalAccountQueryService;
+import org.umc.valuedi.domain.goal.service.query.GoalLedgerQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalListQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
+import org.umc.valuedi.domain.ledger.dto.response.LedgerListResponse;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
 
@@ -29,6 +31,7 @@ public class GoalController implements GoalControllerDocs{
     private final GoalListQueryService goalListQueryService;
     private final GoalAccountQueryService goalAccountQueryService;
     private final GoalAccountCommandService goalAccountCommandService;
+    private final GoalLedgerQueryService goalLedgerQueryService;
 
     // 목표 추가
     @PostMapping
@@ -142,6 +145,20 @@ public class GoalController implements GoalControllerDocs{
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_LIST_FETCHED,
                 goalQueryService.getPrimaryGoals(memberId)
+        );
+    }
+
+    //목표 거래내역 조회
+    @GetMapping("/{goalId}/ledgers")
+    public ApiResponse<LedgerListResponse> getGoalLedgers(
+            @CurrentMember Long memberId,
+            @PathVariable Long goalId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.onSuccess(
+                GoalSuccessCode.GOAL_LEDGER_LIST_FETCHED,
+                goalLedgerQueryService.getGoalLedgerTransactions(memberId, goalId, page, size)
         );
     }
 }

@@ -15,6 +15,7 @@ import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
 import org.umc.valuedi.domain.goal.dto.response.*;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.enums.GoalSort;
+import org.umc.valuedi.domain.ledger.dto.response.LedgerListResponse;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 @Tag(name = "Goal", description = "목표(Goal) 생성/조회/수정/삭제 API")
@@ -165,5 +166,28 @@ public interface GoalControllerDocs {
     })
     org.umc.valuedi.global.apiPayload.ApiResponse<GoalPrimaryListResponseDto> getPrimaryGoals(
             @Parameter(hidden = true) @CurrentMember Long memberId
+    );
+
+    @Operation(
+            summary = "목표 거래내역 조회 API",
+            description = "로그인한 사용자의 특정 목표(goalId)에 연결된 계좌의 거래내역을 페이지네이션으로 조회합니다."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "page/size 파라미터 오류"),
+            @ApiResponse(responseCode = "404", description = "목표가 존재하지 않음"),
+            @ApiResponse(responseCode = "500", description = "서버 오류")
+    })
+    org.umc.valuedi.global.apiPayload.ApiResponse<LedgerListResponse> getGoalLedgers(
+            @Parameter(hidden = true) @CurrentMember Long memberId,
+
+            @Parameter(description = "목표 ID", example = "10", required = true)
+            @PathVariable Long goalId,
+
+            @Parameter(description = "페이지 번호(0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "페이지 크기", example = "20")
+            @RequestParam(defaultValue = "20") int size
     );
 }
