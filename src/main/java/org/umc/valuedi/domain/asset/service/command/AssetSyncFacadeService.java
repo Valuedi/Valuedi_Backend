@@ -2,7 +2,6 @@ package org.umc.valuedi.domain.asset.service.command;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.exception.AssetException;
 import org.umc.valuedi.domain.asset.exception.code.AssetErrorCode;
@@ -26,13 +25,13 @@ public class AssetSyncFacadeService {
 
     private static final long SYNC_COOL_DOWN_MINUTES = 10;
 
-    @Transactional
     public AssetResDTO.AssetSyncRefreshResponse refreshAssetSync(Long memberId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException((MemberErrorCode.MEMBER_NOT_FOUND)));
 
         validateSyncCoolDown(member);
 
+        // 트랜잭션 1: 데이터 수집 및 저장
         AssetResDTO.AssetSyncResult syncResult = assetFetchService.fetchAndSaveLatestData(member);
 
         // 새로 수집된 데이터가 있을 경우에만 가계부 동기화 로직 수행
@@ -40,10 +39,13 @@ public class AssetSyncFacadeService {
         if (hasNewData) {
             LocalDate fromDate = syncResult.getFromDate();
             LocalDate toDate = syncResult.getToDate();
-            ledgerSyncService.syncTransactions(member, fromDate, toDate);
+            
+            // 트랜잭션 2: 가계부 연동 및 최종 업데이트
+            ledgerSyncService.syncTransactionsAndUpdateMember(member, fromDate, toDate);
+        } else {
+            // 새로 수집된 데이터가 없어도 동기화 시간은 갱신
+            ledgerSyncService.updateMemberLastSyncedAt(member);
         }
-        
-        member.updateLastSyncedAt();
 
         return AssetResDTO.AssetSyncRefreshResponse.builder()
                 .newBankTransactionCount(syncResult.getNewBankTransactionCount())
