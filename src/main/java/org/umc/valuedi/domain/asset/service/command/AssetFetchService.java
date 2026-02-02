@@ -13,7 +13,6 @@ import org.umc.valuedi.domain.asset.repository.bank.BankTransactionRepository;
 import org.umc.valuedi.domain.asset.repository.card.CardApprovalRepository;
 import org.umc.valuedi.domain.asset.service.command.worker.AssetFetchWorker;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
-import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.domain.member.entity.Member;
 
@@ -46,10 +45,7 @@ public class AssetFetchService {
 
         // 각 기관별로 비동기 API 호출 실행
         List<CompletableFuture<AssetFetchWorker.FetchResult>> futures = connections.stream()
-                .map(connection -> {
-                    LocalDate startDate = getStartDateForConnection(connection, member, today);
-                    return assetFetchWorker.fetchAndConvertData(connection, member, startDate);
-                })
+                .map(connection -> assetFetchWorker.fetchAndConvertData(connection, member))
                 .collect(Collectors.toList());
 
         // 모든 비동기 작업이 완료될 때까지 대기하고 결과 취합
@@ -57,8 +53,7 @@ public class AssetFetchService {
                 .map(CompletableFuture::join)
                 .collect(Collectors.toList());
 
-        // --- 여기서부터는 모든 API 호출이 완료된 상태 ---
-
+        // 모든 거래내역을 한번에 조회하기 위한 준비
         List<BankTransaction> allFetchedBankTransactions = new ArrayList<>();
         List<CardApproval> allFetchedCardApprovals = new ArrayList<>();
         
@@ -77,10 +72,11 @@ public class AssetFetchService {
                 }
             } else {
                 failureOrganizations.add(result.connection().getOrganization());
-                log.error("자산 데이터 수집 비동기 작업 실패. 기관: {}, 회원 ID: {}", result.connection().getOrganization(), member.getId());
+                log.error("[ASSET-FETCH] 자산 데이터 수집 비동기 작업 실패. 기관: {}, 회원 ID: {}", result.connection().getOrganization(), member.getId());
             }
         }
 
+        // 새로운 데이터 필터링 및 저장
         int totalNewBankTransactions = 0;
         if (!allFetchedBankTransactions.isEmpty()) {
             List<BankTransaction> newBankTransactions = filterNewBankTransactions(allFetchedBankTransactions);
@@ -122,7 +118,7 @@ public class AssetFetchService {
                 .collect(Collectors.toSet());
 
         return allFetched.stream()
-                .filter(tx -> !existingKeys.contains(new BankTransactionKey(tx.getTrDatetime(), tx.getInAmount(), tx.getOutAmount(), tx.getDesc3())))
+                .filter(tx -> !existingKeys.contains(new BankTransactionKey(tx.getTrDatetime(), tx.getInAmount(), tx.getOutAmount(), Objects.toString(tx.getDesc3(), ""))))
                 .collect(Collectors.toList());
     }
 
@@ -141,19 +137,5 @@ public class AssetFetchService {
         return allFetched.stream()
                 .filter(ca -> !existingKeys.contains(new CardApprovalKey(ca.getCard(), ca.getApprovalNo())))
                 .collect(Collectors.toList());
-    }
-    
-    private LocalDate getStartDateForConnection(CodefConnection connection, Member member, LocalDate today) {
-        if (connection.getBusinessType() == BusinessType.BK) {
-            return connection.getBankAccountList().stream()
-                    .map(bankTransactionRepository::findLatestTransactionDateByAccount)
-                    .flatMap(opt -> opt.stream())
-                    .min(LocalDate::compareTo)
-                    .orElse(today.withDayOfMonth(1));
-        } else if (connection.getBusinessType() == BusinessType.CD) {
-            return cardApprovalRepository.findLatestApprovalDateByMember(member)
-                    .orElse(today.withDayOfMonth(1));
-        }
-        return today.withDayOfMonth(1);
     }
 }
