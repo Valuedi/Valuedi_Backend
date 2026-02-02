@@ -267,4 +267,57 @@ public interface AssetControllerDocs {
             )
     })
     ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount(@CurrentMember Long memberId);
+
+    @Operation(
+            summary = "전체 자산 새로고침(동기화) API",
+            description = """
+                    사용자가 연동한 모든 금융사의 최신 거래내역을 동기화합니다.  \n마지막 동기화 시간으로부터 10분 이내에는 재호출할 수 없습니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 동기화 결과 반환",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공 예시 (신규 내역 존재)",
+                                    value = """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "COMMON200",
+                                              "message": "성공입니다.",
+                                              "result": {
+                                                "newBankTransactionCount": 5,
+                                                "newCardApprovalCount": 3,
+                                                "successOrganizations": [
+                                                  "0020",
+                                                  "0309"
+                                                ],
+                                                "failureOrganizations": []
+                                              }
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "429",
+                    description = "실패 - 10분 쿨타임 제한",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "쿨타임 실패 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "ASSET429_1",
+                                              "message": "자산 동기화는 10분에 한 번만 요청할 수 있습니다."
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    ApiResponse<AssetResDTO.AssetSyncRefreshResponse> refreshAssetSync(@Parameter(hidden = true) @CurrentMember Long memberId);
 }
