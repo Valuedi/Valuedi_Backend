@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -125,19 +126,26 @@ public class CodefAssetConverter {
         }
     }
 
-    public List<CardApproval> toCardApprovalList(List<CodefAssetResDTO.CardApproval> data) {
+    public List<CardApproval> toCardApprovalList(List<CodefAssetResDTO.CardApproval> data, Map<String, Card> cardMap) {
         return data.stream()
-                .map(this::toCardApproval)
+                .map(item -> toCardApproval(item, cardMap))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private CardApproval toCardApproval(CodefAssetResDTO.CardApproval item) {
+    private CardApproval toCardApproval(CodefAssetResDTO.CardApproval item, Map<String, Card> cardMap) {
         try {
             LocalDate usedDate = parseDate(item.getResUsedDate());
             LocalTime usedTime = parseTime(item.getResUsedTime());
 
+            Card card = cardMap.get(item.getResCardNo());
+            if (card == null) {
+                log.warn("승인 내역에 해당하는 카드를 찾을 수 없습니다. 카드번호: {}", item.getResCardNo());
+                return null;
+            }
+
             return CardApproval.builder()
+                    .card(card)
                     .usedDate(usedDate)
                     .usedTime(usedTime)
                     .usedDatetime(LocalDateTime.of(usedDate, usedTime))

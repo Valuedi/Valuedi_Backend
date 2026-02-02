@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -157,7 +159,11 @@ public class CodefAssetService {
              return List.of();
         }
 
-        return codefAssetConverter.toCardApprovalList(approvalList);
+        // 승인 내역을 카드에 매핑하기 위해 카드 목록을 조회
+        Map<String, Card> cardMap = connection.getCardList().stream()
+                .collect(Collectors.toMap(Card::getCardNoMasked, Function.identity(), (c1, c2) -> c1));
+
+        return codefAssetConverter.toCardApprovalList(approvalList, cardMap);
     }
 
     private Map<String, Object> createAssetRequestBody(CodefConnection connection) {
