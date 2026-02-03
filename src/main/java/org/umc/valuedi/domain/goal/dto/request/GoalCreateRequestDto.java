@@ -13,7 +13,7 @@ public record GoalCreateRequestDto(
 
         @Schema(description = "연결할 계좌 ID", example = "1")
         @NotNull
-        Long accountId,
+        Long bankAccountId,
 
         @Schema(description = "목표 이름(최대 12자)", example = "유럽 여행 자금")
         @NotNull
@@ -31,7 +31,6 @@ public record GoalCreateRequestDto(
         @Schema(description = "목표 금액(원 단위, 1 이상)", example = "3000000", minimum = "1")
         @NotNull(message = "targetAmount는 필수입니다.")
         @Min(value = 1, message = "targetAmount는 1 이상이어야 합니다.") Long targetAmount,
-
 
 
         @Schema(description = "색상 코드(HEX)", example = "FF6363")

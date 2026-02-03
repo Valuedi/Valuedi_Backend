@@ -103,7 +103,6 @@ public class Goal extends BaseEntity {
         this.completedAt = LocalDateTime.now();
     }
 
-
     public void linkBankAccount(BankAccount bankAccount) {
         this.bankAccount = bankAccount;
     }

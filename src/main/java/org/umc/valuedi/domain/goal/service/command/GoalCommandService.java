@@ -39,7 +39,7 @@ public class GoalCommandService {
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         // 내 계좌 + 활성 상태 검증
-        BankAccount account = bankAccountRepository.findByIdAndMemberId(req.accountId(), memberId)
+        BankAccount account = bankAccountRepository.findByIdAndMemberId(req.bankAccountId(), memberId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.ACCOUNT_NOT_FOUND));
 
         // 이미 다른 목표가 이 계좌를 쓰고 있는지 검증
