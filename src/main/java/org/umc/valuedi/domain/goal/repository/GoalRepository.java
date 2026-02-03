@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface GoalRepository extends JpaRepository<Goal, Long> {
+public interface GoalRepository extends JpaRepository<Goal, Long>, GoalRepositoryCustom {
 
     List<Goal> findAllByMember_Id( Long memberId);
 
@@ -27,7 +27,10 @@ public interface GoalRepository extends JpaRepository<Goal, Long> {
     List<Goal> findAllByBankAccountId(Long bankAccountId);
 
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE Goal g SET g.deletedAt = CURRENT_TIMESTAMP WHERE g.bankAccountId IN " +
-            "(SELECT ba.id FROM BankAccount ba WHERE ba.codefConnection.id = :connectionId)")
+    @Query("UPDATE Goal g SET g.deletedAt = CURRENT_TIMESTAMP " +
+            "WHERE g.bankAccount.id IN (" +
+            "  SELECT ba.id FROM BankAccount ba " +
+            "  WHERE ba.codefConnection.id = :connectionId" +
+            ")")
     void softDeleteGoalsByConnectionId(@Param("connectionId") Long connectionId);
 }

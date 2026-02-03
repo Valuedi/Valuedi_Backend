@@ -19,7 +19,7 @@ public class GoalConverter {
     public static Goal toEntity(Member member, GoalCreateRequestDto req) {
         return Goal.builder()
                 .member(member)
-                .bankAccountId(null)                 // 계좌 연동 되면 채우기
+                .bankAccount(null)                 // 계좌 연동 되면 채우기
                 .title(req.title())
                 .startDate(req.startDate())
                 .endDate(req.endDate())
@@ -66,7 +66,7 @@ public class GoalConverter {
                 remainingAmount,
                 remainingDays,
                 achievementRate,
-                null, // 계좌 연동 되면 채우기
+                goal.getBankAccount() != null ? goal.getBankAccount().getAccountName() : null,
                 goal.getStatus(),
                 goal.getColor(),
                 goal.getIcon()
@@ -80,6 +80,14 @@ public class GoalConverter {
     ) {
         long remainingDays = calcRemainingDays(goal.getEndDate());
 
+        GoalDetailResponseDto.AccountDto accountDto = null;
+        if (goal.getBankAccount() != null) {
+            accountDto = new GoalDetailResponseDto.AccountDto(
+                    goal.getBankAccount().getCodefConnection().getOrganization(), // 은행명(기관명)
+                    goal.getBankAccount().getAccountDisplay() // 계좌번호
+            );
+        }
+
         return new GoalDetailResponseDto(
                 goal.getId(),
                 goal.getTitle(),
@@ -87,7 +95,7 @@ public class GoalConverter {
                 goal.getTargetAmount(),
                 remainingDays,
                 achievementRate,
-                null, // 계좌 연동 되면 채우기
+                accountDto,
                 goal.getStatus(),
                 goal.getColor(),
                 goal.getIcon()
