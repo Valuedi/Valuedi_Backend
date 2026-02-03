@@ -50,12 +50,12 @@ public class AssetFetchService {
         // 각 기관별로 비동기 API 호출 실행
         List<CompletableFuture<AssetFetchWorker.FetchResult>> futures = connections.stream()
                 .map(connection -> assetFetchWorker.fetchAndConvertData(connection, member))
-                .collect(Collectors.toList());
+                .toList();
 
         // 모든 비동기 작업이 완료될 때까지 대기하고 결과 취합
         List<AssetFetchWorker.FetchResult> fetchResults = futures.stream()
                 .map(CompletableFuture::join)
-                .collect(Collectors.toList());
+                .toList();
 
         // 모든 거래내역을 한번에 조회하기 위한 준비
         List<BankTransaction> allFetchedBankTransactions = new ArrayList<>();

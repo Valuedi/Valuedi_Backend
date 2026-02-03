@@ -17,6 +17,7 @@ import org.umc.valuedi.domain.asset.repository.card.card.CardRepository;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.ledger.service.command.LedgerSyncService;
+import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
 import java.time.LocalDate;
@@ -27,6 +28,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class AssetSyncService {
+
+    private static final int DEFAULT_SYNC_PERIOD_MONTHS = 3;
 
     private final CodefAssetService codefAssetService;
     private final BankAccountRepository bankAccountRepository;
@@ -79,7 +82,7 @@ public class AssetSyncService {
         }
 
         if (anyUpdated) {
-            ledgerSyncService.syncTransactions(connection.getMember(), LocalDate.now().minusMonths(3), LocalDate.now());
+            syncLedger(connection.getMember());
         }
 
         log.info("은행 자산 동기화 완료 - Connection ID: {}", connection.getId());
@@ -110,10 +113,17 @@ public class AssetSyncService {
 
         // 전체 승인 내역 조회 및 카드 매칭 후 저장
         if (syncCardApprovals(connection)) {
-            ledgerSyncService.syncTransactions(connection.getMember(), LocalDate.now().minusMonths(3), LocalDate.now());
+            syncLedger(connection.getMember());
         }
         
         log.info("카드사 자산 동기화 완료 - Connection ID: {}", connection.getId());
+    }
+
+    /**
+     * 가계부 동기화 헬퍼 메서드
+     */
+    private void syncLedger(Member member) {
+        ledgerSyncService.syncTransactions(member, LocalDate.now().minusMonths(DEFAULT_SYNC_PERIOD_MONTHS), LocalDate.now());
     }
 
     /**
