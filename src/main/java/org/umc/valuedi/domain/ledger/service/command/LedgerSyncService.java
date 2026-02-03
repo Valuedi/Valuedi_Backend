@@ -2,7 +2,6 @@ package org.umc.valuedi.domain.ledger.service.command;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
@@ -28,10 +27,10 @@ import org.umc.valuedi.domain.member.repository.MemberRepository;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -114,9 +113,17 @@ public class LedgerSyncService {
 
     private void syncCardApprovals(Member member, LocalDate from, LocalDate to, Category defaultCategory, List<LedgerEntry> allNewEntries) {
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
+        if (cards.isEmpty()) return;
+
+        // ID 목록을 추출
+        List<Long> cardApprovalIds = cards.stream().map(CardApproval::getId).collect(Collectors.toList());
+
+        // 이미 존재하는 LedgerEntry의 CardApproval ID를 한 번의 쿼리로 조회
+        Set<Long> existingIds = ledgerEntryRepository.findExistingCardApprovalIds(cardApprovalIds);
 
         for (CardApproval ca : cards) {
-            if (ledgerEntryRepository.existsByCardApprovalId(ca.getId())) continue;
+            // DB 쿼리 대신 메모리의 Set에서 확인
+            if (existingIds.contains(ca.getId())) continue;
             if (ca.getUsedDatetime() == null) continue;
 
             String merchantName = ca.getMerchantName();
@@ -135,8 +142,17 @@ public class LedgerSyncService {
 
     private void syncBankTransactions(Member member, LocalDate from, LocalDate to, List<CardApproval> cards, Category defaultCategory, Category transferCategory, List<LedgerEntry> allNewEntries) {
         List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
+        if (banks.isEmpty()) return;
+
+        // ID 목록 추출
+        List<Long> bankTransactionIds = banks.stream().map(BankTransaction::getId).collect(Collectors.toList());
+
+        // 한 번의 쿼리로 조회
+        Set<Long> existingIds = ledgerEntryRepository.findExistingBankTransactionIds(bankTransactionIds);
+
         for (BankTransaction bt : banks) {
-            if (ledgerEntryRepository.existsByBankTransactionId(bt.getId())) continue;
+            // 메모리에서 확인
+            if (existingIds.contains(bt.getId())) continue;
             if (bt.getTrDatetime() == null) continue;
 
             String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4()).filter(Objects::nonNull).collect(Collectors.joining(" "));
