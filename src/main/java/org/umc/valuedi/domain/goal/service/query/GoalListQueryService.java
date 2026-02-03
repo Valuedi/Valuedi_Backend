@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.entity.Goal;
@@ -71,14 +72,20 @@ public class GoalListQueryService {
     }
 
     private List<GoalListResponseDto.GoalSummaryDto> toSummaryDtos(List<Goal> goals) {
-        long savedAmount = 0; // 계좌 연동 후 수정
 
         return goals.stream()
-                .map(g -> GoalConverter.toSummaryDto(
-                        g,
-                        savedAmount,
-                        achievementRateService.calculateRate(savedAmount, g.getTargetAmount())
-                ))
+                .map(g -> {
+                    BankAccount account = g.getBankAccount();
+
+                    if (!account.getIsActive()) {
+                        throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
+                    }
+
+                    long savedAmount = account.getBalanceAmount() - g.getStartAmount();
+                    int rate = achievementRateService.calculateRate(savedAmount, g.getTargetAmount());
+
+                    return GoalConverter.toSummaryDto(g, savedAmount, rate);
+                })
                 .toList();
     }
 

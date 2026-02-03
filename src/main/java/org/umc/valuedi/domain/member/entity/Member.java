@@ -76,6 +76,9 @@ public class Member extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "last_synced_at")
+    private LocalDateTime lastSyncedAt;
+
     @Builder.Default
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberTerms> memberTermsList = new ArrayList<>();
@@ -101,5 +104,9 @@ public class Member extends BaseEntity {
         this.gender = Gender.UNKNOWN;
         this.passwordHash = null;
         this.withdrawalReason = reason;
+    }
+
+    public void updateLastSyncedAt() {
+        this.lastSyncedAt = LocalDateTime.now();
     }
 }

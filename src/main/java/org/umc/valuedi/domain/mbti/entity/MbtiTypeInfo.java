@@ -30,7 +30,7 @@ public class MbtiTypeInfo {
     private String tagline;
 
     @Lob
-    @Column(name = "detail", nullable = false)
+    @Column(name = "detail", nullable = false, columnDefinition = "TEXT")
     private String detail;
 
     @Column(name = "warning", nullable = false, length = 500)

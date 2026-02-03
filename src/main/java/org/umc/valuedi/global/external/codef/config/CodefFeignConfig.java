@@ -4,8 +4,10 @@ import feign.Logger;
 import feign.RequestInterceptor;
 import feign.codec.Decoder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.umc.valuedi.global.external.codef.service.CodefTokenService;
 
+@Configuration
 public class CodefFeignConfig {
 
     @Bean
