@@ -319,4 +319,52 @@ public interface AssetControllerDocs {
             )
     })
     ApiResponse<AssetResDTO.AssetSummaryCountDTO> getAssetCount(@CurrentMember Long memberId);
+
+    @Operation(
+            summary = "전체 자산 새로고침(동기화) 요청 API",
+            description = """
+                    사용자가 연동한 모든 금융사의 최신 거래내역 수집을 **백그라운드에서 시작**하도록 요청합니다.
+                    - **즉시 응답**: API는 동기화 작업을 백그라운드로 넘기고 즉시 '요청 성공' 응답을 반환합니다.
+                    - **결과 확인**: 실제 동기화 결과는 잠시 후 자산 관련 다른 API를 통해 확인해야 합니다.
+                    - **10분 쿨타임**: 마지막 동기화 시간으로부터 10분 이내에는 재호출할 수 없습니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 동기화 작업이 성공적으로 시작됨",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": true,
+                                              "code": "ASSET200_1",
+                                              "message": "자산 동기화 요청이 성공적으로 접수되었습니다. 잠시 후 데이터를 확인해주세요.",
+                                              "result": null
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "429",
+                    description = "실패 - 10분 쿨타임 제한",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "쿨타임 실패 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "ASSET429_1",
+                                              "message": "자산 동기화는 10분에 한 번만 요청할 수 있습니다."
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    ApiResponse<Void> refreshAssetSync(@Parameter(hidden = true) @CurrentMember Long memberId);
 }

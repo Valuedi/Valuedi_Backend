@@ -6,6 +6,7 @@ import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
 import org.umc.valuedi.domain.ledger.enums.TransactionType;
 import org.umc.valuedi.domain.member.entity.Member;
+import org.umc.valuedi.global.entity.BaseEntity;
 
 import java.time.LocalDateTime;
 
@@ -20,7 +21,7 @@ import java.time.LocalDateTime;
         @Index(name = "uq_ledger_entry_bank_transaction_id", columnList = "bank_transaction_id", unique = true),
         @Index(name = "uq_ledger_entry_card_approval_id", columnList = "card_approval_id", unique = true)
 })
-public class LedgerEntry {
+public class LedgerEntry extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

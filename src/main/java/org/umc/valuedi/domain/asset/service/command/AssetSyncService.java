@@ -1,7 +1,5 @@
 package org.umc.valuedi.domain.asset.service.command;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +18,6 @@ import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -134,71 +131,24 @@ public class AssetSyncService {
             log.warn("연동된 카드가 없어 승인내역 동기화를 건너뜁니다.");
             return;
         }
+        try {
+
+             connection.getCardList().clear();
+             connection.getCardList().addAll(cards);
+        } catch (Exception e) {
+            log.warn("Connection 객체의 카드 리스트 갱신 중 오류 (무시하고 진행): {}", e.getMessage());
+        }
 
         // 전체 승인 내역 조회 (API)
+        // CodefAssetService 내부에서 CodefAssetConverter를 통해 매칭까지 완료된 리스트 반환
         List<CardApproval> approvals = codefAssetService.getCardApprovals(connection);
         if (approvals.isEmpty()) {
             log.info("조회된 승인내역이 없습니다.");
             return;
         }
 
-        List<CardApproval> matchedApprovals = new ArrayList<>();
-
-        // 매칭 로직
-        for (CardApproval approval : approvals) {
-            String resCardNo = extractResCardNo(approval);
-            if (resCardNo == null) {
-                log.warn("승인내역에서 카드번호를 찾을 수 없어 스킵합니다. ApprovalNo: {}", approval.getApprovalNo());
-                continue;
-            }
-
-            Card matchedCard = findMatchingCard(cards, resCardNo);
-            if (matchedCard != null) {
-                approval.assignCard(matchedCard);
-                matchedApprovals.add(approval);
-            } else {
-                log.warn("승인내역의 카드번호({})와 일치하는 카드를 찾을 수 없어 스킵합니다.", resCardNo);
-            }
-        }
-
         // 저장
-        if (!matchedApprovals.isEmpty()) {
-            cardApprovalRepository.bulkInsert(matchedApprovals);
-            log.info("카드 승인내역 Bulk Insert 완료 - {}건 저장 (총 조회: {}건)", matchedApprovals.size(), approvals.size());
-        }
-    }
-
-    private String extractResCardNo(CardApproval approval) {
-        try {
-            JsonNode root = objectMapper.readTree(approval.getRawJson());
-            if (root.has("resCardNo")) {
-                return root.get("resCardNo").asText();
-            }
-        } catch (JsonProcessingException e) {
-            log.error("JSON 파싱 실패: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    private Card findMatchingCard(List<Card> cards, String resCardNo) {
-        // 1순위: 정확히 일치
-        for (Card card : cards) {
-            if (resCardNo.equals(card.getCardNoMasked())) {
-                return card;
-            }
-        }
-
-        // 2순위: 뒤 4자리 일치
-        if (resCardNo.length() >= 4) {
-            String last4 = resCardNo.substring(resCardNo.length() - 4);
-            for (Card card : cards) {
-                String cardNo = card.getCardNoMasked();
-                if (cardNo != null && cardNo.length() >= 4 && cardNo.endsWith(last4)) {
-                    return card;
-                }
-            }
-        }
-
-        return null;
+        cardApprovalRepository.bulkInsert(approvals);
+        log.info("카드 승인내역 Bulk Insert 완료 - {}건", approvals.size());
     }
 }

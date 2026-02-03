@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -57,15 +59,21 @@ public class CodefAssetService {
         return codefAssetConverter.toBankAccountList(allAccounts, connection);
     }
 
+    // 기존 메서드 (3개월 전부터 현재까지)
     public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account) {
+        LocalDate now = LocalDate.now();
+        return getBankTransactions(connection, account, now.minusMonths(3), now);
+    }
+
+    // 오버로딩된 메서드 (시작일, 종료일 지정)
+    public List<BankTransaction> getBankTransactions(CodefConnection connection, BankAccount account, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> requestBody = createAssetRequestBody(connection);
         
         String originalAccountNo = encryptUtil.decryptAES(account.getAccountNoEnc());
         requestBody.put("account", originalAccountNo);
         
-        LocalDate now = LocalDate.now();
-        requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("startDate", startDate.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("endDate", endDate.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
 
@@ -119,14 +127,26 @@ public class CodefAssetService {
         return codefAssetConverter.toCardList(cardList, connection);
     }
 
+    // 기존 메서드 (3개월 전부터 현재까지)
     public List<CardApproval> getCardApprovals(CodefConnection connection) {
+        LocalDate now = LocalDate.now();
+        return getCardApprovals(connection, now.minusMonths(3), now);
+    }
+
+    // 오버로딩된 메서드 (시작일, 종료일 지정)
+    public List<CardApproval> getCardApprovals(CodefConnection connection, LocalDate startDate, LocalDate endDate) {
+        // 이 메서드는 이제 connection 내부의 cardList를 사용하므로, 외부에서 cardList가 채워져 있어야 함.
+        return getCardApprovals(connection, connection.getCardList(), startDate, endDate);
+    }
+    
+    // AssetFetchWorker가 사용할 새로운 오버로딩 메서드
+    public List<CardApproval> getCardApprovals(CodefConnection connection, List<Card> cards, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("connectedId", connection.getConnectedId());
         requestBody.put("organization", connection.getOrganization());
         
-        LocalDate now = LocalDate.now();
-        requestBody.put("startDate", now.minusMonths(3).format(DateTimeFormatter.BASIC_ISO_DATE));
-        requestBody.put("endDate", now.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("startDate", startDate.format(DateTimeFormatter.BASIC_ISO_DATE));
+        requestBody.put("endDate", endDate.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
         requestBody.put("inquiryType", "1");
         requestBody.put("memberStoreInfoType", "1"); // 가맹점 상세 정보 조회 옵션
@@ -145,7 +165,8 @@ public class CodefAssetService {
              return List.of();
         }
 
-        return codefAssetConverter.toCardApprovalList(approvalList);
+        // 승인 내역을 카드에 매핑하기 위해 명시적으로 전달받은 카드 목록을 사용
+        return codefAssetConverter.toCardApprovalList(approvalList, cards);
     }
 
     private Map<String, Object> createAssetRequestBody(CodefConnection connection) {

@@ -3,6 +3,7 @@ package org.umc.valuedi.domain.asset.repository.bank.bankTransaction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 
 import java.sql.PreparedStatement;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 
+@Repository
 @RequiredArgsConstructor
 public class BankTransactionRepositoryImpl implements BankTransactionRepositoryCustom {
 
@@ -17,7 +19,7 @@ public class BankTransactionRepositoryImpl implements BankTransactionRepositoryC
 
     @Override
     public void bulkInsert(List<BankTransaction> transactions) {
-        if (transactions.isEmpty()) {
+        if (transactions == null || transactions.isEmpty()) {
             return;
         }
 
