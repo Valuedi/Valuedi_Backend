@@ -135,6 +135,12 @@ public class CodefAssetService {
 
     // 오버로딩된 메서드 (시작일, 종료일 지정)
     public List<CardApproval> getCardApprovals(CodefConnection connection, LocalDate startDate, LocalDate endDate) {
+        // 이 메서드는 이제 connection 내부의 cardList를 사용하므로, 외부에서 cardList가 채워져 있어야 함.
+        return getCardApprovals(connection, connection.getCardList(), startDate, endDate);
+    }
+    
+    // AssetFetchWorker가 사용할 새로운 오버로딩 메서드
+    public List<CardApproval> getCardApprovals(CodefConnection connection, List<Card> cards, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("connectedId", connection.getConnectedId());
         requestBody.put("organization", connection.getOrganization());
@@ -159,11 +165,8 @@ public class CodefAssetService {
              return List.of();
         }
 
-        // 승인 내역을 카드에 매핑하기 위해 카드 목록을 조회
-        Map<String, Card> cardMap = connection.getCardList().stream()
-                .collect(Collectors.toMap(Card::getCardNoMasked, Function.identity(), (c1, c2) -> c1));
-
-        return codefAssetConverter.toCardApprovalList(approvalList, cardMap);
+        // 승인 내역을 카드에 매핑하기 위해 명시적으로 전달받은 카드 목록을 사용
+        return codefAssetConverter.toCardApprovalList(approvalList, cards);
     }
 
     private Map<String, Object> createAssetRequestBody(CodefConnection connection) {

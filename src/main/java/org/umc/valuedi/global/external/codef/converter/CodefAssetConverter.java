@@ -126,19 +126,19 @@ public class CodefAssetConverter {
         }
     }
 
-    public List<CardApproval> toCardApprovalList(List<CodefAssetResDTO.CardApproval> data, Map<String, Card> cardMap) {
+    public List<CardApproval> toCardApprovalList(List<CodefAssetResDTO.CardApproval> data, List<Card> cardList) {
         return data.stream()
-                .map(item -> toCardApproval(item, cardMap))
+                .map(item -> toCardApproval(item, cardList))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
-    private CardApproval toCardApproval(CodefAssetResDTO.CardApproval item, Map<String, Card> cardMap) {
+    private CardApproval toCardApproval(CodefAssetResDTO.CardApproval item, List<Card> cardList) {
         try {
             LocalDate usedDate = parseDate(item.getResUsedDate());
             LocalTime usedTime = parseTime(item.getResUsedTime());
 
-            Card card = cardMap.get(item.getResCardNo());
+            Card card = findMatchingCard(item.getResCardNo(), cardList);
             if (card == null) {
                 log.warn("승인 내역에 해당하는 카드를 찾을 수 없습니다. 카드번호: {}", item.getResCardNo());
                 return null;
@@ -175,6 +175,38 @@ public class CodefAssetConverter {
             log.error("CardApproval 변환 실패: {}", e.getMessage());
             return null;
         }
+    }
+
+    private Card findMatchingCard(String approvalCardNo, List<Card> cardList) {
+        if (approvalCardNo == null) {
+            return null;
+        }
+        
+        // 숫자만 추출
+        String cleanApprovalNo = approvalCardNo.replaceAll("[^0-9]", "");
+        if (cleanApprovalNo.length() < 8) {
+            // 숫자가 너무 적으면 매칭 불가 (최소 앞4, 뒤4 필요)
+            return null;
+        }
+
+        String approvalPrefix = cleanApprovalNo.substring(0, 4);
+        String approvalSuffix = cleanApprovalNo.substring(cleanApprovalNo.length() - 4);
+
+        return cardList.stream()
+                .filter(c -> {
+                    String cardNo = c.getCardNoMasked();
+                    if (cardNo == null) return false;
+                    
+                    String cleanCardNo = cardNo.replaceAll("[^0-9]", "");
+                    if (cleanCardNo.length() < 8) return false;
+                    
+                    String cardPrefix = cleanCardNo.substring(0, 4);
+                    String cardSuffix = cleanCardNo.substring(cleanCardNo.length() - 4);
+
+                    return approvalPrefix.equals(cardPrefix) && approvalSuffix.equals(cardSuffix);
+                })
+                .findFirst()
+                .orElse(null);
     }
 
     private Long parseAmount(String amount) {
