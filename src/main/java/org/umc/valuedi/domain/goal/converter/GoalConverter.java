@@ -1,29 +1,32 @@
 package org.umc.valuedi.domain.goal.converter;
 
+import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.goal.constant.GoalStyleCatalog;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
+import org.umc.valuedi.domain.goal.dto.response.GoalCreateResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
+import org.umc.valuedi.domain.goal.dto.response.GoalPrimaryListResponseDto;
 import org.umc.valuedi.domain.goal.entity.Goal;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.member.entity.Member;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 public class GoalConverter {
 
-    private GoalConverter() {}
-
-    public static Goal toEntity(Member member, GoalCreateRequestDto req) {
+    public static Goal toEntity(Member member,BankAccount bankAccount, GoalCreateRequestDto req, Long startAmount) {
         return Goal.builder()
                 .member(member)
-                .bankAccount(null)                 // 계좌 연동 되면 채우기
+                .bankAccount(bankAccount)
                 .title(req.title())
                 .startDate(req.startDate())
                 .endDate(req.endDate())
                 .targetAmount(req.targetAmount())
+                .startAmount(startAmount)
                 .status(GoalStatus.ACTIVE)
                 .completedAt(null)
                 .color(GoalStyleCatalog.normalizeColor(req.colorCode()))
@@ -52,40 +55,68 @@ public class GoalConverter {
             goal.changeIcon(req.iconId());
     }
 
+    private record AccountInfo(String bankName, String accountNumber) {}
+
+    private static AccountInfo extractAccountInfo(BankAccount bankAccount) {
+        if (bankAccount == null) return null;
+
+        String bankName = null;
+        if (bankAccount.getCodefConnection() != null) {
+            bankName = bankAccount.getCodefConnection().getOrganization();
+        }
+        String accountNumber = bankAccount.getAccountDisplay();
+        return new AccountInfo(bankName, accountNumber);
+    }
+
+
+    public static GoalCreateResponseDto toCreateDto(Goal goal) {
+        long remainingDays = calcRemainingDays(goal.getEndDate());
+
+        GoalCreateResponseDto.AccountDto accountDto = null;
+        var info = extractAccountInfo(goal.getBankAccount());
+        if (info != null) {
+            accountDto = new GoalCreateResponseDto.AccountDto(info.bankName(), info.accountNumber());
+        }
+
+        return new GoalCreateResponseDto(
+                goal.getId(),
+                goal.getTitle(),
+                goal.getTargetAmount(),
+                goal.getStartAmount(),
+                goal.getStartDate(),
+                goal.getEndDate(),
+                remainingDays,
+                accountDto,
+                goal.getIcon()
+        );
+    }
+
     public static GoalListResponseDto.GoalSummaryDto toSummaryDto(
             Goal goal,
             Long savedAmount,
             int achievementRate
     ) {
-        Long remainingAmount = Math.max(goal.getTargetAmount() - savedAmount, 0);
         Long remainingDays = calcRemainingDays(goal.getEndDate());
 
         return new GoalListResponseDto.GoalSummaryDto(
                 goal.getId(),
                 goal.getTitle(),
-                remainingAmount,
+                savedAmount,
                 remainingDays,
                 achievementRate,
-                goal.getBankAccount() != null ? goal.getBankAccount().getAccountName() : null,
                 goal.getStatus(),
                 goal.getColor(),
                 goal.getIcon()
         );
     }
 
-    public static GoalDetailResponseDto toDetailDto(
-            Goal goal,
-            Long savedAmount,
-            int achievementRate
-    ) {
+    public static GoalDetailResponseDto toDetailDto(Goal goal, Long savedAmount, int achievementRate) {
         long remainingDays = calcRemainingDays(goal.getEndDate());
 
         GoalDetailResponseDto.AccountDto accountDto = null;
-        if (goal.getBankAccount() != null) {
-            accountDto = new GoalDetailResponseDto.AccountDto(
-                    goal.getBankAccount().getCodefConnection().getOrganization(), // 은행명(기관명)
-                    goal.getBankAccount().getAccountDisplay() // 계좌번호
-            );
+        var info = extractAccountInfo(goal.getBankAccount());
+        if (info != null) {
+            accountDto = new GoalDetailResponseDto.AccountDto(info.bankName(), info.accountNumber());
         }
 
         return new GoalDetailResponseDto(
@@ -107,4 +138,18 @@ public class GoalConverter {
         long days = ChronoUnit.DAYS.between(today, endDate);
         return Math.max(days, 0);
     }
+
+    public static GoalPrimaryListResponseDto toPrimaryListResponse(List<Goal> goals) {
+        return new GoalPrimaryListResponseDto(
+                goals.stream()
+                        .map(goal -> new GoalPrimaryListResponseDto.GoalPrimarySummaryDto(
+                                goal.getId(),              // goalId
+                                goal.getTitle(),
+                                goal.getTargetAmount(),
+                                goal.getIcon()
+                        ))
+                        .toList()
+        );
+    }
+
 }
