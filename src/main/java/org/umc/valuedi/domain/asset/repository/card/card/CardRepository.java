@@ -32,4 +32,6 @@ public interface CardRepository extends JpaRepository<Card, Long> {
             "AND c.isActive = true " +
             "ORDER BY c.createdAt DESC")
     List<Card> findAllByMemberId(@Param("memberId") Long memberId);
+
+    List<Card> findAllByCodefConnection(CodefConnection connection);
 }

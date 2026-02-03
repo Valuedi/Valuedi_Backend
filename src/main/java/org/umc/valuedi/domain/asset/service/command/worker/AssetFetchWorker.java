@@ -75,16 +75,27 @@ public class AssetFetchWorker {
             } else if (connection.getBusinessType() == BusinessType.CD) {
                 // 1. 카드 목록 먼저 동기화 (필수)
                 List<Card> fetchedCards = codefAssetService.getCards(connection);
+                List<Card> savedCards = Collections.emptyList();
                 if (!fetchedCards.isEmpty()) {
-                    cardRepository.saveAll(fetchedCards);
+                    List<Card> existingCards = cardRepository.findAllByCodefConnection(connection);
+
+                    List<Card> cardsToSave = fetchedCards.stream().map(newCard -> {
+                        return existingCards.stream()
+                                .filter(oldCard -> oldCard.getCardNoMasked().equals(newCard.getCardNoMasked()))
+                                .findFirst()
+                                .map(oldCard -> oldCard) // 정보 갱신 필요 시 여기서 수행
+                                .orElse(newCard);
+                    }).toList();
+
+                    // saveAll의 결과(영속화된 객체들) 저장
+                    savedCards = cardRepository.saveAll(cardsToSave);
                 }
 
-                // 카드사 startDate 계산 (없으면 3개월 전)
                 LocalDate cardStartDate = cardApprovalRepository.findLatestApprovalDateByMember(member)
                         .orElse(defaultStartDate);
-                
-                // 2. 승인 내역 조회 시, 방금 가져온 카드 목록을 직접 전달
-                List<CardApproval> fetched = codefAssetService.getCardApprovals(connection, fetchedCards, cardStartDate, today);
+
+                List<CardApproval> fetched = codefAssetService.getCardApprovals(connection, savedCards, cardStartDate, today);
+
                 return CompletableFuture.completedFuture(new FetchResult(connection, cardStartDate, Collections.emptyList(), fetched, true));
             }
         } catch (Exception e) {
