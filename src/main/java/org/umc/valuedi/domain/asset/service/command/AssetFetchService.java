@@ -15,6 +15,7 @@ import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRep
 import org.umc.valuedi.domain.asset.service.command.worker.AssetFetchWorker;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
+import org.umc.valuedi.domain.ledger.service.command.LedgerSyncService;
 import org.umc.valuedi.domain.member.entity.Member;
 
 import java.time.LocalDate;
@@ -36,6 +37,7 @@ public class AssetFetchService {
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
     private final AssetFetchWorker assetFetchWorker;
+    private final LedgerSyncService ledgerSyncService;
 
     private record BankTransactionKey(LocalDateTime trDatetime, Long inAmount, Long outAmount, String desc3) {}
     private record CardApprovalKey(Card card, String approvalNo) {}
@@ -100,6 +102,11 @@ public class AssetFetchService {
         // JdbcTemplate 사용 후 영속성 컨텍스트 초기화
         entityManager.flush();
         entityManager.clear();
+
+        // 가계부 동기화
+        if (totalNewBankTransactions > 0 || totalNewCardApprovals > 0) {
+            ledgerSyncService.syncTransactions(member, overallMinDate, today);
+        }
 
         return AssetResDTO.AssetSyncResult.builder()
                 .newBankTransactionCount(totalNewBankTransactions)

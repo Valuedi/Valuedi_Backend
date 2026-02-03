@@ -16,8 +16,10 @@ import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRep
 import org.umc.valuedi.domain.asset.repository.card.card.CardRepository;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
+import org.umc.valuedi.domain.ledger.service.command.LedgerSyncService;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -31,6 +33,7 @@ public class AssetSyncService {
     private final BankTransactionRepository bankTransactionRepository;
     private final CardRepository cardRepository;
     private final CardApprovalRepository cardApprovalRepository;
+    private final LedgerSyncService ledgerSyncService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -68,9 +71,17 @@ public class AssetSyncService {
         log.info("보유 계좌 목록 동기화 완료 - {}개 계좌", accounts.size());
 
         // 각 계좌별 거래 내역 조회 및 저장
+        boolean anyUpdated = false;
         for (BankAccount account : accounts) {
-            syncBankTransactions(connection, account);
+            if (syncBankTransactions(connection, account)) {
+                anyUpdated = true;
+            }
         }
+
+        if (anyUpdated) {
+            ledgerSyncService.syncTransactions(connection.getMember(), LocalDate.now().minusMonths(3), LocalDate.now());
+        }
+
         log.info("은행 자산 동기화 완료 - Connection ID: {}", connection.getId());
     }
 
@@ -98,7 +109,9 @@ public class AssetSyncService {
         log.info("보유 카드 목록 동기화 완료 - {}개 카드", cards.size());
 
         // 전체 승인 내역 조회 및 카드 매칭 후 저장
-        syncCardApprovals(connection);
+        if (syncCardApprovals(connection)) {
+            ledgerSyncService.syncTransactions(connection.getMember(), LocalDate.now().minusMonths(3), LocalDate.now());
+        }
         
         log.info("카드사 자산 동기화 완료 - Connection ID: {}", connection.getId());
     }
@@ -106,30 +119,31 @@ public class AssetSyncService {
     /**
      * 특정 계좌의 거래 내역 동기화
      */
-    private void syncBankTransactions(CodefConnection connection, BankAccount account) {
+    private boolean syncBankTransactions(CodefConnection connection, BankAccount account) {
         log.info("계좌 거래내역 동기화 시작 - Account: {}", account.getAccountDisplay());
         
         List<BankTransaction> transactions = codefAssetService.getBankTransactions(connection, account);
         
         if (transactions.isEmpty()) {
-            return;
+            return false;
         }
 
         bankTransactionRepository.bulkInsert(transactions);
         log.info("계좌 거래내역 Bulk Insert 완료 - {}건", transactions.size());
+        return true;
     }
 
     /**
      * 카드 승인 내역 동기화 (전체 조회 후 매칭)
      */
-    private void syncCardApprovals(CodefConnection connection) {
+    private boolean syncCardApprovals(CodefConnection connection) {
         log.info("카드 승인내역 동기화 시작 - Connection ID: {}", connection.getId());
 
         // 해당 연동의 모든 카드 목록 조회 (DB)
         List<Card> cards = cardRepository.findByCodefConnection(connection);
         if (cards.isEmpty()) {
             log.warn("연동된 카드가 없어 승인내역 동기화를 건너뜁니다.");
-            return;
+            return false;
         }
         try {
 
@@ -144,11 +158,12 @@ public class AssetSyncService {
         List<CardApproval> approvals = codefAssetService.getCardApprovals(connection);
         if (approvals.isEmpty()) {
             log.info("조회된 승인내역이 없습니다.");
-            return;
+            return false;
         }
 
         // 저장
         cardApprovalRepository.bulkInsert(approvals);
         log.info("카드 승인내역 Bulk Insert 완료 - {}건", approvals.size());
+        return true;
     }
 }
