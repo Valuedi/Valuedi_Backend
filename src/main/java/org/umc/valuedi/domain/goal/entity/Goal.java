@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @SQLRestriction("deleted_at IS NULL")
-@SQLDelete(sql = "UPDATE goal SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE goal SET deleted_at = NOW(), bank_account_id = NULL WHERE id = ?")
 public class Goal extends BaseEntity {
 
     @Id
@@ -31,7 +31,7 @@ public class Goal extends BaseEntity {
     private Member member;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bank_account_id")
+    @JoinColumn(name = "bank_account_id", unique = true)
     private BankAccount bankAccount;
 
     @Column(name = "title", nullable = false, length = 20)
@@ -45,6 +45,9 @@ public class Goal extends BaseEntity {
 
     @Column(name = "target_amount", nullable = false)
     private Long targetAmount;
+
+    @Column(name = "start_amount", nullable = false)
+    private Long startAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -77,6 +80,7 @@ public class Goal extends BaseEntity {
     public void changeTargetAmount(Long targetAmount) {
         this.targetAmount = targetAmount;
     }
+    public void changeStartAmount(Long startAmount) { this.startAmount = startAmount; }
 
     public void changeColor(String color) { this.color = color; }
 
@@ -99,5 +103,12 @@ public class Goal extends BaseEntity {
         this.completedAt = LocalDateTime.now();
     }
 
-    public void setBankAccount(BankAccount bankAccount) { this.bankAccount = bankAccount;}
+    public void linkBankAccount(BankAccount bankAccount) {
+        this.bankAccount = bankAccount;
+    }
+
+    public void unlinkBankAccount() {
+        this.bankAccount = null;
+    }
+
 }

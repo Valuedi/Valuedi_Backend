@@ -248,6 +248,44 @@ public class LedgerQueryRepository {
                 return ledgerEntry.transactionAt.desc();
         }
     }
+
+    public Page<LedgerEntry> searchByPeriodLatest(
+            Long memberId,
+            LocalDateTime from,
+            LocalDateTime to,
+            Pageable pageable
+    ) {
+        List<LedgerEntry> content = queryFactory
+                .selectFrom(ledgerEntry)
+                .leftJoin(ledgerEntry.category, category).fetchJoin()
+                .leftJoin(ledgerEntry.bankTransaction, bankTransaction).fetchJoin()
+                .leftJoin(ledgerEntry.cardApproval, cardApproval).fetchJoin()
+                .where(
+                        ledgerEntry.member.id.eq(memberId),
+                        periodBetween(from, to)
+                )
+                .orderBy(ledgerEntry.transactionAt.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long total = queryFactory
+                .select(ledgerEntry.count())
+                .from(ledgerEntry)
+                .where(
+                        ledgerEntry.member.id.eq(memberId),
+                        periodBetween(from, to)
+                )
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total != null ? total : 0L);
+    }
+
+    private BooleanExpression periodBetween(LocalDateTime from, LocalDateTime to) {
+        if (from == null || to == null) return null;
+        return ledgerEntry.transactionAt.between(from, to);
+    }
+
 }
 
 
