@@ -19,7 +19,7 @@ public class AssetSyncFacadeService {
     private final MemberRepository memberRepository;
     private final AssetSyncProcessor assetSyncProcessor; // 실제 비동기 작업을 수행할 서비스 주입
 
-    private static final long SYNC_COOL_DOWN_MINUTES = 0;
+    private static final long SYNC_COOL_DOWN_MINUTES = 10;
 
     /**
      * 동기화 요청을 접수하고, 실제 작업은 백그라운드로 넘깁니다.

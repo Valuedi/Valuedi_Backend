@@ -128,7 +128,7 @@ public class LedgerSyncService {
 
             allNewEntries.add(LedgerEntry.builder()
                     .member(member).cardApproval(ca).category(category)
-                    .title(ObjectUtils.isEmpty(merchantName) ? "카드 승인" : merchantName)
+                    .title(merchantName == null || merchantName.isBlank() ? "카드 승인" : merchantName)
                     .transactionAt(ca.getUsedDatetime()).transactionType(transactionType).build());
         }
     }
@@ -137,7 +137,7 @@ public class LedgerSyncService {
         List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
         for (BankTransaction bt : banks) {
             if (ledgerEntryRepository.existsByBankTransactionId(bt.getId())) continue;
-            if (ObjectUtils.isEmpty(bt.getTrDatetime())) continue;
+            if (bt.getTrDatetime() == null) continue;
 
             String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4()).filter(Objects::nonNull).collect(Collectors.joining(" "));
             if (isDuplicateOfCardApproval(bt, combinedDesc, cards)) continue;
