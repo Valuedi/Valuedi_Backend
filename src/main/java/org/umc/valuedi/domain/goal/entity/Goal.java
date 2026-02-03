@@ -99,5 +99,4 @@ public class Goal extends BaseEntity {
         this.completedAt = LocalDateTime.now();
     }
 
-    public void setBankAccount(BankAccount bankAccount) { this.bankAccount = bankAccount;}
 }

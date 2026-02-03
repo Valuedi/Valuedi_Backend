@@ -1,6 +1,9 @@
 package org.umc.valuedi.domain.goal.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.umc.valuedi.domain.goal.entity.Goal;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.springframework.data.domain.Pageable;
@@ -21,4 +24,13 @@ public interface GoalRepository extends JpaRepository<Goal, Long>, GoalRepositor
     List<Goal> findAllByMember_IdAndStatus(Long memberId, GoalStatus status, Pageable pageable);
     List<Goal> findAllByMember_IdAndStatusIn(Long memberId, List<GoalStatus> statuses, Pageable pageable);
 
+    List<Goal> findAllByBankAccountId(Long bankAccountId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Goal g SET g.deletedAt = CURRENT_TIMESTAMP " +
+            "WHERE g.bankAccount.id IN (" +
+            "  SELECT ba.id FROM BankAccount ba " +
+            "  WHERE ba.codefConnection.id = :connectionId" +
+            ")")
+    void softDeleteGoalsByConnectionId(@Param("connectionId") Long connectionId);
 }
