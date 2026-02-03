@@ -71,13 +71,17 @@ public class LedgerSyncService {
     }
 
     @Transactional
-    public void syncTransactionsAndUpdateMember(Member member, LocalDate from, LocalDate to) {
+    public void syncTransactionsAndUpdateMember(Long memberId, LocalDate from, LocalDate to) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
         syncTransactions(member, from, to);
         member.updateLastSyncedAt();
     }
 
     @Transactional
-    public void updateMemberLastSyncedAt(Member member) {
+    public void updateMemberLastSyncedAt(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
         member.updateLastSyncedAt();
     }
 

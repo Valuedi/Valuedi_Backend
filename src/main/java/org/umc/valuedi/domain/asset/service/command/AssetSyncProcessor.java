@@ -35,10 +35,11 @@ public class AssetSyncProcessor {
                 LocalDate toDate = syncResult.getToDate();
                 
                 // 트랜잭션 2: 가계부 연동 및 최종 업데이트
-                ledgerSyncService.syncTransactionsAndUpdateMember(member, fromDate, toDate);
+                // Member 객체 대신 ID를 전달하여 영속성 컨텍스트 내에서 조회 및 업데이트하도록 변경
+                ledgerSyncService.syncTransactionsAndUpdateMember(member.getId(), fromDate, toDate);
             } else {
                 // 새로 수집된 데이터가 없어도 동기화 시간은 갱신
-                ledgerSyncService.updateMemberLastSyncedAt(member);
+                ledgerSyncService.updateMemberLastSyncedAt(member.getId());
             }
             log.info("자산 동기화 백그라운드 작업을 성공적으로 완료했습니다. 회원 ID: {}", member.getId());
         } catch (Exception e) {
