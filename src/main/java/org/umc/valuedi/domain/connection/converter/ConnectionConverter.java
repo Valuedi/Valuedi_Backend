@@ -7,13 +7,12 @@ import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.Organization;
 
-@Component
 public class ConnectionConverter {
 
     /**
      * CodefConnection -> BankConnectionDTO
      */
-    public BankResDTO.BankConnection toBankConnectionDTO(CodefConnection connection) {
+    public static BankResDTO.BankConnection toBankConnectionDTO(CodefConnection connection) {
         return BankResDTO.BankConnection.builder()
                 .id(connection.getId())
                 .organizationCode(connection.getOrganization())
@@ -26,7 +25,7 @@ public class ConnectionConverter {
     /**
      * CodefConnection -> ConnectionDTO (공통)
      */
-    public ConnectionResDTO.Connection toConnectionDTO(CodefConnection connection) {
+    public static ConnectionResDTO.Connection toConnectionDTO(CodefConnection connection) {
         return ConnectionResDTO.Connection.builder()
                 .connectionId(connection.getId())
                 .organizationCode(connection.getOrganization())
@@ -40,7 +39,7 @@ public class ConnectionConverter {
     /**
      * CodefConnection -> CardIssuerConnectionDTO
      */
-    public CardResDTO.CardIssuerConnection toCardIssuerConnectionDTO(CodefConnection connection) {
+    public static CardResDTO.CardIssuerConnection toCardIssuerConnectionDTO(CodefConnection connection) {
         return CardResDTO.CardIssuerConnection.builder()
                 .id(connection.getId())
                 .organizationCode(connection.getOrganization())

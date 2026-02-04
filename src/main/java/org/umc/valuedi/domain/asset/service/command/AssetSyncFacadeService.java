@@ -37,7 +37,7 @@ public class AssetSyncFacadeService {
         Long logId = syncLogCommandService.startSyncLog(memberId, SyncType.ALL);
 
         // 실제 동기화 프로세스를 비동기적으로 호출
-        assetSyncProcessor.runSyncProcess(member, logId);
+        assetSyncProcessor.runSyncProcess(member.getId(), logId);
     }
 
     private void validateSyncCoolDown(Member member) {

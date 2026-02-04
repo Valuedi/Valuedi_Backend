@@ -20,7 +20,6 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ConnectionQueryService {
     private final CodefConnectionRepository connectionRepository;
-    private final ConnectionConverter connectionConverter;
 
     /**
      * 연동된 은행 목록 조회
@@ -33,7 +32,7 @@ public class ConnectionQueryService {
                 );
 
         return connections.stream()
-                .map(connectionConverter::toBankConnectionDTO)
+                .map(ConnectionConverter::toBankConnectionDTO)
                 .toList();
     }
 
@@ -48,7 +47,7 @@ public class ConnectionQueryService {
                 );
 
         return connections.stream()
-                .map(connectionConverter::toCardIssuerConnectionDTO)
+                .map(ConnectionConverter::toCardIssuerConnectionDTO)
                 .toList();
     }
 
@@ -60,7 +59,7 @@ public class ConnectionQueryService {
                 connectionRepository.findByMemberId(memberId);
 
         return connections.stream()
-                .map(connectionConverter::toConnectionDTO)
+                .map(ConnectionConverter::toConnectionDTO)
                 .toList();
     }
 }
