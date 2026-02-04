@@ -2,6 +2,7 @@ package org.umc.valuedi.domain.connection.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.umc.valuedi.domain.asset.service.command.AssetSyncFacadeService;
 import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.domain.connection.dto.res.SyncLogResDTO;
 import org.umc.valuedi.domain.connection.exception.code.ConnectionSuccessCode;
@@ -22,6 +23,7 @@ public class ConnectionController implements ConnectionControllerDocs {
     private final ConnectionCommandService connectionCommandService;
     private final ConnectionQueryService connectionQueryService;
     private final SyncLogQueryService syncLogQueryService;
+    private final AssetSyncFacadeService assetSyncFacadeService;
 
     @PostMapping
     public ApiResponse<Void> connect(
@@ -49,13 +51,18 @@ public class ConnectionController implements ConnectionControllerDocs {
         return ApiResponse.onSuccess(ConnectionSuccessCode.CONNECTION_DELETE_SUCCESS, null);
     }
 
+    @PostMapping("/sync/refresh")
+    public ApiResponse<Void> refreshAssetSync(
+            @CurrentMember Long memberId
+    ) {
+        assetSyncFacadeService.refreshAssetSync(memberId);
+        return ApiResponse.onSuccess(ConnectionSuccessCode.SYNC_REQUEST_SUCCESS, null);
+    }
+
     @GetMapping("/sync/status")
     public ApiResponse<SyncLogResDTO.SyncLogResponseDTO> getSyncStatus(
             @CurrentMember Long memberId
     ) {
-        return ApiResponse.onSuccess(
-                ConnectionSuccessCode.SYNC_STATUS_FETCH_SUCCESS,
-                syncLogQueryService.getLatestSyncLog(memberId)
-        );
+        return ApiResponse.onSuccess(ConnectionSuccessCode.SYNC_STATUS_FETCH_SUCCESS, syncLogQueryService.getLatestSyncLog(memberId));
     }
 }
