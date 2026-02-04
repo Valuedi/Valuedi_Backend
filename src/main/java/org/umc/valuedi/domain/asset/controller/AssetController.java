@@ -13,7 +13,7 @@ import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.service.query.AssetQueryService;
 import org.umc.valuedi.domain.asset.service.command.AssetSyncFacadeService;
-import org.umc.valuedi.domain.connection.service.ConnectionQueryService;
+import org.umc.valuedi.domain.connection.service.query.ConnectionQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
 import org.umc.valuedi.global.security.annotation.CurrentMember;

@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.connection.service;
+package org.umc.valuedi.domain.connection.service.query;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,9 +11,7 @@ import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
-import org.umc.valuedi.global.external.codef.service.CodefCardService;
 
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
