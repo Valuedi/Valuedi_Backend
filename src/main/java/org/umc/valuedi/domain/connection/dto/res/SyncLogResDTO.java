@@ -10,7 +10,7 @@ public class SyncLogResDTO {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public class SyncLogResponseDTO {
+    public static class SyncLogResponseDTO {
         private Long syncLogId;
         private String syncStatus;
         private String syncType;

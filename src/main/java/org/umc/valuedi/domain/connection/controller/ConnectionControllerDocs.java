@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.domain.connection.dto.res.ConnectionResDTO;
+import org.umc.valuedi.domain.connection.dto.res.SyncLogResDTO;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
 
@@ -142,4 +143,101 @@ public interface ConnectionControllerDocs {
             @CurrentMember Long memberId,
             @Parameter(description = "해제할 연동 ID (connectionId)") @PathVariable Long connectionId
     );
+
+    @Operation(
+            summary = "자산 동기화 상태 조회 API",
+            description = """
+                    최근 요청한 자산 동기화 작업의 진행 상태를 조회합니다. \s
+                    전체 동기화 API 호출 후, 백그라운드 작업이 완료되었는지 확인하기 위한 용도입니다. \s
+                    상태값 설명: \s
+                    - **IN_PROGRESS**: 현재 금융사로부터 데이터를 가져오는 중 \s
+                    - **SUCCESS**: 모든 데이터 수집 및 가계부 반영 완료 \s
+                    - **FAILED**: 동기화 중 오류 발생 (errorMessage 필드에 상세 내용 포함)
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "성공 - 상태 정보 반환",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "1. 진행 중 (IN_PROGRESS)",
+                                            summary = "동기화가 아직 진행 중인 경우",
+                                            value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "SYNC200_1",
+                                                      "message": "동기화 상태를 성공적으로 조회했습니다.",
+                                                      "result": {
+                                                        "syncLogId": 12,
+                                                        "syncStatus": "IN_PROGRESS",
+                                                        "syncType": "ALL",
+                                                        "errorMessage": null,
+                                                        "updatedAt": "2024-05-24T15:00:00"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "2. 성공 (SUCCESS)",
+                                            summary = "동기화가 완료되어 최신 데이터가 반영된 경우",
+                                            value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "SYNC200_1",
+                                                      "message": "동기화 상태를 성공적으로 조회했습니다.",
+                                                      "result": {
+                                                        "syncLogId": 12,
+                                                        "syncStatus": "SUCCESS",
+                                                        "syncType": "ALL",
+                                                        "errorMessage": null,
+                                                        "updatedAt": "2024-05-24T15:02:30"
+                                                      }
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "3. 실패 (FAILED)",
+                                            summary = "금융사 인증 오류 또는 네트워크 문제로 실패한 경우",
+                                            value = """
+                                                    {
+                                                      "isSuccess": true,
+                                                      "code": "SYNC200_1",
+                                                      "message": "동기화 상태를 성공적으로 조회했습니다.",
+                                                      "result": {
+                                                        "syncLogId": 12,
+                                                        "syncStatus": "FAILED",
+                                                        "syncType": "ALL",
+                                                        "errorMessage": "금융사 서버 응답 지연 (Timeout)",
+                                                        "updatedAt": "2024-05-24T15:01:00"
+                                                      }
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "에러 - 동기화 기록이 전혀 없음",
+                    content = @Content(
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "기록 없음 예시",
+                                    value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "SYNC404_1",
+                                              "message": "해당 동기화 로그를 찾을 수 없습니다.",
+                                              "result": null
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    ApiResponse<SyncLogResDTO.SyncLogResponseDTO> getSyncStatus(@CurrentMember Long memberId);
+
 }
