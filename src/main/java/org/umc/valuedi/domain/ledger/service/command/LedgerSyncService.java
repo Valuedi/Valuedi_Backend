@@ -247,10 +247,15 @@ public class LedgerSyncService {
 
             TransactionType transactionType = ca.getCancelYn() == CancelStatus.NORMAL ? TransactionType.EXPENSE : TransactionType.INCOME;
 
+            String key = LedgerCanonicalKeyUtil.from(ca);
+
             allNewEntries.add(LedgerEntry.builder()
                     .member(member).cardApproval(ca).category(category)
                     .title(merchantName == null || merchantName.isBlank() ? "카드 승인" : merchantName)
-                    .transactionAt(ca.getUsedDatetime()).transactionType(transactionType).build());
+                    .transactionAt(ca.getUsedDatetime()).transactionType(transactionType)
+                    .canonicalKey(key)
+                    .sourceType("CARD")
+                    .build());
         }
     }
 
@@ -285,9 +290,14 @@ public class LedgerSyncService {
                 transactionType = bt.getDirection() == TransactionDirection.IN ? TransactionType.INCOME : TransactionType.EXPENSE;
             }
 
+            String key = LedgerCanonicalKeyUtil.from(bt);
+
             allNewEntries.add(LedgerEntry.builder()
                     .member(member).bankTransaction(bt).category(category)
-                    .title(title).transactionAt(bt.getTrDatetime()).transactionType(transactionType).build());
+                    .title(title).transactionAt(bt.getTrDatetime()).transactionType(transactionType)
+                    .canonicalKey(key)
+                    .sourceType("BANK")
+                    .build());
         }
     }
 
