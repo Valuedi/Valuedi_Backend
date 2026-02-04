@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
+import org.umc.valuedi.domain.connection.service.command.SyncLogCommandService;
 import org.umc.valuedi.domain.ledger.service.command.LedgerSyncService;
 import org.umc.valuedi.domain.member.entity.Member;
 
@@ -17,12 +18,13 @@ public class AssetSyncProcessor {
 
     private final AssetFetchService assetFetchService;
     private final LedgerSyncService ledgerSyncService;
+    private final SyncLogCommandService syncLogCommandService;
 
     /**
      * 실제 동기화 로직을 수행하는 비동기 메서드
      */
     @Async("assetFetchExecutor")
-    public void runSyncProcess(Member member) {
+    public void runSyncProcess(Member member, Long logId) {
         log.info("자산 동기화 백그라운드 작업을 시작합니다. 회원 ID: {}", member.getId());
         try {
             // 트랜잭션 1: 데이터 수집 및 저장
@@ -37,13 +39,16 @@ public class AssetSyncProcessor {
                 // 트랜잭션 2: 가계부 연동 및 최종 업데이트
                 // Member 객체 대신 ID를 전달하여 영속성 컨텍스트 내에서 조회 및 업데이트하도록 변경
                 ledgerSyncService.syncTransactionsAndUpdateMember(member.getId(), fromDate, toDate);
-            } else {
-                // 새로 수집된 데이터가 없어도 동기화 시간은 갱신
-                ledgerSyncService.updateMemberLastSyncedAt(member.getId());
             }
+
+            // 트랜잭션 3: 동기화 로그 업데이트
+            syncLogCommandService.updateToSuccess(logId);
             log.info("자산 동기화 백그라운드 작업을 성공적으로 완료했습니다. 회원 ID: {}", member.getId());
+
         } catch (Exception e) {
-            // 비동기 작업 내에서 발생하는 모든 예외를 로깅
+            // 실패 로그 기록
+            String errorMessage = (e.getMessage() != null) ? e.getMessage() : "Unknown Error";
+            syncLogCommandService.updateToFailed(logId, errorMessage);
             log.error("자산 동기화 백그라운드 작업 중 오류 발생. 회원 ID: {}", member.getId(), e);
         }
     }
