@@ -55,16 +55,6 @@ public class AuthController implements AuthControllerDocs {
         }
 
         AuthResDTO.LoginResultDTO result = authCommandService.loginKakao(code);
-
-        // 리프레시 토큰은 쿠키에 저장
-        cookieUtil.addCookie(
-                response,
-                "refreshToken",
-                result.refreshToken(),
-                (int) jwtUtil.getRefreshTokenExpiration() / 1000,
-                "/auth/token/refresh"
-        );
-
         return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, result);
     }
 
@@ -110,15 +100,6 @@ public class AuthController implements AuthControllerDocs {
     ) {
 
         AuthResDTO.LoginResultDTO result = authCommandService.loginLocal(dto);
-
-        // 리프레시 토큰은 쿠키에 저장
-        cookieUtil.addCookie(
-                response,
-                "refreshToken",
-                result.refreshToken(),
-                (int) jwtUtil.getRefreshTokenExpiration() / 1000,
-                "/auth/token/refresh"
-        );
         return ApiResponse.onSuccess(AuthSuccessCode.LOGIN_OK, result);
     }
 
@@ -126,20 +107,10 @@ public class AuthController implements AuthControllerDocs {
     @PostMapping("/token/refresh")
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
             @RequestHeader(value = "Authorization", required = false) String accessToken,
-            @CookieValue(name = "refreshToken") String refreshToken,
+            @RequestParam String refreshToken,
             HttpServletResponse response
     ) {
         AuthResDTO.LoginResultDTO result = authCommandService.tokenReissue(accessToken, refreshToken);
-
-        // 리프레시 토큰은 쿠키에 저장
-        cookieUtil.addCookie(
-                response,
-                "refreshToken",
-                result.refreshToken(),
-                (int) jwtUtil.getRefreshTokenExpiration() / 1000,
-                "/auth/token/refresh"
-        );
-
         return ApiResponse.onSuccess(AuthSuccessCode.TOKEN_REISSUE_SUCCESS, result);
     }
 
