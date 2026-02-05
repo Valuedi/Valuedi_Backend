@@ -23,7 +23,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "카카오 로그인 URL 생성 API",
-            description = "카카오 로그인 페이지로 이동하기 위한 URL을 생성하고, 보안을 위한 state 값을 쿠키에 저장합니다.")
+            description = "카카오 로그인 페이지로 이동하기 위한 URL을 생성하고, 보안을 위한 state 값을 함께 응답합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -32,20 +32,22 @@ public interface AuthControllerDocs {
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
                                     name = "카카오 로그인 URL 생성 예시",
-                                    description = "생성된 URL에는 보안을 위한 state 파라미터가 추가되어 있습니다.",
                                     value = """
                         {
                           "isSuccess": true,
                           "code": "AUTH200_1",
                           "message": "카카오 로그인 URL이 성공적으로 생성되었습니다.",
-                          "result": "https://kauth.kakao.com/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state=bba27165-..."
+                          "result": {
+                            "url": "https://kauth.kakao.com/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state=6af5e726-...",
+                            "state": "6af5e726-7df6-4d03-9829-4b7d4ad792ec"
+                          }
                         }
                         """
                             )
                     )
             )
     })
-    ApiResponse<String> kakaoLogin(HttpServletResponse response);
+    ApiResponse<AuthResDTO.LoginUrlDTO> kakaoLogin(HttpServletResponse response);
 
     @Operation(
             summary = "카카오 로그인 콜백 API",
@@ -125,10 +127,10 @@ public interface AuthControllerDocs {
     ApiResponse<AuthResDTO.LoginResultDTO> kakaoCallback(
             @Parameter(description = "카카오에서 전달한 인가 코드")
             String code,
-            @Parameter(description = "카카오 로그인 URL 생성 시 서버에서 생성한 state 값")
+            @Parameter(description = "카카오에서 전달한 state 값")
             String state,
-            @Parameter(description = "서버에서 보낸 쿠키에 저장된 state 값")
-            String oauthState,
+            @Parameter(description = "클라이언트가 저장해둔 원본 state 값")
+            String originalState,
             HttpServletResponse response
     );
 

@@ -26,4 +26,10 @@ public class AuthResDTO {
             Boolean isLogin,
             Long memberId
     ) {}
+
+    @Builder
+    public record LoginUrlDTO(
+            String url,
+            String state
+    ) {}
 }

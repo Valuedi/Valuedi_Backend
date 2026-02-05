@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.auth.config.KakaoProperties;
+import org.umc.valuedi.domain.auth.converter.AuthConverter;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.domain.auth.exception.AuthException;
@@ -35,12 +36,10 @@ public class AuthController implements AuthControllerDocs {
 
     @Override
     @GetMapping("/oauth/kakao/login")
-    public ApiResponse<String> kakaoLogin(HttpServletResponse response) {
+    public ApiResponse<AuthResDTO.LoginUrlDTO> kakaoLogin(HttpServletResponse response) {
         String state = UUID.randomUUID().toString();
-        cookieUtil.addCookie(response, "oauth_state", state, 600, "/auth/oauth/kakao/callback");
         String loginUrl = kakaoProperties.getKakaoAuthUrl(state);
-
-        return ApiResponse.onSuccess(AuthSuccessCode.KAKAO_AUTH_URL_SUCCESS, loginUrl);
+        return ApiResponse.onSuccess(AuthSuccessCode.KAKAO_AUTH_URL_SUCCESS, AuthConverter.toLoginUrlDTO(loginUrl, state));
     }
 
     @Override
@@ -48,12 +47,10 @@ public class AuthController implements AuthControllerDocs {
     public ApiResponse<AuthResDTO.LoginResultDTO> kakaoCallback(
             @RequestParam("code") String code,
             @RequestParam("state") String state,
-            @CookieValue(name = "oauth_state", required = false) String oauthState,
+            @RequestParam("originalState") String originalState,
             HttpServletResponse response
     ) {
-        cookieUtil.deleteCookie(response, "oauth_state", "/auth/oauth/kakao/callback");
-
-        if (oauthState == null || !oauthState.equals(state)) {
+        if (originalState == null || !originalState.equals(state)) {
             throw new AuthException(AuthErrorCode.INVALID_STATE);
         }
 
