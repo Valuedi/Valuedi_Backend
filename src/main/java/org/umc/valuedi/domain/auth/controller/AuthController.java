@@ -1,6 +1,5 @@
 package org.umc.valuedi.domain.auth.controller;
 
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +16,6 @@ import org.umc.valuedi.domain.auth.service.command.AuthCommandService;
 import org.umc.valuedi.domain.auth.service.query.AuthQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
-import org.umc.valuedi.global.security.jwt.JwtUtil;
 import org.umc.valuedi.global.security.util.CookieUtil;
 
 import java.util.UUID;
@@ -32,11 +30,10 @@ public class AuthController implements AuthControllerDocs {
     private final AuthQueryService authQueryService;
     private final KakaoProperties kakaoProperties;
     private final CookieUtil cookieUtil;
-    private final JwtUtil jwtUtil;
 
     @Override
     @GetMapping("/oauth/kakao/login")
-    public ApiResponse<AuthResDTO.LoginUrlDTO> kakaoLogin(HttpServletResponse response) {
+    public ApiResponse<AuthResDTO.LoginUrlDTO> kakaoLogin() {
         String state = UUID.randomUUID().toString();
         String loginUrl = kakaoProperties.getKakaoAuthUrl(state);
         return ApiResponse.onSuccess(AuthSuccessCode.KAKAO_AUTH_URL_SUCCESS, AuthConverter.toLoginUrlDTO(loginUrl, state));
@@ -47,8 +44,7 @@ public class AuthController implements AuthControllerDocs {
     public ApiResponse<AuthResDTO.LoginResultDTO> kakaoCallback(
             @RequestParam("code") String code,
             @RequestParam("state") String state,
-            @RequestParam("originalState") String originalState,
-            HttpServletResponse response
+            @RequestParam("originalState") String originalState
     ) {
         if (originalState == null || !originalState.equals(state)) {
             throw new AuthException(AuthErrorCode.INVALID_STATE);
@@ -95,8 +91,7 @@ public class AuthController implements AuthControllerDocs {
     @Override
     @PostMapping("/login")
     public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(
-            @RequestBody AuthReqDTO.LocalLoginDTO dto,
-            HttpServletResponse response
+            @RequestBody AuthReqDTO.LocalLoginDTO dto
     ) {
 
         AuthResDTO.LoginResultDTO result = authCommandService.loginLocal(dto);
@@ -107,8 +102,7 @@ public class AuthController implements AuthControllerDocs {
     @PostMapping("/token/refresh")
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
             @RequestHeader(value = "Authorization", required = false) String accessToken,
-            @RequestParam String refreshToken,
-            HttpServletResponse response
+            @RequestParam String refreshToken
     ) {
         AuthResDTO.LoginResultDTO result = authCommandService.tokenReissue(accessToken, refreshToken);
         return ApiResponse.onSuccess(AuthSuccessCode.TOKEN_REISSUE_SUCCESS, result);
@@ -118,11 +112,9 @@ public class AuthController implements AuthControllerDocs {
     @PostMapping("/logout")
     public ApiResponse<Void> logout(
             @CurrentMember Long memberId,
-            @RequestHeader("Authorization") String accessToken,
-            HttpServletResponse response
+            @RequestHeader("Authorization") String accessToken
     ) {
         authCommandService.logout(memberId, accessToken);
-        cookieUtil.deleteCookie(response, "refreshToken", "/auth/token/refresh");
 
         return ApiResponse.onSuccess(AuthSuccessCode.LOGOUT_OK, null);
     }

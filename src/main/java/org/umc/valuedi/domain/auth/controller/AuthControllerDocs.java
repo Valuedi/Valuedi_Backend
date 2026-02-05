@@ -47,7 +47,7 @@ public interface AuthControllerDocs {
                     )
             )
     })
-    ApiResponse<AuthResDTO.LoginUrlDTO> kakaoLogin(HttpServletResponse response);
+    ApiResponse<AuthResDTO.LoginUrlDTO> kakaoLogin();
 
     @Operation(
             summary = "카카오 로그인 콜백 API",
@@ -131,8 +131,7 @@ public interface AuthControllerDocs {
             @Parameter(description = "카카오에서 전달한 state 값")
             String state,
             @Parameter(description = "클라이언트가 저장해둔 원본 state 값")
-            String originalState,
-            HttpServletResponse response
+            String originalState
     );
 
     @Operation(summary = "아이디 중복 확인 API", description = "사용자가 입력한 아이디의 중복 여부를 확인합니다.")
@@ -440,8 +439,7 @@ public interface AuthControllerDocs {
             )
     })
     public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(
-            @Valid AuthReqDTO.LocalLoginDTO dto,
-            HttpServletResponse response
+            @Valid AuthReqDTO.LocalLoginDTO dto
     );
 
     @Operation(
@@ -474,8 +472,7 @@ public interface AuthControllerDocs {
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
             @Parameter(hidden = true)
             String accessToken,
-            String refreshToken,
-            HttpServletResponse response
+            String refreshToken
     );
 
     @Operation(
@@ -504,8 +501,7 @@ public interface AuthControllerDocs {
     public ApiResponse<Void> logout(
             Long memberId,
             @Parameter(hidden = true)
-            String accessToken,
-            HttpServletResponse response
+            String accessToken
     );
 
     @Operation(
