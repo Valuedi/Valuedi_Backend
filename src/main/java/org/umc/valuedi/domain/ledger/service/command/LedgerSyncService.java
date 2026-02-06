@@ -2,6 +2,7 @@ package org.umc.valuedi.domain.ledger.service.command;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
@@ -20,20 +21,19 @@ import org.umc.valuedi.domain.ledger.exception.code.LedgerErrorCode;
 import org.umc.valuedi.domain.ledger.repository.CategoryKeywordRepository;
 import org.umc.valuedi.domain.ledger.repository.CategoryRepository;
 import org.umc.valuedi.domain.ledger.repository.LedgerEntryRepository;
+import org.umc.valuedi.domain.ledger.utill.LedgerCanonicalKeyUtil;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 
 import java.time.Duration;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LedgerSyncService {
@@ -69,6 +69,116 @@ public class LedgerSyncService {
         List<CategoryKeyword> keywords = categoryKeywordRepository.findAllWithCategory();
         this.keywordCache = keywords.stream().collect(Collectors.toMap(CategoryKeyword::getKeyword, CategoryKeyword::getCategory, (e, r) -> e));
     }
+
+    /**
+     * 기간 내 가계부 데이터를 완전히 재생성(Rebuild)합니다.
+     * 1. 해당 기간 LedgerEntry 삭제
+     * 2. 카드/은행 데이터 조회
+     * 3. 중복 제거(카드 우선) 후 생성
+     */
+    @Transactional
+    public void rebuildLedger(Member member, LocalDate from, LocalDate to) {
+        LocalDateTime startDateTime = from.atStartOfDay();
+        LocalDateTime endDateTime = to.plusDays(1).atStartOfDay();
+
+        // 1. 기존 데이터 삭제
+        ledgerEntryRepository.deleteByMemberAndTransactionAtBetween(member, startDateTime, endDateTime);
+        ledgerEntryRepository.flush(); // 즉시 반영
+
+        // 2. 원천 데이터 조회
+        List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
+        List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
+
+        // 3. 카테고리 준비
+        Category defaultCategory = categoryRepository.findByCode("ETC").orElseThrow();
+        Category transferCategory = categoryRepository.findByCode("TRANSFER").orElseThrow();
+
+        // 4. 병합 및 중복 제거 (Key: CanonicalKey)
+        // LinkedHashMap을 사용하여 시간 순서(대략적) 유지 가능성 높임 (실제 정렬은 DB 조회 순서 의존)
+        Map<String, LedgerEntry> ledgerMap = new LinkedHashMap<>();
+
+        // 4-1. 카드 데이터 우선 처리
+        for (CardApproval ca : cards) {
+            if (ca.getUsedDatetime() == null) continue;
+            String key = LedgerCanonicalKeyUtil.from(ca);
+
+            // 이미 같은 키가 있다면(매우 드문 경우), 먼저 들어온 것 유지 or 덮어쓰기. 여기선 덮어쓰기
+            ledgerMap.put(key, createFromCard(member, ca, defaultCategory, key));
+        }
+
+        // 4-2. 은행 데이터 처리 (키 중복 시 Skip -> 즉, 카드가 있으면 은행 무시)
+        for (BankTransaction bt : banks) {
+            if (bt.getTrDatetime() == null) continue;
+            String key = LedgerCanonicalKeyUtil.from(bt);
+
+            if (!ledgerMap.containsKey(key)) {
+                ledgerMap.put(key, createFromBank(member, bt, defaultCategory, transferCategory, key));
+            } else {
+                // 중복 발생 (은행 거래가 카드 승인으로 이미 처리됨)
+                log.debug("Duplicate transaction skipped (Bank): {} / Key: {}", bt.getId(), key);
+            }
+        }
+
+        // 5. 저장
+        if (!ledgerMap.isEmpty()) {
+            List<LedgerEntry> entries = new ArrayList<>(ledgerMap.values());
+            ledgerEntryRepository.bulkInsert(entries);
+            log.info("Ledger Rebuild Complete: Member {}, {} entries created.", member.getId(), entries.size());
+        }
+
+        member.updateLastSyncedAt();
+    }
+
+    private LedgerEntry createFromCard(Member member, CardApproval ca, Category defaultCategory, String key) {
+        String merchantName = ca.getMerchantName();
+        Category category = mapCategoryByKeyword(ca.getMerchantType(), null);
+        if (category == null) category = mapCategoryByKeyword(merchantName, defaultCategory);
+        if (category == null) category = defaultCategory;
+
+        TransactionType type = ca.getCancelYn() == CancelStatus.NORMAL ? TransactionType.EXPENSE : TransactionType.INCOME;
+
+        return LedgerEntry.builder()
+                .member(member)
+                .cardApproval(ca)
+                .category(category)
+                .title(merchantName == null || merchantName.isBlank() ? "카드 승인" : merchantName)
+                .transactionAt(ca.getUsedDatetime())
+                .transactionType(type)
+                .canonicalKey(key)
+                .sourceType("CARD")
+                .build();
+    }
+
+    private LedgerEntry createFromBank(Member member, BankTransaction bt, Category defaultCategory, Category transferCategory, String key) {
+        String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4())
+                .filter(Objects::nonNull).collect(Collectors.joining(" "));
+
+        Category category;
+        TransactionType type;
+
+        if (isCardSettlement(combinedDesc)) {
+            category = transferCategory;
+            type = TransactionType.EXPENSE;
+        } else {
+            category = mapCategoryByKeyword(combinedDesc, defaultCategory);
+            type = bt.getDirection() == TransactionDirection.IN ? TransactionType.INCOME : TransactionType.EXPENSE;
+        }
+
+        String title = combinedDesc.isEmpty() ? "은행 거래" : combinedDesc;
+        if (title.length() > 50) title = title.substring(0, 50);
+
+        return LedgerEntry.builder()
+                .member(member)
+                .bankTransaction(bt)
+                .category(category)
+                .title(title)
+                .transactionAt(bt.getTrDatetime())
+                .transactionType(type)
+                .canonicalKey(key)
+                .sourceType("BANK")
+                .build();
+    }
+
 
     @Transactional
     public void syncTransactionsAndUpdateMember(Long memberId, LocalDate from, LocalDate to) {
@@ -137,10 +247,15 @@ public class LedgerSyncService {
 
             TransactionType transactionType = ca.getCancelYn() == CancelStatus.NORMAL ? TransactionType.EXPENSE : TransactionType.INCOME;
 
+            String key = LedgerCanonicalKeyUtil.from(ca);
+
             allNewEntries.add(LedgerEntry.builder()
                     .member(member).cardApproval(ca).category(category)
                     .title(merchantName == null || merchantName.isBlank() ? "카드 승인" : merchantName)
-                    .transactionAt(ca.getUsedDatetime()).transactionType(transactionType).build());
+                    .transactionAt(ca.getUsedDatetime()).transactionType(transactionType)
+                    .canonicalKey(key)
+                    .sourceType("CARD")
+                    .build());
         }
     }
 
@@ -175,9 +290,14 @@ public class LedgerSyncService {
                 transactionType = bt.getDirection() == TransactionDirection.IN ? TransactionType.INCOME : TransactionType.EXPENSE;
             }
 
+            String key = LedgerCanonicalKeyUtil.from(bt);
+
             allNewEntries.add(LedgerEntry.builder()
                     .member(member).bankTransaction(bt).category(category)
-                    .title(title).transactionAt(bt.getTrDatetime()).transactionType(transactionType).build());
+                    .title(title).transactionAt(bt.getTrDatetime()).transactionType(transactionType)
+                    .canonicalKey(key)
+                    .sourceType("BANK")
+                    .build());
         }
     }
 

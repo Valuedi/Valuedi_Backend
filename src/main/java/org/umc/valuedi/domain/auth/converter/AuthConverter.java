@@ -14,6 +14,11 @@ import java.time.format.DateTimeFormatter;
 
 public class AuthConverter {
 
+    // 카카오 로그인 URL과 state 값을 하나의 DTO로 변환
+    public static AuthResDTO.LoginUrlDTO toLoginUrlDTO(String loginUrl, String state) {
+        return new  AuthResDTO.LoginUrlDTO(loginUrl, state);
+    }
+
     // 카카오 유저 정보 바탕으로 Member 엔티티 생성
     public static Member toKakaoMember(KakaoResDTO.UserInfoDTO userInfo) {
         KakaoResDTO.UserInfoDTO.KakaoAccount account = userInfo.getKakaoAccount();

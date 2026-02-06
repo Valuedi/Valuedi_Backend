@@ -24,6 +24,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
+@Setter
 @Table(name = "member")
 @SQLDelete(sql = "UPDATE member SET deleted_at = CURRENT_TIMESTAMP, status = 'DELETED' WHERE id = ?")
 @SQLRestriction("status <> 'DELETED'")

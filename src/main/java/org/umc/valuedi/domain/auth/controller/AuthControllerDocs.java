@@ -23,7 +23,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "카카오 로그인 URL 생성 API",
-            description = "카카오 로그인 페이지로 이동하기 위한 URL을 생성하고, 보안을 위한 state 값을 쿠키에 저장합니다.")
+            description = "카카오 로그인 페이지로 이동하기 위한 URL을 생성하고, 보안을 위한 state 값을 함께 응답합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -32,24 +32,26 @@ public interface AuthControllerDocs {
                             schema = @Schema(implementation = ApiResponse.class),
                             examples = @ExampleObject(
                                     name = "카카오 로그인 URL 생성 예시",
-                                    description = "생성된 URL에는 보안을 위한 state 파라미터가 추가되어 있습니다.",
                                     value = """
                         {
                           "isSuccess": true,
                           "code": "AUTH200_1",
                           "message": "카카오 로그인 URL이 성공적으로 생성되었습니다.",
-                          "result": "https://kauth.kakao.com/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state=bba27165-..."
+                          "result": {
+                            "url": "https://kauth.kakao.com/oauth/authorize?response_type=code&client_id={clientId}&redirect_uri={redirectUri}&state=6af5e726-...",
+                            "state": "6af5e726-7df6-4d03-9829-4b7d4ad792ec"
+                          }
                         }
                         """
                             )
                     )
             )
     })
-    ApiResponse<String> kakaoLogin(HttpServletResponse response);
+    ApiResponse<AuthResDTO.LoginUrlDTO> kakaoLogin();
 
     @Operation(
             summary = "카카오 로그인 콜백 API",
-            description = "카카오로부터 인가 코드를 받아 로그인을 완료하고 JWT를 발급합니다.  \n기존에 카카오로 로그인한 적 없는 경우, 회원가입 처리 후 JWT를 발급합니다.  \n리프레시 토큰은 쿠키에 저장됩니다.")
+            description = "카카오로부터 인가 코드를 받아 로그인을 완료하고 JWT를 발급합니다.  \n기존에 카카오로 로그인한 적 없는 경우, 회원가입 처리 후 JWT를 발급합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -65,6 +67,7 @@ public interface AuthControllerDocs {
                                               "message": "로그인에 성공했습니다.",
                                               "result": {
                                                 "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
                                                 "memberId": 1
                                               }
                                             }
@@ -125,11 +128,10 @@ public interface AuthControllerDocs {
     ApiResponse<AuthResDTO.LoginResultDTO> kakaoCallback(
             @Parameter(description = "카카오에서 전달한 인가 코드")
             String code,
-            @Parameter(description = "카카오 로그인 URL 생성 시 서버에서 생성한 state 값")
+            @Parameter(description = "카카오에서 전달한 state 값")
             String state,
-            @Parameter(description = "서버에서 보낸 쿠키에 저장된 state 값")
-            String oauthState,
-            HttpServletResponse response
+            @Parameter(description = "클라이언트가 저장해둔 원본 state 값")
+            String originalState
     );
 
     @Operation(summary = "아이디 중복 확인 API", description = "사용자가 입력한 아이디의 중복 여부를 확인합니다.")
@@ -362,7 +364,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "로컬 계정 로그인 API",
-            description = "로컬 계정으로 로그인을 시도합니다. 로그인이 완료되면 JWT를 발급합니다.  \n리프레시 토큰은 쿠키에 저장됩니다.")
+            description = "로컬 계정으로 로그인을 시도합니다. 로그인이 완료되면 JWT를 발급합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -378,6 +380,7 @@ public interface AuthControllerDocs {
                                               "message": "로그인에 성공했습니다.",
                                               "result": {
                                                 "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
                                                 "memberId": 1
                                               }
                                             }
@@ -436,13 +439,12 @@ public interface AuthControllerDocs {
             )
     })
     public ApiResponse<AuthResDTO.LoginResultDTO> localLogin(
-            @Valid AuthReqDTO.LocalLoginDTO dto,
-            HttpServletResponse response
+            @Valid AuthReqDTO.LocalLoginDTO dto
     );
 
     @Operation(
             summary = "토큰 재발급 API",
-            description = "쿠키에 저장된 리프레시 토큰으로 새로운 액세스 토큰과 리프레시 토큰을 발급합니다.  \n요청 헤더에 만료되지 않은 액세스 토큰이 있다면 이를 무효화하며, 새로 발급된 리프레시 토큰은 쿠키에 저장됩니다.")
+            description = "리프레시 토큰으로 새로운 액세스 토큰과 리프레시 토큰을 발급합니다.  \n요청 헤더에 만료되지 않은 액세스 토큰이 있다면 이를 무효화합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
@@ -458,6 +460,7 @@ public interface AuthControllerDocs {
                                                       "message": "토큰 재발급에 성공했습니다.",
                                                       "result": {
                                                         "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+                                                        "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
                                                         "memberId": 1
                                                       }
                                                     }
@@ -469,9 +472,7 @@ public interface AuthControllerDocs {
     public ApiResponse<AuthResDTO.LoginResultDTO> tokenReissue(
             @Parameter(hidden = true)
             String accessToken,
-            @Parameter(hidden = true)
-            String refreshToken,
-            HttpServletResponse response
+            String refreshToken
     );
 
     @Operation(
@@ -500,8 +501,7 @@ public interface AuthControllerDocs {
     public ApiResponse<Void> logout(
             Long memberId,
             @Parameter(hidden = true)
-            String accessToken,
-            HttpServletResponse response
+            String accessToken
     );
 
     @Operation(

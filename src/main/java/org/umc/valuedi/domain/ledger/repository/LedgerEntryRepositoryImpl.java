@@ -21,8 +21,8 @@ public class LedgerEntryRepositoryImpl implements LedgerEntryRepositoryCustom {
             return;
         }
 
-        String sql = "INSERT INTO ledger_entry (member_id, category_id, bank_transaction_id, card_approval_id, transaction_at, transaction_type, title, memo, is_user_modified, created_at, updated_at) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+        String sql = "INSERT INTO ledger_entry (member_id, category_id, bank_transaction_id, card_approval_id, transaction_at, transaction_type, title, memo, is_user_modified, canonical_key, source_type, created_at, updated_at) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         jdbcTemplate.batchUpdate(sql,
                 entries,
@@ -37,6 +37,8 @@ public class LedgerEntryRepositoryImpl implements LedgerEntryRepositoryCustom {
                     ps.setString(7, le.getTitle());
                     ps.setString(8, le.getMemo());
                     ps.setBoolean(9, le.getIsUserModified());
+                    ps.setString(10, le.getCanonicalKey());
+                    ps.setString(11, le.getSourceType());
                 });
     }
 }

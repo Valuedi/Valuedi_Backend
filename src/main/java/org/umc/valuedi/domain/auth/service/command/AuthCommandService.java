@@ -36,6 +36,7 @@ import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -56,7 +57,6 @@ public class AuthCommandService {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String REFRESH_TOKEN_PREFIX = "RT:";
     private static final String BLACKLIST_PREFIX = "BL:";
-
 
     // 카카오 로그인
     public AuthResDTO.LoginResultDTO loginKakao(String code) {
@@ -91,22 +91,55 @@ public class AuthCommandService {
     // 카카오로 회원가입
     private Member registerKakao(KakaoResDTO.UserTokenInfo userTokenInfo) {
         try {
+            // 1. AuthConverter를 통해 엔티티로 변환
             Member newMember = AuthConverter.toKakaoMember(userTokenInfo.userInfo());
+
+            // 2. username이 누락된 경우(소셜 가입) 고유 식별값 생성
+            if (newMember.getUsername() == null || newMember.getUsername().isBlank()) {
+                newMember.setUsername(generateUniqueUsername(newMember.getEmail()));
+            }
+
+            // 3. Member 저장
             Member savedMember = memberRepository.save(newMember);
 
+            // 약관 정보 저장
             memberTermsService.saveTermsForRegistration(
                     savedMember,
                     kakaoService.getKakaoServiceTerms(userTokenInfo.accessToken()));
 
-            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(newMember, String.valueOf(userTokenInfo.userInfo().getId()));
+            // 제공자 정보 저장
+            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(savedMember, String.valueOf(userTokenInfo.userInfo().getId()));
             memberAuthProviderRepository.save(authProvider);
 
-            return newMember;
+            return savedMember;
         } catch(DataAccessResourceFailureException e) {
             throw new GeneralException(GeneralErrorCode.DB_SERVER_ERROR);
         } catch(DataIntegrityViolationException e) {
             throw new GeneralException(GeneralErrorCode.INVALID_DATA_REQUEST);
         }
+    }
+
+    // username 생성 로직 (이메일 + 랜덤 숫자)
+    private String generateUniqueUsername(String email) {
+        String prefix = (email != null && email.contains("@"))
+                ? email.split("@")[0]
+                : "user";
+
+        // 초기 후보 생성
+        String candidate = prefix + "_" + (sr.nextInt(9000) + 1000);
+
+        // 최대 5번까지 DB 중복 체크 후 재시도
+        int attempts = 0;
+        while (memberRepository.existsByUsername(candidate) && attempts < 5) {
+            candidate = prefix + "_" + (sr.nextInt(9000) + 1000);
+            attempts++;
+        }
+
+        if (attempts >= 5) {
+            candidate = prefix + "_" + (System.currentTimeMillis() % 10000);
+        }
+
+        return candidate;
     }
 
     // 이메일 인증번호 발송
@@ -152,12 +185,10 @@ public class AuthCommandService {
             String verifiedKey = "EMAIL_VERIFIED:" + email;
             String isVerified = redisTemplate.opsForValue().get(verifiedKey);
 
-            // 이메일 인증을 안 했을 경우 예외 발생
             if (!"true".equals(isVerified)) {
                 throw new AuthException(AuthErrorCode.EMAIL_NOT_VERIFIED);
             }
 
-            // DB 저장 전 한번 더 아이디 중복 확인
             authQueryService.checkUsernameDuplicate(dto.username());
 
             String encodedPassword = passwordEncoder.encode(dto.password());
@@ -183,7 +214,6 @@ public class AuthCommandService {
             throw new AuthException(AuthErrorCode.LOGIN_FAILED);
         }
 
-        // 휴면 계정이거나 탈퇴한 계정은 로그인 X
         if(member.getStatus() == Status.SUSPENDED) {
             throw new MemberException(MemberErrorCode.MEMBER_SUSPENDED);
         } else if(member.getStatus() == Status.DELETED) {
@@ -204,9 +234,8 @@ public class AuthCommandService {
         return AuthConverter.toLoginResultDTO(member, accessToken, refreshToken);
     }
 
-    // 엑세스/리프레시 토큰 재발급
+    // 토큰 재발급
     public AuthResDTO.LoginResultDTO tokenReissue(String accessToken, String refreshToken) {
-        // 리프레시 토큰이 맞는지 확인. 아닐 경우와 토큰 자체가 유효하지 않을 경우 예외 발생
         try {
             if(!jwtUtil.getCategory(refreshToken).equals("refresh")) {
                 throw new AuthException(AuthErrorCode.NOT_REFRESH_TOKEN);
@@ -217,14 +246,11 @@ public class AuthCommandService {
             throw new AuthException(AuthErrorCode.INVALID_TOKEN);
         }
 
-        // 기존 엑세스 토큰이 만료되지 않았다면 무효화
         if(accessToken != null && accessToken.startsWith(BEARER_PREFIX)) {
             accessToken = accessToken.substring(BEARER_PREFIX.length());
-
             long expiration = jwtUtil.getExpiration(accessToken);
             long diff = expiration - System.currentTimeMillis();
 
-            // 0보다 작거나 같으면 이미 만료된 토큰
             if(diff > 0) {
                 redisTemplate.opsForValue().set(
                         BLACKLIST_PREFIX + accessToken,
@@ -242,7 +268,6 @@ public class AuthCommandService {
         String redisKey = REFRESH_TOKEN_PREFIX + member.getId();
         String savedRefreshToken = redisTemplate.opsForValue().get(redisKey);
 
-        // Redis에 저장된 토큰인지 확인
         if(savedRefreshToken == null || !savedRefreshToken.equals(refreshToken)) {
             throw new AuthException(AuthErrorCode.INVALID_TOKEN);
         }
@@ -275,7 +300,6 @@ public class AuthCommandService {
         long expiration = jwtUtil.getExpiration(resolveToken);
         long diff = expiration - System.currentTimeMillis();
 
-        // 0보다 작거나 같으면 이미 만료된 토큰
         if(diff > 0) {
             redisTemplate.opsForValue().set(
                     BLACKLIST_PREFIX + resolveToken,
