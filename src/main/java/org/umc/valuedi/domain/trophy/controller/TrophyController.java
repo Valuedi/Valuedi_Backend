@@ -8,6 +8,7 @@ import org.umc.valuedi.domain.trophy.enums.PeriodType;
 import org.umc.valuedi.domain.trophy.service.query.TrophyQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -27,12 +28,9 @@ public class TrophyController implements TrophyControllerDocs{
     @GetMapping("/members/me/trophies")
     public ApiResponse<List<TrophyResponse>> getMyTrophies(
             @RequestParam(name = "periodType", defaultValue = "MONTHLY") PeriodType periodType,
-            @RequestParam(name = "periodKey") String periodKey
-//            @AuthenticationPrincipal CustomUserDetails userDetails
+            @RequestParam(name = "periodKey") String periodKey,
+            @CurrentMember Long memberId
     ) {
-//        Long memberId = Long.parseLong(userDetails.getUsername());
-        Long memberId = 1L;
-
         List<TrophyResponse> response = trophyQueryService.getMyTrophies(memberId, periodType, periodKey);
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, response);
     }
