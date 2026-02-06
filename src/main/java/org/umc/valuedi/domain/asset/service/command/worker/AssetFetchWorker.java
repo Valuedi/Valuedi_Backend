@@ -27,6 +27,8 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 public class AssetFetchWorker {
 
+    private static final int DEFAULT_SYNC_PERIOD_MONTHS = 3;
+
     private final CodefAssetService codefAssetService;
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
@@ -43,7 +45,7 @@ public class AssetFetchWorker {
     @Async("assetFetchExecutor")
     public CompletableFuture<FetchResult> fetchAndConvertData(CodefConnection connection, Member member) {
         LocalDate today = LocalDate.now();
-        LocalDate defaultStartDate = today.minusMonths(3); // 기본 시작일을 3개월 전으로 설정
+        LocalDate defaultStartDate = today.minusMonths(DEFAULT_SYNC_PERIOD_MONTHS); // 기본 시작일을 3개월 전으로 설정
         LocalDate overallStartDate = today; // 전체 기관의 시작일 기록용
 
         try {

@@ -58,4 +58,11 @@ public class LedgerEntry extends BaseEntity {
     @Column(nullable = false)
     private LocalDateTime transactionAt;
 
+    @Column(name = "canonical_key", length = 64, nullable = false)
+    private String canonicalKey;
+
+    @Column(name = "source_type", length = 10, nullable = false)
+    @Builder.Default
+    private String sourceType = "BANK"; //
+
 }
