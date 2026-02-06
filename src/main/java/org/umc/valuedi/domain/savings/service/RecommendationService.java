@@ -13,7 +13,6 @@ import org.umc.valuedi.domain.mbti.exception.MbtiException;
 import org.umc.valuedi.domain.mbti.exception.code.MbtiErrorCode;
 import org.umc.valuedi.domain.mbti.repository.MemberMbtiTestRepository;
 import org.umc.valuedi.domain.mbti.service.FinanceMbtiProvider;
-import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.domain.savings.converter.SavingsConverter;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
@@ -54,49 +53,38 @@ public class RecommendationService {
     private final RecommendationTxService recommendationTxService;
 
     @Transactional
-    public SavingsResponseDTO.RecommendResponse recommend(
-            Long memberId
-    ) {
+    public void generateAndSaveRecommendations(Long memberId) {
         // 금융 mbti 최신 결과 조회
         MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
 
         Long memberMbtiTestId = memberMbtiTest.getId();
 
+        // 멱등성(중복 저장 방지)
         boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTestId);
         if (exists) {
-            return recommendationTxService.buildCachedResponse(memberId, memberMbtiTestId);
+            log.info("[RecommendAsync] already exists. memberId={}, mbtiTestId={}", memberId, memberMbtiTestId);
+            return;
         }
-
-        MbtiType mbtiType = memberMbtiTest.getResultType();
-        FinanceMbtiTypeInfoDto financeMbtiTypeInfo = financeMbtiProvider.get(mbtiType);
 
         // 추천 상품 후보 조회
         Pageable candidatePage = PageRequest.of(0, CANDIDATE_LIMIT);
         List<SavingsOption> candidates = savingsOptionRepository.findCandidates(candidatePage);
 
         if (candidates.isEmpty()) {
-            return SavingsResponseDTO.RecommendResponse.builder()
-                    .products(List.of())
-                    .rationale("조건에 맞는 후보 상품이 없습니다.")
-                    .build();
+            log.warn("[RecommendAsync] no candidates. memberId={}", memberId);
+            return;
         }
 
         // 제미나이 프롬프트 생성
+        MbtiType mbtiType = memberMbtiTest.getResultType();
+        FinanceMbtiTypeInfoDto financeMbtiTypeInfo = financeMbtiProvider.get(mbtiType);
         String prompt = buildPrompt(mbtiType, financeMbtiTypeInfo, candidates, RECOMMEND_COUNT);
 
-        log.info("[Gemini] request memberId={}, promptChars={}",
-                memberId,
-                prompt == null ? 0 : prompt.length()
-        );
-
         // 제미나이 호출
+        log.info("[RecommendAsync] Gemini request. memberId={}, promptChars={}", memberId, prompt.length());
         String raw = geminiClient.generateText(prompt);
-
-        log.info("[Gemini] response memberId={}, rawChars={}",
-                memberId,
-                raw == null ? 0 : raw.length()
-        );
+        log.info("[RecommendAsync] Gemini response. memberId={}, rawChars={}", memberId, raw == null ? 0 : raw.length());
 
         // JSON 파싱
         GeminiSavingsResponseDTO.Result parsed = parseGeminiJson(raw);
@@ -108,19 +96,33 @@ public class RecommendationService {
                 .limit(RECOMMEND_COUNT)
                 .toList();
 
-        List<Long> optionIds = items.stream()
-                .map(GeminiSavingsResponseDTO.Item::optionId)
-                .distinct()
-                .toList();
-
-        if (optionIds.isEmpty()) {
-            return SavingsResponseDTO.RecommendResponse.builder()
-                    .products(List.of())
-                    .rationale("추천 결과 파싱에 실패했거나 추천 후보가 없습니다.")
-                    .build();
+        if (items.isEmpty()) {
+            log.warn("[RecommendAsync] parsed items empty. memberId={}", memberId);
+            return;
         }
 
-        return recommendationTxService.saveRecommendations(memberId, memberMbtiTest, parsed, items);
+        // 추천 결과 저장
+        recommendationTxService.saveRecommendations(memberId, memberMbtiTest, parsed, items);
+        log.info("[RecommendAsync] saved. memberId={}, mbtiTestId={}", memberId, memberMbtiTestId);
+    }
+
+    @Transactional
+    public SavingsResponseDTO.RecommendResponse recommend(Long memberId) {
+        // 금융 mbti 최신 결과 조회
+        MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
+                .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
+
+        Long memberMbtiTestId = memberMbtiTest.getId();
+
+        boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTestId);
+        if (exists) {
+            return recommendationTxService.buildCachedResponse(memberId, memberMbtiTestId);
+        }
+
+        return SavingsResponseDTO.RecommendResponse.builder()
+                .products(List.of())
+                .rationale("추천 생성 중입니다. 잠시 후 다시 조회해 주세요.")
+                .build();
     }
 
     // 추천 상품 15개 조회

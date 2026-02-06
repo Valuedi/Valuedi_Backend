@@ -100,7 +100,7 @@ public interface RecommendationControllerDocs {
                     )
             }
     )
-    ApiResponse<SavingsResponseDTO.RecommendResponse> recommend(
+    ApiResponse<SavingsResponseDTO.TriggerResponse> recommend(
             @CurrentMember Long memberId
     );
 

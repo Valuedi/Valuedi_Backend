@@ -69,4 +69,9 @@ public class SavingsResponseDTO {
             String rsrvTypeNm,
             BigDecimal score
     ) {}
+
+    @Builder
+    public record TriggerResponse(
+            String status  // PENDING | SUCCESS | FAILED
+    ) {}
 }
