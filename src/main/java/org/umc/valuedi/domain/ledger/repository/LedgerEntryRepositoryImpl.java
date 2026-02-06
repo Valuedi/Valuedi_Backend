@@ -21,7 +21,7 @@ public class LedgerEntryRepositoryImpl implements LedgerEntryRepositoryCustom {
             return;
         }
 
-        String sql = "INSERT INTO ledger_entry (member_id, category_id, bank_transaction_id, card_approval_id, transaction_at, transaction_type, title, memo, is_user_modified, canonical_key, source_type, created_at, updated_at) " +
+        String sql = "INSERT IGNORE INTO ledger_entry (member_id, category_id, bank_transaction_id, card_approval_id, transaction_at, transaction_type, title, memo, is_user_modified, canonical_key, source_type, created_at, updated_at) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
         jdbcTemplate.batchUpdate(sql,
