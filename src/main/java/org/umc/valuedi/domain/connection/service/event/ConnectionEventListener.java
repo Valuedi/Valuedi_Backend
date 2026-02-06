@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.connection.service;
+package org.umc.valuedi.domain.connection.service.event;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

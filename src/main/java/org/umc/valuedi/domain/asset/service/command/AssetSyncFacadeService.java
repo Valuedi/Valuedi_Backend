@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.domain.asset.exception.AssetException;
 import org.umc.valuedi.domain.asset.exception.code.AssetErrorCode;
+import org.umc.valuedi.domain.connection.enums.SyncType;
+import org.umc.valuedi.domain.connection.service.command.SyncLogCommandService;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
@@ -17,7 +19,8 @@ import java.time.LocalDateTime;
 public class AssetSyncFacadeService {
 
     private final MemberRepository memberRepository;
-    private final AssetSyncProcessor assetSyncProcessor; // 실제 비동기 작업을 수행할 서비스 주입
+    private final AssetSyncProcessor assetSyncProcessor;
+    private final SyncLogCommandService syncLogCommandService;
 
     private static final long SYNC_COOL_DOWN_MINUTES = 10;
 
@@ -30,8 +33,11 @@ public class AssetSyncFacadeService {
 
         validateSyncCoolDown(member);
 
+        // 동기화 로그 시작
+        Long logId = syncLogCommandService.startSyncLog(memberId, SyncType.ALL);
+
         // 실제 동기화 프로세스를 비동기적으로 호출
-        assetSyncProcessor.runSyncProcess(member);
+        assetSyncProcessor.runSyncProcess(member.getId(), logId);
     }
 
     private void validateSyncCoolDown(Member member) {
