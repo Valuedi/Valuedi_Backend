@@ -3,7 +3,6 @@ package org.umc.valuedi.domain.ledger.service.command;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
@@ -39,12 +38,12 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class LedgerSyncService {
 
+    private final LedgerEntryRepository ledgerEntryRepository;
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
     private final CategoryRepository categoryRepository;
     private final CategoryKeywordRepository categoryKeywordRepository;
     private final MemberRepository memberRepository;
-    private final LedgerEntryJdbcRepository ledgerEntryJdbcRepository;
 
     // --- 키워드 상수 정의 ---
     private static final List<String> CARD_PAYMENT_KEYWORDS = List.of(
@@ -217,47 +216,21 @@ public class LedgerSyncService {
 
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from.minusDays(1), to.plusDays(1));
 
-        // 저장할 엔티티를 모을 리스트 생성
-        List<LedgerEntry> entriesToSave = new ArrayList<>();
+        List<LedgerEntry> allNewEntries = new ArrayList<>();
+        syncCardApprovals(member, from, to, defaultCategory, allNewEntries);
+        syncBankTransactions(member, from, to, cards, defaultCategory, transferCategory, allNewEntries);
 
-        // 카드 승인 내역 동기화 (조회된 리스트 전달)
-        syncCardApprovals(member, from, to, defaultCategory, entriesToSave);
-
-        // 은행 거래 내역 동기화 (조회된 카드 리스트 전달하여 중복 매칭)
-        syncBankTransactions(member, from, to, cards, defaultCategory, transferCategory, entriesToSave);
-
-        // Batch Insert
-        if (!entriesToSave.isEmpty()) {
-            log.info("Batch Insert 시작: 총 {}건", entriesToSave.size());
-            long startTime = System.currentTimeMillis();
-
-            ledgerEntryJdbcRepository.batchInsert(entriesToSave);
-
-            long endTime = System.currentTimeMillis();
-            log.info("Batch Insert 완료: 소요시간 {}ms", endTime - startTime);
-        } else {
-            log.info("저장할 내역이 없습니다.");
+        if (!allNewEntries.isEmpty()) {
+            ledgerEntryRepository.bulkInsert(allNewEntries);
         }
     }
 
-    private void syncCardApprovals(
-            Member member,
-            LocalDate from,
-            LocalDate to,
-            Category defaultCategory,
-            List<LedgerEntry> entriesToSave
-    ) {
+    private void syncCardApprovals(Member member, LocalDate from, LocalDate to, Category defaultCategory, List<LedgerEntry> allNewEntries) {
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
         if (cards.isEmpty()) return;
 
-        for (CardApproval ca : cards) {
-            if (ObjectUtils.isEmpty(ca.getUsedDatetime())) continue;
-
-            String merchantName = ca.getMerchantName();
-            String merchantType = ca.getMerchantType();
-
-            Category category = null;
-            TransactionType transactionType;
+        // ID 목록을 추출
+        List<Long> cardApprovalIds = cards.stream().map(CardApproval::getId).collect(Collectors.toList());
 
         // 이미 존재하는 LedgerEntry의 CardApproval ID를 한 번의 쿼리로 조회
         Set<Long> existingIds = ledgerEntryRepository.findExistingCardApprovalIds(cardApprovalIds);
@@ -286,21 +259,12 @@ public class LedgerSyncService {
         }
     }
 
-    public void syncBankTransactions(
-            Member member,
-            LocalDate from,
-            LocalDate to,
-            List<CardApproval> cards,
-            Category defaultCategory,
-            Category transferCategory,
-            List<LedgerEntry> entriesToSave
-    ) {
+    private void syncBankTransactions(Member member, LocalDate from, LocalDate to, List<CardApproval> cards, Category defaultCategory, Category transferCategory, List<LedgerEntry> allNewEntries) {
         List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
         if (banks.isEmpty()) return;
 
-        for (BankTransaction bt : banks) {
-            // 필수 값 체크
-            if (ObjectUtils.isEmpty(bt.getTrDatetime())) continue;
+        // ID 목록 추출
+        List<Long> bankTransactionIds = banks.stream().map(BankTransaction::getId).collect(Collectors.toList());
 
         // 한 번의 쿼리로 조회
         Set<Long> existingIds = ledgerEntryRepository.findExistingBankTransactionIds(bankTransactionIds);
@@ -338,8 +302,7 @@ public class LedgerSyncService {
     }
 
     private boolean isCardSettlement(String text) {
-        if (ObjectUtils.isEmpty(text)) return false;
-        return CARD_SETTLEMENT_KEYWORDS.stream().anyMatch(text::contains);
+        return text != null && CARD_SETTLEMENT_KEYWORDS.stream().anyMatch(text::contains);
     }
 
     private Category mapCategoryByKeyword(String text, Category defaultCategory) {
