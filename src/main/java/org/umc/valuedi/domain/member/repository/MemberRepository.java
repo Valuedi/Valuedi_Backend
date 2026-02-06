@@ -8,6 +8,9 @@ import org.umc.valuedi.domain.member.entity.Member;
 import java.util.Optional;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
+
+    boolean existsByUsername(String username);
+
     @Query(value = "SELECT EXISTS (SELECT 1 FROM member WHERE username = :username)", nativeQuery = true)
     Number _existsByUsernameIncludeDeleted(@Param("username") String username);
 
