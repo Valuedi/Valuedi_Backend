@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.umc.valuedi.domain.asset.enums.AccountGroup;
+import org.umc.valuedi.domain.goal.entity.Goal;
 import org.umc.valuedi.global.entity.BaseEntity;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 
@@ -84,6 +85,9 @@ public class BankAccount extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "codef_connection_id", nullable = false)
     private CodefConnection codefConnection;
+
+    @OneToOne(mappedBy = "bankAccount", fetch = FetchType.LAZY)
+    private Goal goal;
 
     public void assignConnection(CodefConnection connection) {
         this.codefConnection = connection;

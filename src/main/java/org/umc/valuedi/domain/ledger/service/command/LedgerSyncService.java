@@ -10,8 +10,8 @@ import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
 import org.umc.valuedi.domain.asset.enums.CancelStatus;
 import org.umc.valuedi.domain.asset.enums.TransactionDirection;
-import org.umc.valuedi.domain.asset.repository.bank.BankTransactionRepository;
-import org.umc.valuedi.domain.asset.repository.card.CardApprovalRepository;
+import org.umc.valuedi.domain.asset.repository.bank.bankTransaction.BankTransactionRepository;
+import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRepository;
 import org.umc.valuedi.domain.ledger.dto.request.LedgerSyncRequest;
 import org.umc.valuedi.domain.ledger.entity.Category;
 import org.umc.valuedi.domain.ledger.entity.CategoryKeyword;
@@ -32,13 +32,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class LedgerSyncService {
 
     private final BankTransactionRepository bankTransactionRepository;
@@ -68,54 +69,45 @@ public class LedgerSyncService {
         refreshKeywordCache();
     }
 
-    // 주기적으로 캐시 갱신이 필요하다면 별도 스케줄러 사용 가능
     public void refreshKeywordCache() {
         List<CategoryKeyword> keywords = categoryKeywordRepository.findAllWithCategory();
-        Map<String, Category> newCache = keywords.stream()
-                .collect(Collectors.toMap(CategoryKeyword::getKeyword, CategoryKeyword::getCategory, (existing, replacement) -> existing));
-        this.keywordCache = Collections.unmodifiableMap(newCache);
+        this.keywordCache = keywords.stream().collect(Collectors.toMap(CategoryKeyword::getKeyword, CategoryKeyword::getCategory, (e, r) -> e));
     }
 
-    public void syncTransactions(Long memberId, LedgerSyncRequest request) {
-        // 요청 파라미터 검증
-        if (ObjectUtils.isEmpty(request.getYearMonth()) && ObjectUtils.isEmpty(request.getFromDate()) || ObjectUtils.isEmpty(request.getToDate())) {
-            throw new LedgerException(LedgerErrorCode.INVALID_SYNC_REQUEST);
-        }
-
+    @Transactional
+    public void syncTransactionsAndUpdateMember(Long memberId, LocalDate from, LocalDate to) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
+        syncTransactions(member, from, to);
+        member.updateLastSyncedAt();
+    }
+
+    @Transactional
+    public void updateMemberLastSyncedAt(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
+        member.updateLastSyncedAt();
+    }
+
+    @Transactional
+    public void syncTransactions(Long memberId, LedgerSyncRequest request) {
+        Member member = memberRepository.findById(memberId).orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
+        LocalDate from = request.getFromDate();
+        LocalDate to = request.getToDate();
+        syncTransactions(member, from, to);
+    }
+
+    // 트랜잭션 어노테이션 제거 (상위 메서드에서 관리)
+    public void syncTransactions(Member member, LocalDate from, LocalDate to) {
+        if (to.isBefore(from)) {
+            throw new LedgerException(LedgerErrorCode.INVALID_DATE_RANGE);
+        }
 
         Category defaultCategory = categoryRepository.findByCode("ETC")
                 .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
         Category transferCategory = categoryRepository.findByCode("TRANSFER")
                 .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
 
-        // 2. 날짜 범위 설정 로직 개선
-        LocalDate from;
-        LocalDate to;
-
-        if (ObjectUtils.isNotEmpty(request.getYearMonth())) {
-            // Case 1: yearMonth가 있는 경우 -> 해당 월 전체 (1일 ~ 말일)
-            from = request.getYearMonth().atDay(1);
-            to = request.getYearMonth().atEndOfMonth();
-        } else {
-            // Case 2: fromDate가 있는 경우
-            from = request.getFromDate();
-            if (ObjectUtils.isNotEmpty(request.getToDate())) {
-                // Case 2-1: toDate도 있는 경우 -> fromDate ~ toDate
-                to = request.getToDate();
-            } else {
-                // Case 2-2: toDate가 없는 경우 -> fromDate ~ 오늘(현재)
-                to = LocalDate.now();
-            }
-        }
-
-        // 유효성 검사: 종료일이 시작일보다 앞서면 안됨
-        if (to.isBefore(from)) {
-            throw new LedgerException(LedgerErrorCode.INVALID_DATE_RANGE); // 에러 코드 추가 필요
-        }
-
-        // 카드 승인 내역 미리 조회 (매칭 오차 고려 +-1일 버퍼)
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from.minusDays(1), to.plusDays(1));
 
         // 저장할 엔티티를 모을 리스트 생성
@@ -149,6 +141,7 @@ public class LedgerSyncService {
             List<LedgerEntry> entriesToSave
     ) {
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
+        if (cards.isEmpty()) return;
 
         for (CardApproval ca : cards) {
             if (ObjectUtils.isEmpty(ca.getUsedDatetime())) continue;
@@ -159,26 +152,20 @@ public class LedgerSyncService {
             Category category = null;
             TransactionType transactionType;
 
-            // 업종(merchantType)으로 먼저 매핑 시도
-            if (!ObjectUtils.isEmpty(merchantType)) {
-                category = mapCategoryByKeyword(merchantType, null);
-            }
+        // 이미 존재하는 LedgerEntry의 CardApproval ID를 한 번의 쿼리로 조회
+        Set<Long> existingIds = ledgerEntryRepository.findExistingCardApprovalIds(cardApprovalIds);
 
-            // 업종 매핑 실패 시 가맹점명(merchantName)으로 매핑 시도
-            if (ObjectUtils.isEmpty(category) && !ObjectUtils.isEmpty(merchantName)) {
-                category = mapCategoryByKeyword(merchantName, defaultCategory);
-            }
+        for (CardApproval ca : cards) {
+            // DB 쿼리 대신 메모리의 Set에서 확인
+            if (existingIds.contains(ca.getId())) continue;
+            if (ca.getUsedDatetime() == null) continue;
 
-            // 모든 매핑 실패 시 기본 카테고리 사용
-            if (ObjectUtils.isEmpty(category)) {
-                category = defaultCategory;
-            }
+            String merchantName = ca.getMerchantName();
+            Category category = mapCategoryByKeyword(ca.getMerchantType(), null);
+            if (category == null) category = mapCategoryByKeyword(merchantName, defaultCategory);
+            if (category == null) category = defaultCategory;
 
-            if (ca.getCancelYn().equals(CancelStatus.NORMAL)) {
-                transactionType = TransactionType.EXPENSE;
-            } else {
-                transactionType = TransactionType.INCOME;
-            }
+            TransactionType transactionType = ca.getCancelYn() == CancelStatus.NORMAL ? TransactionType.EXPENSE : TransactionType.INCOME;
 
             LedgerEntry entry = LedgerEntry.builder()
                     .member(member)
@@ -202,40 +189,34 @@ public class LedgerSyncService {
             List<LedgerEntry> entriesToSave
     ) {
         List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
+        if (banks.isEmpty()) return;
 
         for (BankTransaction bt : banks) {
             // 필수 값 체크
             if (ObjectUtils.isEmpty(bt.getTrDatetime())) continue;
 
-            // desc 필드 결합
-            String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4())
-                    .filter(s -> !ObjectUtils.isEmpty(s))
-                    .collect(Collectors.joining(" "));
+        // 한 번의 쿼리로 조회
+        Set<Long> existingIds = ledgerEntryRepository.findExistingBankTransactionIds(bankTransactionIds);
 
-            // 중복 제거 로직 변경 : 키워드 포함 시 + 실제 매칭 성공 시에만 스킵
+        for (BankTransaction bt : banks) {
+            // 메모리에서 확인
+            if (existingIds.contains(bt.getId())) continue;
+            if (bt.getTrDatetime() == null) continue;
+
+            String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4()).filter(Objects::nonNull).collect(Collectors.joining(" "));
             if (isDuplicateOfCardApproval(bt, combinedDesc, cards)) continue;
-
 
             Category category;
             TransactionType transactionType;
-            String title = ObjectUtils.isEmpty(combinedDesc) ? "은행 거래" : combinedDesc;
-            if (title.length() > 50) {
-                title = title.substring(0, 50);
-            }
+            String title = combinedDesc.isEmpty() ? "은행 거래" : combinedDesc;
+            if (title.length() > 50) title = title.substring(0, 50);
 
             if (isCardSettlement(combinedDesc)) {
                 category = transferCategory;
-                transactionType = TransactionType.EXPENSE; // 카드대금 정산은 출금
+                transactionType = TransactionType.EXPENSE;
             } else {
                 category = mapCategoryByKeyword(combinedDesc, defaultCategory);
-                // BankTransaction의 direction을 따름
-                if (bt.getDirection() == TransactionDirection.IN) {
-                    transactionType = TransactionType.INCOME;
-                } else if (bt.getDirection() == TransactionDirection.OUT) {
-                    transactionType = TransactionType.EXPENSE;
-                } else {
-                    transactionType = TransactionType.EXPENSE; // 기본값
-                }
+                transactionType = bt.getDirection() == TransactionDirection.IN ? TransactionType.INCOME : TransactionType.EXPENSE;
             }
 
             LedgerEntry entry = LedgerEntry.builder()
@@ -250,81 +231,46 @@ public class LedgerSyncService {
         }
     }
 
-    // --- 판단 함수 ---
     private boolean isCardSettlement(String text) {
         if (ObjectUtils.isEmpty(text)) return false;
         return CARD_SETTLEMENT_KEYWORDS.stream().anyMatch(text::contains);
     }
 
     private Category mapCategoryByKeyword(String text, Category defaultCategory) {
-        if (ObjectUtils.isEmpty(text) || text.isEmpty()) return defaultCategory;
-
-        // 캐시된 키워드 맵을 순회하며 포함 여부 확인
-        // (키워드가 많아지면 Aho-Corasick 등 알고리즘 최적화 필요, 현재는 단순 루프)
+        if (text == null || text.isEmpty()) return defaultCategory;
         for (Map.Entry<String, Category> entry : keywordCache.entrySet()) {
-            if (text.contains(entry.getKey())) {
-                return entry.getValue();
-            }
+            if (text.contains(entry.getKey())) return entry.getValue();
         }
         return defaultCategory;
     }
 
-    // 은행 거래가 카드 승인 내역과 중복되는지 정밀하게 판단
     private boolean isDuplicateOfCardApproval(BankTransaction bt, String combinedDesc, List<CardApproval> cards) {
-        // 1. 출금(OUT)인 경우에만 체크
-        if (bt.getDirection() != TransactionDirection.OUT) return false;
-
-        // 2. 정산/청구 키워드가 있으면 중복 아님 (TRANSFER로 처리됨)
-        if (isCardSettlement(combinedDesc)) return false;
-
-        // 3. 카드 결제 후보 키워드가 있는 경우에만 매칭 시도 (선택 사항이지만 성능 최적화 위해 적용)
-        if (!hasCardPaymentKeyword(combinedDesc)) return false;
-
-        // 4. 실제 매칭 로직 (금액, 시간, 상호명 유사도)
+        if (bt.getDirection() != TransactionDirection.OUT || isCardSettlement(combinedDesc) || !hasCardPaymentKeyword(combinedDesc)) return false;
         return cards.stream().anyMatch(ca -> isMatch(bt, combinedDesc, ca));
     }
 
     private boolean isMatch(BankTransaction bt, String bankDesc, CardApproval ca) {
-        // 1. 금액 일치 여부 (정확히 일치)
         if (bt.getOutAmount().compareTo(ca.getUsedAmount()) != 0) return false;
+        if (Duration.between(bt.getTrDatetime(), ca.getUsedDatetime()).abs().toHours() > 6) return false;
 
-        // 2. 시간 근접 여부 (±6시간 이내)
-        long hoursDiff = Duration.between(bt.getTrDatetime(), ca.getUsedDatetime()).abs().toHours();
-        if (hoursDiff > 6) return false;
-
-        // 3. 상호/적요 유사도 (정규화 후 포함 여부 확인)
         String normBankDesc = normalizeText(bankDesc);
         String normMerchant = normalizeText(ca.getMerchantName());
 
-        // 한쪽이 너무 짧으면 매칭 위험하므로 스킵 (예: 2자 미만)
         if (normBankDesc.length() < 2 || normMerchant.length() < 2) return false;
 
-        // LCS 길이 계산
         int lcsLength = getLongestCommonSubstringLength(normBankDesc, normMerchant);
-
-
-        // 기준: 짧은 문자열 길이의 60% 이상 겹치거나, 4글자 이상 겹치면 일치로 판단
-        int minLength = Math.min(normBankDesc.length(), normMerchant.length());
-        return lcsLength >= 4 || (double) lcsLength / minLength >= 0.6;
+        return lcsLength >= 4 || (double) lcsLength / Math.min(normBankDesc.length(), normMerchant.length()) >= 0.6;
     }
 
     private String normalizeText(String text) {
-        if (text == null) return "";
-        return text.replaceAll("[^a-zA-Z0-9가-힣]", "") // 특수문자, 공백 제거
-                .replace("주식회사", "")
-                .replace("유한회사", "")
-                .replace("체크", "") // "체크우리" 등에서 제거
-                .replace("카드", "") // "카드" 제거
-                .toUpperCase();
+        return text == null ? "" : text.replaceAll("[^a-zA-Z0-9가-힣]", "").replace("주식회사", "").replace("유한회사", "").replace("체크", "").replace("카드", "").toUpperCase();
     }
 
-    // LCS (Longest Common Substring) 길이 계산
     private int getLongestCommonSubstringLength(String s1, String s2) {
         int m = s1.length();
         int n = s2.length();
         int[][] dp = new int[m + 1][n + 1];
         int maxLength = 0;
-
         for (int i = 1; i <= m; i++) {
             for (int j = 1; j <= n; j++) {
                 if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
@@ -338,11 +284,7 @@ public class LedgerSyncService {
         return maxLength;
     }
 
-
     private boolean hasCardPaymentKeyword(String text) {
-        if (ObjectUtils.isEmpty(text)) return false;
-        return CARD_PAYMENT_KEYWORDS.stream().anyMatch(text::contains);
+        return text != null && CARD_PAYMENT_KEYWORDS.stream().anyMatch(text::contains);
     }
-
-
 }

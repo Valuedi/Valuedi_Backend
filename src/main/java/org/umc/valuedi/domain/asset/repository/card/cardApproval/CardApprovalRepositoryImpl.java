@@ -1,8 +1,9 @@
-package org.umc.valuedi.domain.asset.repository.card;
+package org.umc.valuedi.domain.asset.repository.card.cardApproval;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
 
 import java.sql.PreparedStatement;
@@ -10,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 
+@Repository
 @RequiredArgsConstructor
 public class CardApprovalRepositoryImpl implements CardApprovalRepositoryCustom {
 
@@ -17,7 +19,7 @@ public class CardApprovalRepositoryImpl implements CardApprovalRepositoryCustom 
 
     @Override
     public void bulkInsert(List<CardApproval> approvals) {
-        if (approvals.isEmpty()) {
+        if (approvals == null || approvals.isEmpty()) {
             return;
         }
 

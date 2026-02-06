@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.asset.repository.card;
+package org.umc.valuedi.domain.asset.repository.card.card;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +32,6 @@ public interface CardRepository extends JpaRepository<Card, Long> {
             "AND c.isActive = true " +
             "ORDER BY c.createdAt DESC")
     List<Card> findAllByMemberId(@Param("memberId") Long memberId);
+
+    List<Card> findAllByCodefConnection(CodefConnection connection);
 }

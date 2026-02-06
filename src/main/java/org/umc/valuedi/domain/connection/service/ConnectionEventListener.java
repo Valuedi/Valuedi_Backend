@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-import org.umc.valuedi.domain.asset.service.AssetSyncService;
+import org.umc.valuedi.domain.asset.service.command.AssetSyncService;
 import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 
 @Slf4j
@@ -16,7 +16,7 @@ public class ConnectionEventListener {
 
     private final AssetSyncService assetSyncService;
 
-    @Async("assetSyncExecutor")
+    @Async("assetFetchExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleConnectionSuccess(ConnectionSuccessEvent event) {
         log.info("금융사 연동 성공 이벤트 수신 - Connection ID: {}, Organization: {}",

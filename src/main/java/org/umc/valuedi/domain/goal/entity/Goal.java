@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.entity.BaseEntity;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @SQLRestriction("deleted_at IS NULL")
-@SQLDelete(sql = "UPDATE goal SET deleted_at = NOW() WHERE id = ?")
+@SQLDelete(sql = "UPDATE goal SET deleted_at = NOW(), bank_account_id = NULL WHERE id = ?")
 public class Goal extends BaseEntity {
 
     @Id
@@ -29,8 +30,9 @@ public class Goal extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member member;
 
-    @Column(name = "id2", nullable = true)
-    private Long accountId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bank_account_id", unique = true)
+    private BankAccount bankAccount;
 
     @Column(name = "title", nullable = false, length = 20)
     private String title;
@@ -43,6 +45,9 @@ public class Goal extends BaseEntity {
 
     @Column(name = "target_amount", nullable = false)
     private Long targetAmount;
+
+    @Column(name = "start_amount", nullable = false)
+    private Long startAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -75,6 +80,7 @@ public class Goal extends BaseEntity {
     public void changeTargetAmount(Long targetAmount) {
         this.targetAmount = targetAmount;
     }
+    public void changeStartAmount(Long startAmount) { this.startAmount = startAmount; }
 
     public void changeColor(String color) { this.color = color; }
 
@@ -95,6 +101,14 @@ public class Goal extends BaseEntity {
     public void Fail() {
         this.status = GoalStatus.FAILED;
         this.completedAt = LocalDateTime.now();
+    }
+
+    public void linkBankAccount(BankAccount bankAccount) {
+        this.bankAccount = bankAccount;
+    }
+
+    public void unlinkBankAccount() {
+        this.bankAccount = null;
     }
 
 }
