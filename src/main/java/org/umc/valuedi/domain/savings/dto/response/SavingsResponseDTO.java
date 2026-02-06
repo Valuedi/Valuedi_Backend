@@ -1,6 +1,7 @@
 package org.umc.valuedi.domain.savings.dto.response;
 
 import lombok.Builder;
+import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -72,6 +73,6 @@ public class SavingsResponseDTO {
 
     @Builder
     public record TriggerResponse(
-            String status  // PENDING | SUCCESS | FAILED
+            RecommendationStatus status  // PENDING | SUCCESS | FAILED
     ) {}
 }

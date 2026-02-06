@@ -3,6 +3,7 @@ package org.umc.valuedi.domain.savings.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
+import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
 import org.umc.valuedi.domain.savings.service.RecommendationAsyncWorker;
 import org.umc.valuedi.domain.savings.service.RecommendationService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
@@ -23,7 +24,7 @@ public class RecommendationController implements RecommendationControllerDocs {
             @CurrentMember Long memberId
     ) {
         recommendationAsyncWorker.generateAndSaveAsync(memberId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.ACCEPTED, new SavingsResponseDTO.TriggerResponse("PENDING"));
+        return ApiResponse.onSuccess(GeneralSuccessCode.ACCEPTED, new SavingsResponseDTO.TriggerResponse(RecommendationStatus.PENDING));
     }
 
     // 최신 추천 15개 조회
