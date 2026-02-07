@@ -26,19 +26,18 @@ public class RecommendationController implements RecommendationControllerDocs {
     public ApiResponse<SavingsResponseDTO.TriggerResponse> recommend(
             @CurrentMember Long memberId
     ) {
-        RecommendationBatch batch = recommendationTxService.createOrGetPendingBatch(memberId);
+        SavingsResponseDTO.TriggerDecision triggerDecision = recommendationTxService.triggerRecommendation(memberId);
 
         // 진행 중이면 새로 실행하지 않음
-        if (!batch.isPendingOrProcessing()) {
-            // 보통 이 케이스는 거의 없으나 안전을 위해 둠
-        } else {
-            recommendationAsyncWorker.generateAndSaveAsync(memberId, batch.getId());
+        if (triggerDecision.shouldStartAsync()) {
+            recommendationAsyncWorker.generateAndSaveAsync(memberId, triggerDecision.batchId());
         }
+
         return ApiResponse.onSuccess(GeneralSuccessCode.ACCEPTED,
                 SavingsResponseDTO.TriggerResponse.builder()
-                        .batchId(batch.getId())
-                        .status(batch.getStatus())
-                        .message("추천 생성 요청이 접수되었습니다. 생성 완료까지 약간의 시간이 걸릴 수 있으며, 잠시 후 조회 API로 확인해 주세요.")
+                        .batchId(triggerDecision.batchId())
+                        .status(triggerDecision.status())
+                        .message(triggerDecision.message())
                         .build()
         );
     }

@@ -16,6 +16,7 @@ import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.*;
 import org.umc.valuedi.domain.savings.enums.ReasonCode;
+import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
 import org.umc.valuedi.domain.savings.repository.RecommendationBatchRepository;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
 import org.umc.valuedi.domain.savings.repository.SavingsOptionRepository;
@@ -42,7 +43,7 @@ public class RecommendationTxService {
 
     // 없으면 PENDING 배치 만들거나, 진행 중이면 기존 배치 반환
     @Transactional
-    public RecommendationBatch createOrGetPendingBatch(Long memberId) {
+    public SavingsResponseDTO.TriggerDecision triggerRecommendation(Long memberId) {
         // 금융 mbti 최신 결과 조회
         Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND))
@@ -50,12 +51,36 @@ public class RecommendationTxService {
 
         Optional<RecommendationBatch> latest = batchRepository.findTopByMemberIdAndMemberMbtiTestIdOrderByIdDesc(memberId, mbtiTestId);
 
+        // PENDING/PROCESSING이면 재실행 금지
         if (latest.isPresent() && latest.get().isPendingOrProcessing()) {
-            return latest.get();
+            RecommendationBatch b = latest.get();
+            return SavingsResponseDTO.TriggerDecision.builder()
+                    .batchId(b.getId())
+                    .status(b.getStatus()) // PENDING/PROCESSING
+                    .message("추천을 생성 중입니다. 잠시 후 조회 API로 확인해 주세요.")
+                    .shouldStartAsync(false)
+                    .build();
         }
 
+        // SUCCESS면 재생성 금지
+        if (latest.isPresent() && latest.get().getStatus() == RecommendationStatus.SUCCESS) {
+            RecommendationBatch b = latest.get();
+            return SavingsResponseDTO.TriggerDecision.builder()
+                    .batchId(b.getId())
+                    .status(b.getStatus())
+                    .message("이미 최신 추천이 존재합니다. 조회 API로 확인해 주세요.")
+                    .shouldStartAsync(false)
+                    .build();
+        }
+
+        // 추천 상품 생성
         RecommendationBatch created = batchRepository.save(RecommendationBatch.pending(memberId, mbtiTestId));
-        return created;
+        return SavingsResponseDTO.TriggerDecision.builder()
+                .batchId(created.getId())
+                .status(created.getStatus()) // PENDING
+                .message("추천 상품을 생성 중입니다. 잠시 후 조회 API로 확인해 주세요.")
+                .shouldStartAsync(true)
+                .build();
     }
 
     // 상태 변경

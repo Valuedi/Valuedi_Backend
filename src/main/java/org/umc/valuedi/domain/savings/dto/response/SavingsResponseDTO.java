@@ -79,4 +79,12 @@ public class SavingsResponseDTO {
             RecommendationStatus status,  // PENDING | SUCCESS | FAILED
             String message
     ) {}
+
+    @Builder
+    public record TriggerDecision(
+            Long batchId,
+            RecommendationStatus status,
+            String message,
+            boolean shouldStartAsync
+    ) {}
 }
