@@ -16,7 +16,6 @@ import org.umc.valuedi.domain.ledger.repository.LedgerQueryRepository;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor

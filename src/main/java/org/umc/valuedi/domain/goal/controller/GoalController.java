@@ -11,10 +11,10 @@ import org.umc.valuedi.domain.goal.dto.response.*;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 import org.umc.valuedi.domain.goal.enums.GoalSort;
 import org.umc.valuedi.domain.goal.exception.code.GoalSuccessCode;
+import org.umc.valuedi.domain.goal.service.GoalLedgerFacade;
 import org.umc.valuedi.domain.goal.service.command.GoalAccountCommandService;
 import org.umc.valuedi.domain.goal.service.command.GoalCommandService;
 import org.umc.valuedi.domain.goal.service.query.GoalAccountQueryService;
-import org.umc.valuedi.domain.goal.service.query.GoalLedgerQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalListQueryService;
 import org.umc.valuedi.domain.goal.service.query.GoalQueryService;
 import org.umc.valuedi.domain.ledger.dto.response.LedgerListResponse;
@@ -31,7 +31,7 @@ public class GoalController implements GoalControllerDocs{
     private final GoalListQueryService goalListQueryService;
     private final GoalAccountQueryService goalAccountQueryService;
     private final GoalAccountCommandService goalAccountCommandService;
-    private final GoalLedgerQueryService goalLedgerQueryService;
+    private final GoalLedgerFacade goalLedgerFacade;
 
     // 목표 추가
     @PostMapping
@@ -158,7 +158,7 @@ public class GoalController implements GoalControllerDocs{
     ) {
         return ApiResponse.onSuccess(
                 GoalSuccessCode.GOAL_LEDGER_LIST_FETCHED,
-                goalLedgerQueryService.getGoalLedgerTransactions(memberId, goalId, page, size)
+                goalLedgerFacade.getGoalLedgerTransactions(memberId, goalId, page, size)
         );
     }
 }
