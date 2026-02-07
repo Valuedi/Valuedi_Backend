@@ -90,7 +90,7 @@ public class GeminiClient {
 
                 if (attempt == MAX_ATTEMPTS || !isRetryable(e)) {
                     log.warn("Gemini timeout exhausted after {} attempts", attempt, e);
-                    throw new GeminiException(GeminiErrorCode.GEMINI_TIMEOUT, e);
+                    throw new GeminiException(GeminiErrorCode.GEMINI_CALL_FAILED, e);
                 }
                 sleepBackoff(attempt, e);
             }
