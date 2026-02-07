@@ -13,7 +13,9 @@ public class SavingsResponseDTO {
             int totalCount,  // 총 상품건수
             int maxPageNo,  // 총 페이지 건수
             int nowPageNo,  // 현재 조회 페이지 번호
-            List<RecommendedSavingProduct> products// 상품 목록
+            List<RecommendedSavingProduct> products,  // 상품 목록
+            RecommendationStatus status,  // 상품 추천 상태 (PENDING | SUCCESS | FAILED)
+            String message  // 상품 추천 상태 메시지
     ) {
         // 상품 목록 조회
         public record RecommendedSavingProduct(
@@ -73,6 +75,7 @@ public class SavingsResponseDTO {
 
     @Builder
     public record TriggerResponse(
-            RecommendationStatus status  // PENDING | SUCCESS | FAILED
+            RecommendationStatus status,  // PENDING | SUCCESS | FAILED
+            String message
     ) {}
 }

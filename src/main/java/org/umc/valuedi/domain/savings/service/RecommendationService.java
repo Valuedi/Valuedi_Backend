@@ -18,6 +18,7 @@ import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.entity.SavingsOption;
+import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
 import org.umc.valuedi.domain.savings.exception.SavingsException;
 import org.umc.valuedi.domain.savings.exception.code.SavingsErrorCode;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
@@ -106,8 +107,8 @@ public class RecommendationService {
         log.info("[RecommendAsync] saved. memberId={}, mbtiTestId={}", memberId, memberMbtiTestId);
     }
 
-    @Transactional
-    public SavingsResponseDTO.RecommendResponse recommend(Long memberId) {
+    @Transactional(readOnly = true)
+    public SavingsResponseDTO.RecommendResponse getCachedOrPending(Long memberId) {
         // 금융 mbti 최신 결과 조회
         MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
@@ -156,11 +157,24 @@ public class RecommendationService {
                 })
                 .toList();
 
+        if (products.isEmpty()) {
+            return SavingsResponseDTO.SavingsListResponse.builder()
+                    .totalCount(0)
+                    .nowPageNo(1)
+                    .maxPageNo(1)
+                    .products(List.of())
+                    .status(RecommendationStatus.PENDING)
+                    .message("추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요.")
+                    .build();
+        }
+
         return SavingsResponseDTO.SavingsListResponse.builder()
                 .totalCount(products.size())
                 .nowPageNo(1)
                 .maxPageNo(1)
                 .products(products)
+                .status(RecommendationStatus.SUCCESS)
+                .message(null)
                 .build();
     }
 
@@ -173,6 +187,17 @@ public class RecommendationService {
 
         Pageable pageable = PageRequest.of(0, TOP3_COUNT);
         List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
+
+        if (recs.isEmpty()) {
+            return SavingsResponseDTO.SavingsListResponse.builder()
+                    .totalCount(0)
+                    .nowPageNo(1)
+                    .maxPageNo(1)
+                    .products(List.of())
+                    .status(RecommendationStatus.PENDING)
+                    .message("추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요.")
+                    .build();
+        }
 
         List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
                 .map(r -> {
@@ -193,6 +218,8 @@ public class RecommendationService {
                 .nowPageNo(1)
                 .maxPageNo(1)
                 .products(products)
+                .status(RecommendationStatus.SUCCESS)
+                .message(null)
                 .build();
     }
 

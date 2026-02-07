@@ -24,7 +24,7 @@ public class RecommendationController implements RecommendationControllerDocs {
             @CurrentMember Long memberId
     ) {
         recommendationAsyncWorker.generateAndSaveAsync(memberId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.ACCEPTED, new SavingsResponseDTO.TriggerResponse(RecommendationStatus.PENDING));
+        return ApiResponse.onSuccess(GeneralSuccessCode.ACCEPTED, new SavingsResponseDTO.TriggerResponse(RecommendationStatus.PENDING, "추천 생성 요청이 접수되었습니다. 생성 완료까지 약간의 시간이 걸릴 수 있으며, 잠시 후 조회 API로 확인해 주세요."));
     }
 
     // 최신 추천 15개 조회
