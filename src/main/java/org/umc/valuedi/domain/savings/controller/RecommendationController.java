@@ -3,7 +3,11 @@ package org.umc.valuedi.domain.savings.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
+import org.umc.valuedi.domain.savings.entity.RecommendationBatch;
+import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
+import org.umc.valuedi.domain.savings.service.RecommendationAsyncWorker;
 import org.umc.valuedi.domain.savings.service.RecommendationService;
+import org.umc.valuedi.domain.savings.service.RecommendationTxService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
@@ -14,14 +18,28 @@ import org.umc.valuedi.global.security.annotation.CurrentMember;
 public class RecommendationController implements RecommendationControllerDocs {
 
     private final RecommendationService recommendationService;
+    private final RecommendationTxService recommendationTxService;
+    private final RecommendationAsyncWorker recommendationAsyncWorker;
 
-    // 15개 추천 생성 + 저장 + 응답(15개)
+    // 추천 생성 트리거(비동기)
     @PostMapping
-    public ApiResponse<SavingsResponseDTO.RecommendResponse> recommend(
+    public ApiResponse<SavingsResponseDTO.TriggerResponse> recommend(
             @CurrentMember Long memberId
     ) {
-        SavingsResponseDTO.RecommendResponse result = recommendationService.recommend(memberId);
-        return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
+        SavingsResponseDTO.TriggerDecision triggerDecision = recommendationTxService.triggerRecommendation(memberId);
+
+        // 진행 중이면 새로 실행하지 않음
+        if (triggerDecision.shouldStartAsync()) {
+            recommendationAsyncWorker.generateAndSaveAsync(memberId, triggerDecision.batchId());
+        }
+
+        return ApiResponse.onSuccess(GeneralSuccessCode.ACCEPTED,
+                SavingsResponseDTO.TriggerResponse.builder()
+                        .batchId(triggerDecision.batchId())
+                        .status(triggerDecision.status())
+                        .message(triggerDecision.message())
+                        .build()
+        );
     }
 
     // 최신 추천 15개 조회

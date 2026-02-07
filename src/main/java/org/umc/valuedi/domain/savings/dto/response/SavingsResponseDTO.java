@@ -1,6 +1,7 @@
 package org.umc.valuedi.domain.savings.dto.response;
 
 import lombok.Builder;
+import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -12,7 +13,9 @@ public class SavingsResponseDTO {
             int totalCount,  // 총 상품건수
             int maxPageNo,  // 총 페이지 건수
             int nowPageNo,  // 현재 조회 페이지 번호
-            List<RecommendedSavingProduct> products// 상품 목록
+            List<RecommendedSavingProduct> products,  // 상품 목록
+            RecommendationStatus status,  // 상품 추천 상태 (PENDING | SUCCESS | FAILED)
+            String message  // 상품 추천 상태 메시지
     ) {
         // 상품 목록 조회
         public record RecommendedSavingProduct(
@@ -68,5 +71,20 @@ public class SavingsResponseDTO {
             String rsrvType,
             String rsrvTypeNm,
             BigDecimal score
+    ) {}
+
+    @Builder
+    public record TriggerResponse(
+            Long batchId,
+            RecommendationStatus status,  // PENDING | SUCCESS | FAILED
+            String message
+    ) {}
+
+    @Builder
+    public record TriggerDecision(
+            Long batchId,
+            RecommendationStatus status,
+            String message,
+            boolean shouldStartAsync
     ) {}
 }
