@@ -18,4 +18,7 @@ public interface BankTransactionRepository extends JpaRepository<BankTransaction
     Optional<LocalDate> findLatestTransactionDateByAccount(@Param("account") BankAccount account);
 
     List<BankTransaction> findByBankAccountInAndTrDatetimeAfter(List<BankAccount> accounts, LocalDateTime startTime);
+
+    // 특정 계좌의 가장 최신 거래내역 1건 조회
+    Optional<BankTransaction> findTopByBankAccountOrderByTrDatetimeDesc(BankAccount bankAccount);
 }

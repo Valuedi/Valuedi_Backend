@@ -1,10 +1,12 @@
 package org.umc.valuedi.domain.goal.service.command;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
+import org.umc.valuedi.domain.asset.service.AssetBalanceService;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.request.GoalCreateRequestDto;
 import org.umc.valuedi.domain.goal.dto.request.GoalUpdateRequestDto;
@@ -20,6 +22,7 @@ import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,6 +31,7 @@ public class GoalCommandService {
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
     private final BankAccountRepository bankAccountRepository;
+    private final AssetBalanceService assetBalanceService;
 
     // 목표 생성
     public GoalCreateResponseDto createGoal(Long memberId, GoalCreateRequestDto req) {
@@ -47,7 +51,8 @@ public class GoalCommandService {
             throw new GoalException(GoalErrorCode.ACCOUNT_ALREADY_LINKED_TO_GOAL);
         }
 
-        Long startAmount = account.getBalanceAmount();
+        // 동기화 후 최신 잔액 가져오기
+        Long startAmount = assetBalanceService.syncAndGetLatestBalance(memberId, req.bankAccountId());
 
         // Goal 엔티티 생성 시 bankAccount 포함
         Goal goal = GoalConverter.toEntity(member, account, req, startAmount);

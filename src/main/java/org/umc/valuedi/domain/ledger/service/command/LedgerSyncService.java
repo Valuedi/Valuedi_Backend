@@ -3,6 +3,7 @@ package org.umc.valuedi.domain.ledger.service.command;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
@@ -70,7 +71,7 @@ public class LedgerSyncService {
         this.keywordCache = keywords.stream().collect(Collectors.toMap(CategoryKeyword::getKeyword, CategoryKeyword::getCategory, (e, r) -> e));
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void syncTransactionsAndUpdateMember(Long memberId, LocalDate from, LocalDate to) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));

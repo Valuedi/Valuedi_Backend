@@ -23,6 +23,7 @@ public class LedgerConverter {
         // LedgerEntry의 transactionType 필드를 직접 사용
         TransactionType type = entry.getTransactionType(); // String 필드를 그대로 사용
         Long amount = 0L;
+        Long afterBalance = null; // 거래 후 잔액
 
         if (entry.getTransactionType().equals(TransactionType.INCOME)) {
             type = TransactionType.INCOME;
@@ -40,10 +41,12 @@ public class LedgerConverter {
             } else { // "출금"이면 outAmount
                 amount = bt.getOutAmount();
             }
+            afterBalance = bt.getAfterBalance(); // 은행 거래인 경우 잔액 정보 설정
         } else if (entry.getCardApproval() != null) {
             CardApproval ca = entry.getCardApproval();
             // 카드 금액은 항상 양수로 가져옴 (취소 건도 입금으로 처리되므로 양수)
             amount = ca.getUsedAmount();
+            // 카드 승인은 잔액 정보가 없음
         }
 
         return LedgerListResponse.LedgerDetail.builder()
@@ -55,6 +58,7 @@ public class LedgerConverter {
                 .categoryName(entry.getCategory() != null ? entry.getCategory().getName() : "기타")
                 .transactionAt(entry.getTransactionAt())
                 .memo(entry.getMemo())
+                .afterBalance(afterBalance) // 추가된 필드 매핑
                 .build();
     }
 

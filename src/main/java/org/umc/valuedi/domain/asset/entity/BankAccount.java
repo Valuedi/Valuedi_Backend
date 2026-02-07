@@ -96,4 +96,8 @@ public class BankAccount extends BaseEntity {
     public void deactivate() {
         this.isActive = false;
     }
+
+    public void updateBalance(Long balanceAmount) {
+        this.balanceAmount = balanceAmount;
+    }
 }
