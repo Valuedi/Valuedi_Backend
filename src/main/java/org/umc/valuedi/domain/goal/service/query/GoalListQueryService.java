@@ -80,19 +80,31 @@ public class GoalListQueryService {
         return goals.stream()
                 .map(g -> {
                     BankAccount account = g.getBankAccount();
+                    long savedAmount = 0L;
 
-                    if (!account.getIsActive()) {
-                        throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
+                    // ACTIVE 상태일 때만 계좌가 연결되어 있고, 잔액 계산 및 상태 갱신이 필요함
+                    if (g.getStatus() == GoalStatus.ACTIVE) {
+                        if (account == null || !account.getIsActive()) {
+                            throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
+                        }
+
+                        // 동기화 후 최신 잔액 가져오기
+                        Long currentBalance = assetBalanceService.syncAndGetLatestBalance(memberId, account.getId());
+
+                        // 현재 잔액 - 시작 잔액
+                        savedAmount = currentBalance - g.getStartAmount();
+
+                        // 목표 달성 여부 체크 및 상태 업데이트 (공통 로직 사용)
+                        goalStatusChangeService.checkAndUpdateStatus(g, savedAmount);
+                    } else {
+                        
+                        if (g.getStatus() == GoalStatus.COMPLETE) {
+                            savedAmount = g.getTargetAmount(); // 성공했으므로 목표 달성으로 간주
+                        } else {
+                            // FAILED인 경우 달성률을 저장하지 않으므로 그냥 0으로 설정
+                            savedAmount = 0L; 
+                        }
                     }
-
-                    // 동기화 후 최신 잔액 가져오기
-                    Long currentBalance = assetBalanceService.syncAndGetLatestBalance(memberId, account.getId());
-
-                    // 현재 잔액 - 시작 잔액
-                    long savedAmount = currentBalance - g.getStartAmount();
-
-                    // 목표 달성 여부 체크 및 상태 업데이트 (공통 로직 사용)
-                    goalStatusChangeService.checkAndUpdateStatus(g, savedAmount);
                     
                     int rate = achievementRateService.calculateRate(savedAmount, g.getTargetAmount());
 

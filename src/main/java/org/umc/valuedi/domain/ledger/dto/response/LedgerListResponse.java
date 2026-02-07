@@ -30,5 +30,6 @@ public class LedgerListResponse {
         private String categoryName;
         private LocalDateTime transactionAt;
         private String memo;
+        private Long afterBalance; // 거래 후 잔액 추가
     }
 }
