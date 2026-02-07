@@ -108,30 +108,6 @@ public class RecommendationTxService {
         return batchRepository.findTopByMemberIdOrderByIdDesc(memberId);
     }
 
-    // 이미 존재하는 추천 상품 반환
-    @Transactional(readOnly = true)
-    public SavingsResponseDTO.RecommendResponse buildCachedResponse(Long memberId, Long memberMbtiTestId) {
-        PageRequest pageable = PageRequest.of(0, RECOMMEND_COUNT);
-        List<Recommendation> recs =
-                recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, memberMbtiTestId, pageable);
-
-        List<SavingsResponseDTO.RecommendedProduct> products = recs.stream()
-                .map(r -> new SavingsResponseDTO.RecommendedProduct(
-                        r.getSavings().getKorCoNm(),
-                        r.getSavings().getFinPrdtCd(),
-                        r.getSavings().getFinPrdtNm(),
-                        r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvType(),
-                        r.getSavingsOption() == null ? null : r.getSavingsOption().getRsrvTypeNm(),
-                        r.getScore()
-                ))
-                .toList();
-
-        return SavingsResponseDTO.RecommendResponse.builder()
-                .products(products)
-                .rationale(null)
-                .build();
-    }
-
     // 추천 상품 저장
     @Transactional
     public SavingsResponseDTO.RecommendResponse saveRecommendations(
