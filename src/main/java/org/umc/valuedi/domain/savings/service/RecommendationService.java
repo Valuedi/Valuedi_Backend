@@ -169,7 +169,6 @@ public class RecommendationService {
     }
 
     // 추천 상품 Top3 조회
-
     @Transactional(readOnly = true)
     public SavingsResponseDTO.SavingsListResponse getRecommendationTop3(Long memberId) {
         Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
