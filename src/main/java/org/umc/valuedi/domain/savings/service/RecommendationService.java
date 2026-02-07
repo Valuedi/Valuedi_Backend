@@ -16,6 +16,7 @@ import org.umc.valuedi.domain.mbti.service.FinanceMbtiProvider;
 import org.umc.valuedi.domain.savings.converter.SavingsConverter;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
+import org.umc.valuedi.domain.savings.entity.RecommendationBatch;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.entity.SavingsOption;
 import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
@@ -107,25 +108,6 @@ public class RecommendationService {
         log.info("[RecommendAsync] saved. memberId={}, mbtiTestId={}", memberId, memberMbtiTestId);
     }
 
-    @Transactional(readOnly = true)
-    public SavingsResponseDTO.RecommendResponse getCachedOrPending(Long memberId) {
-        // 금융 mbti 최신 결과 조회
-        MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
-                .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
-
-        Long memberMbtiTestId = memberMbtiTest.getId();
-
-        boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTestId);
-        if (exists) {
-            return recommendationTxService.buildCachedResponse(memberId, memberMbtiTestId);
-        }
-
-        return SavingsResponseDTO.RecommendResponse.builder()
-                .products(List.of())
-                .rationale("추천 생성 중입니다. 잠시 후 다시 조회해 주세요.")
-                .build();
-    }
-
     // 추천 상품 15개 조회
     @Transactional(readOnly = true)
     public SavingsResponseDTO.SavingsListResponse getRecommendation(Long memberId, String rsrvType) {
@@ -157,15 +139,23 @@ public class RecommendationService {
                 })
                 .toList();
 
+        boolean hasAnyRecommendationRow = !recs.isEmpty();
+
         if (products.isEmpty()) {
-            return SavingsResponseDTO.SavingsListResponse.builder()
-                    .totalCount(0)
-                    .nowPageNo(1)
-                    .maxPageNo(1)
-                    .products(List.of())
-                    .status(RecommendationStatus.PENDING)
-                    .message("추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요.")
-                    .build();
+            // 추천은 있는데 rsrvType 필터로 인해 0개인 경우
+            if (hasAnyRecommendationRow) {
+                return SavingsResponseDTO.SavingsListResponse.builder()
+                        .totalCount(0)
+                        .nowPageNo(1)
+                        .maxPageNo(1)
+                        .products(List.of())
+                        .status(RecommendationStatus.SUCCESS)
+                        .message("해당 적립 유형의 추천 결과가 없습니다.")
+                        .build();
+            }
+
+            // 추천 자체가 없는 경우
+            return getRecommendationState(memberId);
         }
 
         return SavingsResponseDTO.SavingsListResponse.builder()
@@ -179,6 +169,7 @@ public class RecommendationService {
     }
 
     // 추천 상품 Top3 조회
+
     @Transactional(readOnly = true)
     public SavingsResponseDTO.SavingsListResponse getRecommendationTop3(Long memberId) {
         Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
@@ -189,14 +180,8 @@ public class RecommendationService {
         List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
         if (recs.isEmpty()) {
-            return SavingsResponseDTO.SavingsListResponse.builder()
-                    .totalCount(0)
-                    .nowPageNo(1)
-                    .maxPageNo(1)
-                    .products(List.of())
-                    .status(RecommendationStatus.PENDING)
-                    .message("추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요.")
-                    .build();
+            // 추천 자체가 없는 경우
+            return getRecommendationState(memberId);
         }
 
         List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
@@ -220,6 +205,38 @@ public class RecommendationService {
                 .products(products)
                 .status(RecommendationStatus.SUCCESS)
                 .message(null)
+                .build();
+    }
+
+    private SavingsResponseDTO.SavingsListResponse getRecommendationState(Long memberId) {
+        RecommendationStatus status = RecommendationStatus.PENDING;
+        String message = "추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요.";
+
+        Optional<RecommendationBatch> latestBatch = recommendationTxService.findLatestBatch(memberId);
+
+        if (latestBatch.isPresent()) {
+            RecommendationStatus batchStatus = latestBatch.get().getStatus();
+
+            if (batchStatus == RecommendationStatus.FAILED) {
+                status = RecommendationStatus.FAILED;
+                message = "추천 생성에 실패했습니다. 다시 시도해 주세요.";
+            } else if (batchStatus == RecommendationStatus.SUCCESS) {
+                status = RecommendationStatus.SUCCESS;
+                message = "조건에 맞는 추천 결과가 없습니다.";
+            } else {
+                // PENDING/PROCESSING이면 기본값 유지
+            }
+        } else {
+            // 배치 없음이면 기본값 유지
+        }
+
+        return SavingsResponseDTO.SavingsListResponse.builder()
+                .totalCount(0)
+                .nowPageNo(1)
+                .maxPageNo(1)
+                .products(List.of())
+                .status(status)
+                .message(message)
                 .build();
     }
 

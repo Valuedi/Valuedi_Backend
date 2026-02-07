@@ -6,26 +6,24 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.mbti.entity.MemberMbtiTest;
+import org.umc.valuedi.domain.mbti.exception.MbtiException;
+import org.umc.valuedi.domain.mbti.exception.code.MbtiErrorCode;
+import org.umc.valuedi.domain.mbti.repository.MemberMbtiTestRepository;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
-import org.umc.valuedi.domain.savings.entity.Recommendation;
-import org.umc.valuedi.domain.savings.entity.RecommendationReason;
-import org.umc.valuedi.domain.savings.entity.Savings;
-import org.umc.valuedi.domain.savings.entity.SavingsOption;
+import org.umc.valuedi.domain.savings.entity.*;
 import org.umc.valuedi.domain.savings.enums.ReasonCode;
+import org.umc.valuedi.domain.savings.repository.RecommendationBatchRepository;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
 import org.umc.valuedi.domain.savings.repository.SavingsOptionRepository;
 import org.umc.valuedi.global.external.genai.dto.response.GeminiSavingsResponseDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,12 +32,58 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RecommendationTxService {
 
+    private final RecommendationBatchRepository batchRepository;
+    private final MemberMbtiTestRepository memberMbtiTestRepository;
     private final MemberRepository memberRepository;
     private final SavingsOptionRepository savingsOptionRepository;
     private final RecommendationRepository recommendationRepository;
 
     private static final int RECOMMEND_COUNT = 15;
 
+    // 없으면 PENDING 배치 만들거나, 진행 중이면 기존 배치 반환
+    @Transactional
+    public RecommendationBatch createOrGetPendingBatch(Long memberId) {
+        // 금융 mbti 최신 결과 조회
+        Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
+                .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND))
+                .getId();
+
+        Optional<RecommendationBatch> latest = batchRepository.findTopByMemberIdAndMemberMbtiTestIdOrderByIdDesc(memberId, mbtiTestId);
+
+        if (latest.isPresent() && latest.get().isPendingOrProcessing()) {
+            return latest.get();
+        }
+
+        RecommendationBatch created = batchRepository.save(RecommendationBatch.pending(memberId, mbtiTestId));
+        return created;
+    }
+
+    // 상태 변경
+    @Transactional
+    public void markProcessing(Long batchId) {
+        RecommendationBatch b = batchRepository.findById(batchId).orElseThrow();
+        b.markProcessing();
+    }
+
+    @Transactional
+    public void markSuccess(Long batchId) {
+        RecommendationBatch b = batchRepository.findById(batchId).orElseThrow();
+        b.markSuccess();
+    }
+
+    @Transactional
+    public void markFailed(Long batchId, String errorMessage) {
+        RecommendationBatch b = batchRepository.findById(batchId).orElseThrow();
+        b.markFailed(errorMessage);
+    }
+
+    // 상태 조회용
+    @Transactional(readOnly = true)
+    public Optional<RecommendationBatch> findLatestBatch(Long memberId) {
+        return batchRepository.findTopByMemberIdOrderByIdDesc(memberId);
+    }
+
+    // 이미 존재하는 추천 상품 반환
     @Transactional(readOnly = true)
     public SavingsResponseDTO.RecommendResponse buildCachedResponse(Long memberId, Long memberMbtiTestId) {
         PageRequest pageable = PageRequest.of(0, RECOMMEND_COUNT);
@@ -63,6 +107,7 @@ public class RecommendationTxService {
                 .build();
     }
 
+    // 추천 상품 저장
     @Transactional
     public SavingsResponseDTO.RecommendResponse saveRecommendations(
             Long memberId,

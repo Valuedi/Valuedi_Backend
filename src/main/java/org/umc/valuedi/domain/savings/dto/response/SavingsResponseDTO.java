@@ -75,6 +75,7 @@ public class SavingsResponseDTO {
 
     @Builder
     public record TriggerResponse(
+            Long batchId,
             RecommendationStatus status,  // PENDING | SUCCESS | FAILED
             String message
     ) {}
