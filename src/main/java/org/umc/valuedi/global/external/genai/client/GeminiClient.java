@@ -61,6 +61,12 @@ public class GeminiClient {
                 }
                 return text;
             } catch (GeminiException e) {
+                Throwable cause = (e.getOriginalCause() != null) ? e.getOriginalCause() : e;
+
+                if (isQuotaExceeded(cause)) {
+                    throw new GeminiException(GeminiErrorCode.GEMINI_QUOTA_EXCEEDED, cause);
+                }
+
                 if (e.getErrorCode() == GeminiErrorCode.EMPTY_RESPONSE) {
                     throw e;
                 }
@@ -86,6 +92,11 @@ public class GeminiClient {
 
                 sleepBackoff(attempt, e);
             } catch (Exception e) {
+                // 할당량 초과는 재시도 금지
+                if (isQuotaExceeded(e)) {
+                    throw new GeminiException(GeminiErrorCode.GEMINI_QUOTA_EXCEEDED, e);
+                }
+
                 lastCause = e;
 
                 if (attempt == MAX_ATTEMPTS || !isRetryable(e)) {
@@ -117,12 +128,16 @@ public class GeminiClient {
     }
 
     private boolean isRetryable(Throwable t) {
+        if (t == null) return false;
+
         if (t instanceof GeminiException ge && ge.getOriginalCause() != null) {
             t = ge.getOriginalCause();
         }
 
+        if (isQuotaExceeded(t)) return false;
+
         Throwable root = rootCause(t);
-        String msg = (root.getMessage() == null) ? "" : root.getMessage().toLowerCase();
+        String msg = ((t.getMessage() == null ? "" : t.getMessage()) + " " + (root.getMessage() == null ? "" : root.getMessage())).toLowerCase();
 
         // 네트워크/연결 계열
         if (msg.contains("timeout") || msg.contains("timed out")) return true;
@@ -156,5 +171,20 @@ public class GeminiClient {
             cur = cur.getCause();
         }
         return cur;
+    }
+
+    private boolean isQuotaExceeded(Throwable t) {
+        if (t == null) return false;
+
+        String msg = String.valueOf(t.getMessage()).toLowerCase();
+        if (msg.contains("resource_exhausted")
+                || msg.contains("quota")
+                || msg.contains("rate limit")
+                || msg.contains("too many requests")
+                || msg.contains("429")) {
+            return true;
+        }
+
+        return isQuotaExceeded(t.getCause());
     }
 }

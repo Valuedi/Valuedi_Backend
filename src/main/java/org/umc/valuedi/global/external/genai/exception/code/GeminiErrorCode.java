@@ -9,6 +9,7 @@ import org.umc.valuedi.global.apiPayload.code.BaseErrorCode;
 @AllArgsConstructor
 public enum GeminiErrorCode implements BaseErrorCode {
 
+    GEMINI_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS,"GEMINI429_1", "Gemini API 사용량이 초과되었습니다."),
     EMPTY_RESPONSE(HttpStatus.BAD_GATEWAY, "GEMINI502_1", "Gemini API 응답이 비어 있습니다."),
     GEMINI_CALL_FAILED(HttpStatus.BAD_GATEWAY, "GEMINI502_2", "Gemini API 호출에 실패했습니다."),
     GEMINI_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "GEMINI504_1", "Gemini API 호출 시간이 초과되었습니다.")
