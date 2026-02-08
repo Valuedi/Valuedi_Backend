@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -119,17 +120,25 @@ public class AssetFetchService {
 
     private void updateAccountBalances(List<BankTransaction> transactions) {
         // 계좌별로 가장 최신 거래내역을 찾아서 잔액 업데이트
-        transactions.stream()
+        Map<BankAccount, BankTransaction> latestTransactions = transactions.stream()
                 .collect(Collectors.groupingBy(BankTransaction::getBankAccount, 
-                        Collectors.maxBy((t1, t2) -> t1.getTrDatetime().compareTo(t2.getTrDatetime()))))
-                .forEach((account, latestTransactionOpt) -> {
-                    latestTransactionOpt.ifPresent(latestTransaction -> {
-                        if (latestTransaction.getAfterBalance() != null) {
-                            account.updateBalance(latestTransaction.getAfterBalance());
-                            bankAccountRepository.save(account);
-                        }
-                    });
-                });
+                        Collectors.collectingAndThen(
+                                Collectors.maxBy((t1, t2) -> t1.getTrDatetime().compareTo(t2.getTrDatetime())),
+                                java.util.Optional::get
+                        )));
+
+        List<BankAccount> updatedAccounts = new ArrayList<>();
+        
+        latestTransactions.forEach((account, latestTransaction) -> {
+            if (latestTransaction.getAfterBalance() != null) {
+                account.updateBalance(latestTransaction.getAfterBalance());
+                updatedAccounts.add(account);
+            }
+        });
+
+        if (!updatedAccounts.isEmpty()) {
+            bankAccountRepository.saveAll(updatedAccounts);
+        }
     }
 
     private List<BankTransaction> filterNewBankTransactions(List<BankTransaction> allFetched) {

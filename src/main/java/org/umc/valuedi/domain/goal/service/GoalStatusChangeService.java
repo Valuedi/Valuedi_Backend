@@ -50,6 +50,7 @@ public class GoalStatusChangeService {
         }
 
         boolean isTargetReached = savedAmount >= goal.getTargetAmount();
+        // 목표 종료일이 오늘보다 이전이면 만료된 것으로 판단 (종료일 당일까지는 진행 중)
         boolean isExpired = goal.getEndDate().isBefore(LocalDate.now());
 
         if (isTargetReached) {

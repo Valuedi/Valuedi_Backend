@@ -94,8 +94,14 @@ public class GoalListQueryService {
                         // 현재 잔액 - 시작 잔액
                         savedAmount = currentBalance - g.getStartAmount();
 
+                        // 음수일 경우 0으로 처리
+                        if (savedAmount < 0) {
+                            savedAmount = 0;
+                        }
+
                         // 목표 달성 여부 체크 및 상태 업데이트 (공통 로직 사용)
                         goalStatusChangeService.checkAndUpdateStatus(g, savedAmount);
+
                     } else {
                         
                         if (g.getStatus() == GoalStatus.COMPLETE) {

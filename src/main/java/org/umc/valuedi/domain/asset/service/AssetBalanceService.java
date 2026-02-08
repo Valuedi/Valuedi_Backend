@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
@@ -37,7 +38,9 @@ public class AssetBalanceService {
 
         // 자산 동기화 시도
         try {
-            assetFetchService.fetchAndSaveLatestData(member);
+            AssetResDTO.AssetSyncResult result = assetFetchService.fetchAndSaveLatestData(member);
+            log.info("[AssetBalanceService] 자산 동기화 완료. MemberID: {}, NewTransactions: {}, SuccessOrgs: {}, FailedOrgs: {}",
+                    memberId, result.getNewBankTransactionCount(), result.getSuccessOrganizations(), result.getFailureOrganizations());
         } catch (Exception e) {
             log.warn("잔액 조회 중 자산 동기화 실패 (기존 잔액 사용): {}", e.getMessage());
         }
