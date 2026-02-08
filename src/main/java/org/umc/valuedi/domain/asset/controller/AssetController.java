@@ -4,16 +4,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.umc.valuedi.domain.asset.exception.code.AssetSuccessCode;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.service.query.AssetQueryService;
-import org.umc.valuedi.domain.asset.service.command.AssetSyncFacadeService;
-import org.umc.valuedi.domain.connection.service.ConnectionQueryService;
+import org.umc.valuedi.domain.connection.service.query.ConnectionQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
@@ -28,8 +25,6 @@ public class AssetController implements AssetControllerDocs {
 
     private final ConnectionQueryService connectionQueryService;
     private final AssetQueryService assetQueryService;
-    private final AssetSyncFacadeService assetSyncFacadeService;
-
 
     @GetMapping("/cards")
     public ApiResponse<CardResDTO.CardListDTO> getCards(
@@ -82,13 +77,5 @@ public class AssetController implements AssetControllerDocs {
             @CurrentMember Long memberId
     ) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAssetSummaryCount(memberId));
-    }
-
-    @PostMapping("/sync/refresh")
-    public ApiResponse<Void> refreshAssetSync(
-            @CurrentMember Long memberId
-    ) {
-        assetSyncFacadeService.refreshAssetSync(memberId);
-        return ApiResponse.onSuccess(AssetSuccessCode.SYNC_REQUEST_SUCCESS, null);
     }
 }

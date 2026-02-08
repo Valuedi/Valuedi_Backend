@@ -17,6 +17,7 @@ import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRep
 import org.umc.valuedi.domain.asset.service.command.worker.AssetFetchWorker;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
+import org.umc.valuedi.domain.ledger.service.command.LedgerSyncService;
 import org.umc.valuedi.domain.member.entity.Member;
 
 import java.time.LocalDate;
@@ -40,6 +41,7 @@ public class AssetFetchService {
     private final CardApprovalRepository cardApprovalRepository;
     private final BankAccountRepository bankAccountRepository;
     private final AssetFetchWorker assetFetchWorker;
+    private final LedgerSyncService ledgerSyncService;
 
     private record BankTransactionKey(LocalDateTime trDatetime, Long inAmount, Long outAmount, String desc3) {}
     private record CardApprovalKey(Card card, String approvalNo) {}
@@ -52,12 +54,12 @@ public class AssetFetchService {
         // 각 기관별로 비동기 API 호출 실행
         List<CompletableFuture<AssetFetchWorker.FetchResult>> futures = connections.stream()
                 .map(connection -> assetFetchWorker.fetchAndConvertData(connection, member))
-                .collect(Collectors.toList());
+                .toList();
 
         // 모든 비동기 작업이 완료될 때까지 대기하고 결과 취합
         List<AssetFetchWorker.FetchResult> fetchResults = futures.stream()
                 .map(CompletableFuture::join)
-                .collect(Collectors.toList());
+                .toList();
 
         // 모든 거래내역을 한번에 조회하기 위한 준비
         List<BankTransaction> allFetchedBankTransactions = new ArrayList<>();
@@ -107,6 +109,11 @@ public class AssetFetchService {
         // JdbcTemplate 사용 후 영속성 컨텍스트 초기화
         entityManager.flush();
         entityManager.clear();
+
+        // 가계부 동기화
+        if (totalNewBankTransactions > 0 || totalNewCardApprovals > 0) {
+            ledgerSyncService.syncTransactions(member, overallMinDate, today);
+        }
 
         return AssetResDTO.AssetSyncResult.builder()
                 .newBankTransactionCount(totalNewBankTransactions)
