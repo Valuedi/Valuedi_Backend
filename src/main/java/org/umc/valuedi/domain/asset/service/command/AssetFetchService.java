@@ -44,7 +44,7 @@ public class AssetFetchService {
 
     @Transactional
     public AssetResDTO.AssetSyncResult fetchAndSaveLatestData(Member member) {
-        List<CodefConnection> connections = codefConnectionRepository.findByMemberId(member.getId());
+        List<CodefConnection> connections = codefConnectionRepository.findByMemberIdWithMember(member.getId());
         LocalDate today = LocalDate.now();
 
         // 각 기관별로 비동기 API 호출 실행

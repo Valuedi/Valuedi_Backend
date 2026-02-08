@@ -125,8 +125,6 @@ public class LedgerSyncService {
             ledgerEntryRepository.bulkInsert(entries);
             log.info("Ledger Rebuild Complete: Member {}, {} entries created.", member.getId(), entries.size());
         }
-
-        member.updateLastSyncedAt();
     }
 
     private LedgerEntry createFromCard(Member member, CardApproval ca, Category defaultCategory, String key) {
@@ -179,22 +177,6 @@ public class LedgerSyncService {
                 .build();
     }
 
-
-    @Transactional
-    public void syncTransactionsAndUpdateMember(Long memberId, LocalDate from, LocalDate to) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
-        syncTransactions(member, from, to);
-        member.updateLastSyncedAt();
-    }
-
-    @Transactional
-    public void updateMemberLastSyncedAt(Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
-        member.updateLastSyncedAt();
-    }
-
     @Transactional
     public void syncTransactions(Long memberId, LedgerSyncRequest request) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
@@ -203,7 +185,7 @@ public class LedgerSyncService {
         syncTransactions(member, from, to);
     }
 
-    // 트랜잭션 어노테이션 제거 (상위 메서드에서 관리)
+    @Transactional
     public void syncTransactions(Member member, LocalDate from, LocalDate to) {
         if (to.isBefore(from)) {
             throw new LedgerException(LedgerErrorCode.INVALID_DATE_RANGE);
