@@ -3,6 +3,7 @@ package org.umc.valuedi.domain.asset.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
@@ -31,7 +32,7 @@ public class AssetBalanceService {
      * 자산 동기화를 수행하고, 특정 계좌의 최신 잔액을 반환합니다.
      * 동기화 실패 시 기존 잔액을 반환합니다.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Long syncAndGetLatestBalance(Long memberId, Long accountId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
@@ -41,6 +42,8 @@ public class AssetBalanceService {
             AssetResDTO.AssetSyncResult result = assetFetchService.fetchAndSaveLatestData(member);
             log.info("[AssetBalanceService] 자산 동기화 완료. MemberID: {}, NewTransactions: {}, SuccessOrgs: {}, FailedOrgs: {}",
                     memberId, result.getNewBankTransactionCount(), result.getSuccessOrganizations(), result.getFailureOrganizations());
+
+
         } catch (Exception e) {
             log.warn("잔액 조회 중 자산 동기화 실패 (기존 잔액 사용): {}", e.getMessage());
         }
