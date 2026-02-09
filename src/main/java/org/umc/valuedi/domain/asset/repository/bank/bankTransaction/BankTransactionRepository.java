@@ -18,4 +18,11 @@ public interface BankTransactionRepository extends JpaRepository<BankTransaction
     Optional<LocalDate> findLatestTransactionDateByAccount(@Param("account") BankAccount account);
 
     List<BankTransaction> findByBankAccountInAndTrDatetimeAfter(List<BankAccount> accounts, LocalDateTime startTime);
+
+    @Query("SELECT bt FROM BankTransaction bt " +
+            "LEFT JOIN LedgerEntry le ON le.bankTransaction = bt " +
+            "WHERE bt.bankAccount.codefConnection.member.id = :memberId " +
+            "AND bt.trDate BETWEEN :from AND :to " +
+            "AND le.id IS NULL")
+    List<BankTransaction> findUnsyncedBankTransactions(@Param("memberId") Long memberId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

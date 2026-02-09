@@ -196,6 +196,7 @@ public class LedgerSyncService {
         Category transferCategory = categoryRepository.findByCode("TRANSFER")
                 .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
 
+        // 중복 체크를 위한 카드 내역 (은행 거래와 비교용)
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from.minusDays(1), to.plusDays(1));
 
         List<LedgerEntry> allNewEntries = new ArrayList<>();
@@ -208,18 +209,11 @@ public class LedgerSyncService {
     }
 
     private void syncCardApprovals(Member member, LocalDate from, LocalDate to, Category defaultCategory, List<LedgerEntry> allNewEntries) {
-        List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
+        // 가계부에 없는 카드 내역만 조회
+        List<CardApproval> cards = cardApprovalRepository.findUnsyncedCardApprovals(member.getId(), from, to);
         if (cards.isEmpty()) return;
 
-        // ID 목록을 추출
-        List<Long> cardApprovalIds = cards.stream().map(CardApproval::getId).collect(Collectors.toList());
-
-        // 이미 존재하는 LedgerEntry의 CardApproval ID를 한 번의 쿼리로 조회
-        Set<Long> existingIds = ledgerEntryRepository.findExistingCardApprovalIds(cardApprovalIds);
-
         for (CardApproval ca : cards) {
-            // DB 쿼리 대신 메모리의 Set에서 확인
-            if (existingIds.contains(ca.getId())) continue;
             if (ca.getUsedDatetime() == null) continue;
 
             String merchantName = ca.getMerchantName();
@@ -242,18 +236,11 @@ public class LedgerSyncService {
     }
 
     private void syncBankTransactions(Member member, LocalDate from, LocalDate to, List<CardApproval> cards, Category defaultCategory, Category transferCategory, List<LedgerEntry> allNewEntries) {
-        List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
+        // 가계부에 없는 은행 내역만 조회
+        List<BankTransaction> banks = bankTransactionRepository.findUnsyncedBankTransactions(member.getId(), from, to);
         if (banks.isEmpty()) return;
 
-        // ID 목록 추출
-        List<Long> bankTransactionIds = banks.stream().map(BankTransaction::getId).collect(Collectors.toList());
-
-        // 한 번의 쿼리로 조회
-        Set<Long> existingIds = ledgerEntryRepository.findExistingBankTransactionIds(bankTransactionIds);
-
         for (BankTransaction bt : banks) {
-            // 메모리에서 확인
-            if (existingIds.contains(bt.getId())) continue;
             if (bt.getTrDatetime() == null) continue;
 
             String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4()).filter(Objects::nonNull).collect(Collectors.joining(" "));

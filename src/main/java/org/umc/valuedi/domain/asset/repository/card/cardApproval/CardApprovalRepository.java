@@ -21,4 +21,11 @@ public interface CardApprovalRepository extends JpaRepository<CardApproval, Long
     Optional<LocalDate> findLatestApprovalDateByMember(@Param("member") Member member);
 
     List<CardApproval> findByCardInAndApprovalNoIn(List<Card> cards, List<String> approvalNos);
+
+    @Query("SELECT ca FROM CardApproval ca " +
+            "LEFT JOIN LedgerEntry le ON le.cardApproval = ca " +
+            "WHERE ca.card.codefConnection.member.id = :memberId " +
+            "AND ca.usedDate BETWEEN :from AND :to " +
+            "AND le.id IS NULL")
+    List<CardApproval> findUnsyncedCardApprovals(@Param("memberId") Long memberId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }
