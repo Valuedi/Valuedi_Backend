@@ -15,7 +15,7 @@ public class FinanceMbtiScoringService {
 
     private final FinanceMbtiProvider typeInfoProvider;
 
-    private static final double BASE_SCORE = 10.0;
+    private static final double BASE_SCORE = 5.0;
 
     public record ScoreResult(
             int anxietyScore,
