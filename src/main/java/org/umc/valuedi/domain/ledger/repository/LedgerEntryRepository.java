@@ -8,6 +8,7 @@ import org.umc.valuedi.domain.ledger.entity.LedgerEntry;
 import org.umc.valuedi.domain.member.entity.Member;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long>, LedgerEntryRepositoryCustom {
     boolean existsByBankTransactionId(Long bankTransactionId);
