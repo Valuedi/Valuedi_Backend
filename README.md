@@ -26,6 +26,12 @@ VALUEDI는 사용자의 금융 데이터를 기반으로 **목표 중심 자산 
 
 ---
 
+## 🗃️ ERD
+
+![ERD](docs/images/erd.png)
+
+---
+
 ## 🧩 사용한 브랜치 전략 / 기술 스택 / 프로젝트 구조
 
 ### 브랜치 전략
@@ -79,10 +85,20 @@ VALUEDI는 사용자의 금융 데이터를 기반으로 **목표 중심 자산 
 - `domain/*`에는 각 도메인의 Entity/Service/Repository 등 핵심 로직을 배치하고,
 - `global/*`에는 공통 설정, 보안, 응답 포맷, 외부 API 연동 모듈을 관리합니다.
 
+```
 src/main/java/org/umc/valuedi
 ├── domain
 │ ├── asset
+│ │ ├─ controller
+│ │ ├─ converter
+│ │ ├─ dto
+│ │ ├─ entity
+│ │ ├─ enums
+│ │ ├─ exception
+│ │ ├─ repository
+│ │ └─ service
 │ ├── auth
+│ ├── connection
 │ ├── goal
 │ ├── ledger
 │ ├── mbti
@@ -92,19 +108,30 @@ src/main/java/org/umc/valuedi
 │ └── trophy
 └── global
 ├── apiPayload
+│ ├─ code
+│ ├─ exception
+│ └─ handler
 ├── config
-├── external (codef / fss / genai)
+├── external
+│ ├─ codef
+│ ├─ fss
+│ └─ genai
 └── security
-
-전체 프로젝트 구조: [docs/project-structure.txt](docs/project-structure.txt)
+  ├─ annotation
+  ├─ handler
+  ├─ jwt
+  ├─ principal
+  ├─ service
+  └─ util
+```
 
 ---
 
 ## 👥 팀원 정보
-| 이름  | 역할 | 담당                       |
-|-----|------|--------------------------|
-| 권도희 | Backend | codef 연동, 자산 도메인 구현      |
-| 최정규 | Backend | 유저 도메인 구현                |
-| 윤도훈 | Backend | 인프라 구축, 트로피 도메인 구현       |
-| 이가은 | Backend | 목표, 금융 mbti 도메인 구현       |
-| 이시연 | Backend | 약관, 제미나이 연동 적금 추천 도메인 구현 |
+| 이름  | 역할 | 깃헙 주소                          |
+|-----|------|--------------------------------|
+| 권도희 | Backend | https://github.com/seamooll    |
+| 최정규 | Backend | https://github.com/JeongGyul   |
+| 윤도훈 | Backend | https://github.com/hodoon      |
+| 이가은 | Backend | https://github.com/kkeunii     |
+| 이시연 | Backend | https://github.com/lee-si-yeon |
