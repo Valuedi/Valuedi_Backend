@@ -37,6 +37,10 @@ public class MbtiQuestion extends BaseEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "weight", nullable = false)
+    @Builder.Default
+    private Double weight = 1.0; // 기본 가중치 1
+
     @PrePersist
     void prePersist() {
         if (isActive == null) isActive = true;

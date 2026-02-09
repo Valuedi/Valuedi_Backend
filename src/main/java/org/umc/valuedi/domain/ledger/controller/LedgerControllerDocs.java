@@ -3,14 +3,12 @@ package org.umc.valuedi.domain.ledger.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.ledger.enums.LedgerSortType;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.domain.ledger.dto.request.LedgerSyncRequest;
 import org.umc.valuedi.domain.ledger.dto.response.*;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
-import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -77,6 +75,13 @@ public interface LedgerControllerDocs {
     @Operation(summary = "거래내역 동기화", description = "금융사로부터 거래내역을 가져와 동기화합니다.")
     @PostMapping("/api/transactions/sync")
     ApiResponse<String> syncTransactions(
+            @CurrentMember Long memberId,
+            @RequestBody LedgerSyncRequest request
+    );
+
+    @Operation(summary = "카테고리 재매칭", description = "지정된 기간의 거래내역 카테고리를 다시 분류합니다. (사용자 수정 내역 제외)")
+    @PostMapping("/api/transactions/rematch")
+    ApiResponse<String> rematchCategories(
             @CurrentMember Long memberId,
             @RequestBody LedgerSyncRequest request
     );

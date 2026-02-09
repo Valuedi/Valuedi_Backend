@@ -1,7 +1,6 @@
 package org.umc.valuedi.domain.ledger.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RestController;
 import org.umc.valuedi.domain.ledger.dto.request.LedgerSyncRequest;
 import org.umc.valuedi.domain.ledger.dto.response.*;
@@ -11,7 +10,6 @@ import org.umc.valuedi.domain.ledger.service.command.LedgerSyncService;
 import org.umc.valuedi.domain.ledger.service.query.LedgerQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
-import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -63,5 +61,11 @@ public class LedgerController implements LedgerControllerDocs {
     public ApiResponse<String> syncTransactions(@CurrentMember Long memberId, LedgerSyncRequest request) {
         ledgerSyncService.syncTransactions(memberId, request);
         return ApiResponse.onSuccess(LedgerSuccessCode.LEDGER_SYNC_SUCCESS, "거래내역 동기화가 완료되었습니다.");
+    }
+
+    @Override
+    public ApiResponse<String> rematchCategories(@CurrentMember Long memberId, LedgerSyncRequest request) {
+        int count = ledgerSyncService.rematchCategories(memberId, request.getFromDate(), request.getToDate());
+        return ApiResponse.onSuccess(LedgerSuccessCode.LEDGER_SYNC_SUCCESS, count + "건의 카테고리가 재분류되었습니다.");
     }
 }

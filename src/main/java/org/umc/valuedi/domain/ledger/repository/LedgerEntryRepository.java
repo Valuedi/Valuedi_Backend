@@ -21,4 +21,6 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long>,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    List<LedgerEntry> findAllByMemberAndTransactionAtBetween(Member member, LocalDateTime start, LocalDateTime end);
 }

@@ -63,6 +63,10 @@ public class LedgerEntry extends BaseEntity {
 
     @Column(name = "source_type", length = 10, nullable = false)
     @Builder.Default
-    private String sourceType = "BANK"; //
+    private String sourceType = "BANK";
+
+    public void updateCategory(Category category) {
+        this.category = category;
+    }
 
 }
