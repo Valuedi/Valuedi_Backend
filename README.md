@@ -84,7 +84,7 @@ VALUEDI는 사용자의 금융 데이터를 기반으로 **목표 중심 자산 
 
 ### 프로젝트 구조 (DDD 기반)
 - 본 프로젝트는 DDD(Domain-Driven Design) 관점에서 **도메인별로 비즈니스 로직을 분리**하여 관리합니다.
-- `domain/*`에는 각 도메인의 Entity/Service/Repository 등 핵심 로직을 배치하고,
+- `domain/*`에는 각 도메인의 Entity/Service/Repository 등 핵심 로직을 배치합니다.
 - `global/*`에는 공통 설정, 보안, 응답 포맷, 외부 API 연동 모듈을 관리합니다.
 
 ```
