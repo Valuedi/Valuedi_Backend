@@ -15,10 +15,23 @@ import java.util.Set;
 
 public interface CardApprovalRepository extends JpaRepository<CardApproval, Long>, CardApprovalRepositoryCustom {
     List<CardApproval> findByUsedDateBetween(LocalDate fromDate, LocalDate toDate);
+    
+    @Query("SELECT ca FROM CardApproval ca " +
+            "WHERE ca.card.codefConnection.member.id = :memberId " +
+            "AND ca.usedDate BETWEEN :from AND :to")
+    List<CardApproval> findMemberCardApprovalsBetween(@Param("memberId") Long memberId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
     boolean existsByUsedAmountAndUsedDatetimeBetween(Long amount, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT MAX(ca.usedDate) FROM CardApproval ca JOIN ca.card c WHERE c.codefConnection.member = :member")
     Optional<LocalDate> findLatestApprovalDateByMember(@Param("member") Member member);
 
     List<CardApproval> findByCardInAndApprovalNoIn(List<Card> cards, List<String> approvalNos);
+
+    @Query("SELECT ca FROM CardApproval ca " +
+            "LEFT JOIN LedgerEntry le ON le.cardApproval = ca " +
+            "WHERE ca.card.codefConnection.member.id = :memberId " +
+            "AND ca.usedDate BETWEEN :from AND :to " +
+            "AND le.id IS NULL")
+    List<CardApproval> findUnsyncedCardApprovals(@Param("memberId") Long memberId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

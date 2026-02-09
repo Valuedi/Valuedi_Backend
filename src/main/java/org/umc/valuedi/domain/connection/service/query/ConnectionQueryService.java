@@ -26,7 +26,7 @@ public class ConnectionQueryService {
      */
     public List<BankResDTO.BankConnection> getConnectedBanks(Long memberId) {
         List<CodefConnection> connections =
-                connectionRepository.findByMemberIdAndBusinessType(
+                connectionRepository.findByMemberIdAndBusinessTypeWithMember(
                         memberId,
                         BusinessType.BK
                 );
@@ -41,7 +41,7 @@ public class ConnectionQueryService {
      */
     public List<CardResDTO.CardIssuerConnection> getConnectedCardIssuers(Long memberId) {
         List<CodefConnection> connections =
-                connectionRepository.findByMemberIdAndBusinessType(
+                connectionRepository.findByMemberIdAndBusinessTypeWithMember(
                         memberId,
                         BusinessType.CD
                 );
@@ -56,7 +56,7 @@ public class ConnectionQueryService {
      */
     public List<ConnectionResDTO.Connection> getAllConnections(Long memberId) {
         List<CodefConnection> connections =
-                connectionRepository.findByMemberId(memberId);
+                connectionRepository.findByMemberIdWithMember(memberId);
 
         return connections.stream()
                 .map(ConnectionConverter::toConnectionDTO)

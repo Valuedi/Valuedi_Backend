@@ -125,8 +125,6 @@ public class LedgerSyncService {
             ledgerEntryRepository.bulkInsert(entries);
             log.info("Ledger Rebuild Complete: Member {}, {} entries created.", member.getId(), entries.size());
         }
-
-        member.updateLastSyncedAt();
     }
 
     private LedgerEntry createFromCard(Member member, CardApproval ca, Category defaultCategory, String key) {
@@ -179,22 +177,6 @@ public class LedgerSyncService {
                 .build();
     }
 
-
-    @Transactional
-    public void syncTransactionsAndUpdateMember(Long memberId, LocalDate from, LocalDate to) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
-        syncTransactions(member, from, to);
-        member.updateLastSyncedAt();
-    }
-
-    @Transactional
-    public void updateMemberLastSyncedAt(Long memberId) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
-        member.updateLastSyncedAt();
-    }
-
     @Transactional
     public void syncTransactions(Long memberId, LedgerSyncRequest request) {
         Member member = memberRepository.findById(memberId).orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
@@ -203,7 +185,7 @@ public class LedgerSyncService {
         syncTransactions(member, from, to);
     }
 
-    // 트랜잭션 어노테이션 제거 (상위 메서드에서 관리)
+    @Transactional
     public void syncTransactions(Member member, LocalDate from, LocalDate to) {
         if (to.isBefore(from)) {
             throw new LedgerException(LedgerErrorCode.INVALID_DATE_RANGE);
@@ -214,7 +196,8 @@ public class LedgerSyncService {
         Category transferCategory = categoryRepository.findByCode("TRANSFER")
                 .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
 
-        List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from.minusDays(1), to.plusDays(1));
+        // 중복 체크를 위한 카드 내역 (은행 거래와 비교용)
+        List<CardApproval> cards = cardApprovalRepository.findMemberCardApprovalsBetween(member.getId(), from.minusDays(1), to.plusDays(1));
 
         List<LedgerEntry> allNewEntries = new ArrayList<>();
         syncCardApprovals(member, from, to, defaultCategory, allNewEntries);
@@ -274,18 +257,11 @@ public class LedgerSyncService {
     }
 
     private void syncCardApprovals(Member member, LocalDate from, LocalDate to, Category defaultCategory, List<LedgerEntry> allNewEntries) {
-        List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
+        // 가계부에 없는 카드 내역만 조회
+        List<CardApproval> cards = cardApprovalRepository.findUnsyncedCardApprovals(member.getId(), from, to);
         if (cards.isEmpty()) return;
 
-        // ID 목록을 추출
-        List<Long> cardApprovalIds = cards.stream().map(CardApproval::getId).collect(Collectors.toList());
-
-        // 이미 존재하는 LedgerEntry의 CardApproval ID를 한 번의 쿼리로 조회
-        Set<Long> existingIds = ledgerEntryRepository.findExistingCardApprovalIds(cardApprovalIds);
-
         for (CardApproval ca : cards) {
-            // DB 쿼리 대신 메모리의 Set에서 확인
-            if (existingIds.contains(ca.getId())) continue;
             if (ca.getUsedDatetime() == null) continue;
 
             String merchantName = ca.getMerchantName();
@@ -308,18 +284,11 @@ public class LedgerSyncService {
     }
 
     private void syncBankTransactions(Member member, LocalDate from, LocalDate to, List<CardApproval> cards, Category defaultCategory, Category transferCategory, List<LedgerEntry> allNewEntries) {
-        List<BankTransaction> banks = bankTransactionRepository.findByTrDateBetween(from, to);
+        // 가계부에 없는 은행 내역만 조회
+        List<BankTransaction> banks = bankTransactionRepository.findUnsyncedBankTransactions(member.getId(), from, to);
         if (banks.isEmpty()) return;
 
-        // ID 목록 추출
-        List<Long> bankTransactionIds = banks.stream().map(BankTransaction::getId).collect(Collectors.toList());
-
-        // 한 번의 쿼리로 조회
-        Set<Long> existingIds = ledgerEntryRepository.findExistingBankTransactionIds(bankTransactionIds);
-
         for (BankTransaction bt : banks) {
-            // 메모리에서 확인
-            if (existingIds.contains(bt.getId())) continue;
             if (bt.getTrDatetime() == null) continue;
 
             String combinedDesc = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4()).filter(Objects::nonNull).collect(Collectors.joining(" "));
