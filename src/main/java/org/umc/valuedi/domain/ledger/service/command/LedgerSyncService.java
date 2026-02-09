@@ -197,7 +197,7 @@ public class LedgerSyncService {
                 .orElseThrow(() -> new LedgerException(LedgerErrorCode.CATEGORY_NOT_FOUND));
 
         // 중복 체크를 위한 카드 내역 (은행 거래와 비교용)
-        List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from.minusDays(1), to.plusDays(1));
+        List<CardApproval> cards = cardApprovalRepository.findMemberCardApprovalsBetween(member.getId(), from.minusDays(1), to.plusDays(1));
 
         List<LedgerEntry> allNewEntries = new ArrayList<>();
         syncCardApprovals(member, from, to, defaultCategory, allNewEntries);
