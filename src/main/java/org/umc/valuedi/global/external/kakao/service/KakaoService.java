@@ -1,6 +1,7 @@
 package org.umc.valuedi.global.external.kakao.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.umc.valuedi.global.external.kakao.config.KakaoProperties;
 import org.umc.valuedi.global.external.kakao.dto.res.KakaoResDTO;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class KakaoService {
@@ -57,5 +59,19 @@ public class KakaoService {
                         kakaoAgreement.get(term.getCode())
                 ))
                 .toList();
+    }
+
+    public void unlinkKakao(Long providerId) {
+        String authHeader = "KakaoAK " + kakaoProperties.getAdminKey();
+
+        try {
+            kakaoApiClient.unlinkUser(authHeader, "user_id", providerId);
+        } catch (Exception e) {
+            /*
+             사용자가 카카오 설정에서 직접 연결 해제 했을 경우 예외 발생할 수 있음.
+             이 경우 에러 응답을 하는 것이 아니라 로그 남긴 후 회원 탈퇴 로직 계속 진행
+             */
+            log.error("카카오 연결 해제 중 예상치 못한 오류 발생: {}", e.getMessage());
+        }
     }
 }
