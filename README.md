@@ -1,5 +1,7 @@
 # 🔥 VALUEDI - 목표 달성을 돕는 자산 관리 서비스
 
+![valuedi](docs/images/valuedi.png)
+
 **목적: 밸류디(VALUEDI) 서비스 개발**
 
 VALUEDI는 사용자의 금융 데이터를 기반으로 **목표 중심 자산 현황을 제공**하고, **소비 성향을 분석**하여  
