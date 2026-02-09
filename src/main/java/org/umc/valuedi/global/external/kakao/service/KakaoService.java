@@ -1,11 +1,11 @@
-package org.umc.valuedi.domain.auth.service.external;
+package org.umc.valuedi.global.external.kakao.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.umc.valuedi.domain.auth.config.KakaoProperties;
-import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
-import org.umc.valuedi.domain.auth.feign.KakaoApiClient;
-import org.umc.valuedi.domain.auth.feign.KakaoAuthClient;
+import org.umc.valuedi.global.external.kakao.config.KakaoProperties;
+import org.umc.valuedi.global.external.kakao.dto.res.KakaoResDTO;
+import org.umc.valuedi.global.external.kakao.client.KakaoApiClient;
+import org.umc.valuedi.global.external.kakao.client.KakaoAuthClient;
 import org.umc.valuedi.domain.terms.dto.request.TermsRequestDTO;
 import org.umc.valuedi.domain.terms.entity.Terms;
 import org.umc.valuedi.domain.terms.repository.TermsRepository;

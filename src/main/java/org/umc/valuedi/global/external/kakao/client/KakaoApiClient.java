@@ -1,9 +1,9 @@
-package org.umc.valuedi.domain.auth.feign;
+package org.umc.valuedi.global.external.kakao.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
+import org.umc.valuedi.global.external.kakao.dto.res.KakaoResDTO;
 
 @FeignClient(name = "KakaoApiClient", url = "https://kapi.kakao.com")
 public interface KakaoApiClient {

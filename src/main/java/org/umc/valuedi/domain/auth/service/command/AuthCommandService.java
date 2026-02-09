@@ -13,12 +13,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.auth.converter.AuthConverter;
 import org.umc.valuedi.domain.auth.dto.event.AuthMailEvent;
-import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
+import org.umc.valuedi.global.external.kakao.converter.KakaoConverter;
+import org.umc.valuedi.global.external.kakao.dto.res.KakaoResDTO;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.domain.auth.exception.AuthException;
 import org.umc.valuedi.domain.auth.exception.code.AuthErrorCode;
-import org.umc.valuedi.domain.auth.service.external.KakaoService;
+import org.umc.valuedi.global.external.kakao.service.KakaoService;
 import org.umc.valuedi.domain.auth.service.query.AuthQueryService;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.entity.MemberAuthProvider;
@@ -90,14 +91,14 @@ public class AuthCommandService {
     // 카카오로 회원가입
     private Member registerKakao(KakaoResDTO.UserTokenInfo userTokenInfo) {
         try {
-            Member newMember = AuthConverter.toKakaoMember(userTokenInfo.userInfo());
+            Member newMember = KakaoConverter.toKakaoMember(userTokenInfo.userInfo());
             Member savedMember = memberRepository.save(newMember);
 
             memberTermsService.saveTermsForRegistration(
                     savedMember,
                     kakaoService.getKakaoServiceTerms(userTokenInfo.accessToken()));
 
-            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(savedMember, String.valueOf(userTokenInfo.userInfo().getId()));
+            MemberAuthProvider authProvider = KakaoConverter.toMemberAuthProvider(savedMember, String.valueOf(userTokenInfo.userInfo().getId()));
             memberAuthProviderRepository.save(authProvider);
 
             return savedMember;
