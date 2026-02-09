@@ -66,12 +66,12 @@ public class KakaoService {
 
         try {
             kakaoApiClient.unlinkUser(authHeader, "user_id", providerId);
-        } catch (Exception e) {
+        } catch (feign.FeignException e) {
             /*
              사용자가 카카오 설정에서 직접 연결 해제 했을 경우 예외 발생할 수 있음.
              이 경우 에러 응답을 하는 것이 아니라 로그 남긴 후 회원 탈퇴 로직 계속 진행
              */
-            log.error("카카오 연결 해제 중 예상치 못한 오류 발생: {}", e.getMessage());
+            log.error("카카오 연결 해제 API 호출 실패: status={}, message={}", e.status(), e.getMessage());
         }
     }
 }
