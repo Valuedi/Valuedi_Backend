@@ -226,6 +226,54 @@ public class LedgerSyncService {
         }
     }
 
+    /**
+     * 기존 거래내역의 카테고리를 재매핑합니다. (사용자가 수정한 내역 제외)
+     */
+    @Transactional
+    public int rematchCategories(Long memberId, LocalDate from, LocalDate to) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
+
+        LocalDateTime startDateTime = from.atStartOfDay();
+        LocalDateTime endDateTime = to.plusDays(1).atStartOfDay();
+
+        // 해당 기간의 모든 거래내역 조회
+        List<LedgerEntry> entries = ledgerEntryRepository.findAllByMemberAndTransactionAtBetween(member, startDateTime, endDateTime);
+
+        // 키워드 캐시 갱신 (최신 로직 적용)
+        refreshKeywordCache();
+        Category defaultCategory = categoryRepository.findByCode("ETC").orElseThrow();
+
+        int updatedCount = 0;
+        for (LedgerEntry entry : entries) {
+            // 사용자가 수동으로 수정한 내역은 건너뜀
+            if (Boolean.TRUE.equals(entry.getIsUserModified())) continue;
+
+            String textToMatch = null;
+            if (entry.getCardApproval() != null) {
+                textToMatch = entry.getCardApproval().getMerchantName();
+            } else if (entry.getBankTransaction() != null) {
+                // 은행 거래내역 조합 (Desc2 + Desc3 + Desc4)
+                BankTransaction bt = entry.getBankTransaction();
+                textToMatch = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4())
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.joining(" "));
+            }
+
+            if (textToMatch != null && !textToMatch.isBlank()) {
+                Category newCategory = mapCategoryByKeyword(textToMatch, defaultCategory);
+
+                // 카테고리가 변경되었을 경우에만 업데이트
+                if (!entry.getCategory().equals(newCategory)) {
+                    entry.updateCategory(newCategory); // LedgerEntry에 updateCategory 메서드 필요 (또는 setter)
+                    updatedCount++;
+                }
+            }
+        }
+
+        return updatedCount;
+    }
+
     private void syncCardApprovals(Member member, LocalDate from, LocalDate to, Category defaultCategory, List<LedgerEntry> allNewEntries) {
         List<CardApproval> cards = cardApprovalRepository.findByUsedDateBetween(from, to);
         if (cards.isEmpty()) return;

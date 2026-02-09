@@ -9,6 +9,7 @@ import org.umc.valuedi.domain.trophy.dto.response.TrophyMetaResponse;
 import org.umc.valuedi.domain.trophy.dto.response.TrophyResponse;
 import org.umc.valuedi.domain.trophy.enums.PeriodType;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
+import org.umc.valuedi.global.security.annotation.CurrentMember;
 
 import java.util.List;
 
@@ -23,11 +24,9 @@ public interface TrophyControllerDocs {
             @Parameter(description = "조회 기간 타입 (DAILY, MONTHLY, LAST_30_DAYS)", example = "MONTHLY")
             @RequestParam(name = "periodType", defaultValue = "MONTHLY") PeriodType periodType,
 
-            @Parameter(description = "조회 기간 키 (예: '2023-10', '2023-10-27')", example = "2023-10")
-            @RequestParam(name = "periodKey") String periodKey
+            @Parameter(description = "조회 기간 키 (예: '2025-12', '2025-12-27')", example = "2025-12")
+            @RequestParam(name = "periodKey") String periodKey,
 
-            // 로그인 기능 완성되면 활성화
-//            @Parameter(hidden = true)
-//            @AuthenticationPrincipal CustomUserDetails userDetails
+            @CurrentMember Long memberId
             );
 }
