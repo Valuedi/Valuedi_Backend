@@ -69,7 +69,7 @@ VALUEDI는 사용자의 금융 데이터를 기반으로 **목표 중심 자산 
 - Gemini(GenAI)
 
 #### Collaboration / Tools
-- GitHub, GitHub Actions
+- GitHub
 - Swagger
 
 ---
