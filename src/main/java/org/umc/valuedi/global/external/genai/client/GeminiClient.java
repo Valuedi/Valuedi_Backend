@@ -23,8 +23,8 @@ public class GeminiClient {
 
     private static final int MAX_ATTEMPTS = 4;
 
-    private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(30); // 시도별 제한
-    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(240);    // 전체 제한(선택)
+    private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(30);  // 시도별 제한
+    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(240);  // 전체 제한
 
     private static final long BASE_BACKOFF_MILLIS = 200;
     private static final long MAX_BACKOFF_MILLIS = 90_000;
