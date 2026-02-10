@@ -21,7 +21,8 @@ public final class GoalStyleCatalog {
             new ColorOption("3DC2FF", "lightblue"),
             new ColorOption("28D0ED", "cyan"),
             new ColorOption("1ED45A", "green"),
-            new ColorOption("6BE016", "lime")
+            new ColorOption("6BE016", "lime"),
+            new ColorOption("FFEB38", "yellow")
     );
 
     public static final List<IconOption> ICONS = List.of(
