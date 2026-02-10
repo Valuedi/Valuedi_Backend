@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
+import org.umc.valuedi.domain.asset.service.AssetBalanceService;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.entity.Goal;
@@ -16,6 +17,7 @@ import org.umc.valuedi.domain.goal.exception.GoalException;
 import org.umc.valuedi.domain.goal.exception.code.GoalErrorCode;
 import org.umc.valuedi.domain.goal.repository.GoalRepository;
 import org.umc.valuedi.domain.goal.service.GoalAchievementRateService;
+import org.umc.valuedi.domain.goal.service.GoalStatusChangeService;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
@@ -31,6 +33,8 @@ public class GoalListQueryService {
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
     private final GoalAchievementRateService achievementRateService;
+    private final AssetBalanceService assetBalanceService;
+    private final GoalStatusChangeService goalStatusChangeService;
 
     private void validateListStatus(GoalStatus status) {
         if (status != GoalStatus.ACTIVE && status != GoalStatus.COMPLETE) {
@@ -71,17 +75,43 @@ public class GoalListQueryService {
         };
     }
 
-    private List<GoalListResponseDto.GoalSummaryDto> toSummaryDtos(List<Goal> goals) {
+    private List<GoalListResponseDto.GoalSummaryDto> toSummaryDtos(List<Goal> goals, Long memberId) {
 
         return goals.stream()
                 .map(g -> {
                     BankAccount account = g.getBankAccount();
+                    long savedAmount = 0L;
 
-                    if (!account.getIsActive()) {
-                        throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
+                    // ACTIVE 상태일 때만 계좌가 연결되어 있고, 잔액 계산 및 상태 갱신이 필요함
+                    if (g.getStatus() == GoalStatus.ACTIVE) {
+                        if (account == null || !account.getIsActive()) {
+                            throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
+                        }
+
+                        // 동기화 후 최신 잔액 가져오기
+                        Long currentBalance = assetBalanceService.syncAndGetLatestBalance(memberId, account.getId());
+
+                        // 현재 잔액 - 시작 잔액
+                        savedAmount = currentBalance - g.getStartAmount();
+
+                        // 음수일 경우 0으로 처리
+                        if (savedAmount < 0) {
+                            savedAmount = 0;
+                        }
+
+                        // 목표 달성 여부 체크 및 상태 업데이트 (공통 로직 사용)
+                        goalStatusChangeService.checkAndUpdateStatus(g, savedAmount);
+
+                    } else {
+                        
+                        if (g.getStatus() == GoalStatus.COMPLETE) {
+                            savedAmount = g.getTargetAmount(); // 성공했으므로 목표 달성으로 간주
+                        } else {
+                            // FAILED인 경우 달성률을 저장하지 않으므로 그냥 0으로 설정
+                            savedAmount = 0L; 
+                        }
                     }
-
-                    long savedAmount = account.getBalanceAmount() - g.getStartAmount();
+                    
                     int rate = achievementRateService.calculateRate(savedAmount, g.getTargetAmount());
 
                     return GoalConverter.toSummaryDto(g, savedAmount, rate);
@@ -106,6 +136,7 @@ public class GoalListQueryService {
     }
 
     // 목표 전체 목록
+    @Transactional // 상태 변경이 일어날 수 있으므로 트랜잭션 추가
     public GoalListResponseDto getGoals(Long memberId, GoalStatus status, GoalSort sort, Integer limit) {
         if (!memberRepository.existsById(memberId)) {
             throw new MemberException(MemberErrorCode.MEMBER_NOT_FOUND);
@@ -131,7 +162,7 @@ public class GoalListQueryService {
                 goals = goals.subList(0, size);
             }
 
-            return new GoalListResponseDto(toSummaryDtos(goals));
+            return new GoalListResponseDto(toSummaryDtos(goals, memberId));
         }
 
         // TIME_DESC (ACTIVE면 createdAt, COMPLETE면 completedAt)
@@ -148,12 +179,12 @@ public class GoalListQueryService {
                         .toList();
             }
 
-            return new GoalListResponseDto(toSummaryDtos(goals));
+            return new GoalListResponseDto(toSummaryDtos(goals, memberId));
         }
 
         // ACTIVE + PROGRESS_DESC => 달성률 높은 진행 중인 목표만
         List<Goal> goals = findGoals(memberId, listStatus);
-        var dtos = toSummaryDtos(goals).stream()
+        var dtos = toSummaryDtos(goals, memberId).stream()
                 .sorted(Comparator.comparingInt(GoalListResponseDto.GoalSummaryDto::achievementRate).reversed());
 
         if (size != null) {

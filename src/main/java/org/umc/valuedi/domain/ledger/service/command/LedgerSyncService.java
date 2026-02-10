@@ -4,6 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
@@ -125,6 +126,8 @@ public class LedgerSyncService {
             ledgerEntryRepository.bulkInsert(entries);
             log.info("Ledger Rebuild Complete: Member {}, {} entries created.", member.getId(), entries.size());
         }
+
+        member.updateLastSyncedAt();
     }
 
     private LedgerEntry createFromCard(Member member, CardApproval ca, Category defaultCategory, String key) {
@@ -175,6 +178,22 @@ public class LedgerSyncService {
                 .canonicalKey(key)
                 .sourceType("BANK")
                 .build();
+    }
+
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void syncTransactionsAndUpdateMember(Long memberId, LocalDate from, LocalDate to) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
+        syncTransactions(member, from, to);
+        member.updateLastSyncedAt();
+    }
+
+    @Transactional
+    public void updateMemberLastSyncedAt(Long memberId) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new LedgerException(MemberErrorCode.MEMBER_NOT_FOUND));
+        member.updateLastSyncedAt();
     }
 
     @Transactional

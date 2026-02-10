@@ -91,24 +91,21 @@ public class Goal extends BaseEntity {
         this.completedAt = null;
     }
 
-    // 실패 종료
+    // 성공 종료 (계좌 연결 해제)
     public void Complete() {
         this.status = GoalStatus.COMPLETE;
         this.completedAt = LocalDateTime.now();
+        this.bankAccount = null;
     }
 
-    // 취소 종료
+    // 실패 종료 (계좌 연결 해제)
     public void Fail() {
         this.status = GoalStatus.FAILED;
         this.completedAt = LocalDateTime.now();
+        this.bankAccount = null;
     }
 
     public void linkBankAccount(BankAccount bankAccount) {
         this.bankAccount = bankAccount;
     }
-
-    public void unlinkBankAccount() {
-        this.bankAccount = null;
-    }
-
 }

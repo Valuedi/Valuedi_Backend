@@ -124,6 +124,8 @@ public class GoalConverter {
                 goal.getTitle(),
                 savedAmount,
                 goal.getTargetAmount(),
+                goal.getStartDate(),
+                goal.getEndDate(),
                 remainingDays,
                 achievementRate,
                 accountDto,

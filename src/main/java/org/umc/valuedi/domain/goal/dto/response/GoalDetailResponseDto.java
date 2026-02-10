@@ -3,6 +3,8 @@ package org.umc.valuedi.domain.goal.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.umc.valuedi.domain.goal.enums.GoalStatus;
 
+import java.time.LocalDate;
+
 @Schema(description = "목표 상세 조회 응답")
 public record GoalDetailResponseDto(
 
@@ -17,6 +19,12 @@ public record GoalDetailResponseDto(
 
         @Schema(description = "목표 금액", example = "1000000")
         Long targetAmount,
+
+        @Schema(description = "시작일", example = "2024-01-01")
+        LocalDate startDate,
+
+        @Schema(description = "목표일", example = "2024-12-31")
+        LocalDate endDate,
 
         @Schema(description = "남은 일수", example = "30")
         Long remainingDays,

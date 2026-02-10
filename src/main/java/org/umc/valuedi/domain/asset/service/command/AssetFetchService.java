@@ -4,12 +4,14 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.Card;
 import org.umc.valuedi.domain.asset.entity.CardApproval;
+import org.umc.valuedi.domain.asset.repository.bank.bankAccount.BankAccountRepository;
 import org.umc.valuedi.domain.asset.repository.bank.bankTransaction.BankTransactionRepository;
 import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRepository;
 import org.umc.valuedi.domain.asset.service.command.worker.AssetFetchWorker;
@@ -21,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -35,12 +38,13 @@ public class AssetFetchService {
     private final CodefConnectionRepository codefConnectionRepository;
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
+    private final BankAccountRepository bankAccountRepository;
     private final AssetFetchWorker assetFetchWorker;
 
     private record BankTransactionKey(LocalDateTime trDatetime, Long inAmount, Long outAmount, String desc3) {}
     private record CardApprovalKey(Card card, String approvalNo) {}
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public AssetResDTO.AssetSyncResult fetchAndSaveLatestData(Member member) {
         List<CodefConnection> connections = codefConnectionRepository.findByMemberIdWithMember(member.getId());
         LocalDate today = LocalDate.now();
@@ -85,6 +89,9 @@ public class AssetFetchService {
             if (!newBankTransactions.isEmpty()) {
                 bankTransactionRepository.bulkInsert(newBankTransactions);
                 totalNewBankTransactions = newBankTransactions.size();
+
+                // 계좌 잔액 업데이트 로직 추가
+                updateAccountBalances(newBankTransactions);
             }
         }
 
@@ -109,6 +116,29 @@ public class AssetFetchService {
                 .fromDate(overallMinDate)
                 .toDate(today)
                 .build();
+    }
+
+    private void updateAccountBalances(List<BankTransaction> transactions) {
+        // 계좌별로 가장 최신 거래내역을 찾아서 잔액 업데이트
+        Map<BankAccount, BankTransaction> latestTransactions = transactions.stream()
+                .collect(Collectors.groupingBy(BankTransaction::getBankAccount, 
+                        Collectors.collectingAndThen(
+                                Collectors.maxBy((t1, t2) -> t1.getTrDatetime().compareTo(t2.getTrDatetime())),
+                                java.util.Optional::get
+                        )));
+
+        List<BankAccount> updatedAccounts = new ArrayList<>();
+        
+        latestTransactions.forEach((account, latestTransaction) -> {
+            if (latestTransaction.getAfterBalance() != null) {
+                account.updateBalance(latestTransaction.getAfterBalance());
+                updatedAccounts.add(account);
+            }
+        });
+
+        if (!updatedAccounts.isEmpty()) {
+            bankAccountRepository.saveAll(updatedAccounts);
+        }
     }
 
     private List<BankTransaction> filterNewBankTransactions(List<BankTransaction> allFetched) {
