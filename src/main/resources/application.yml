@@ -35,6 +35,17 @@ spring:
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 5000
+          CodefApiClient:
+            connectTimeout: 10000
+            readTimeout: 120000 # 120초
+
 codef:
   client-id: ${CODEF_CLIENT_ID}
   client-secret: ${CODEF_CLIENT_SECRET}
