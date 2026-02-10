@@ -21,13 +21,13 @@ public class GeminiClient {
     private final Client genaiClient;
     private final GeminiProperties geminiProperties;
 
-    private static final int MAX_ATTEMPTS = 2;
+    private static final int MAX_ATTEMPTS = 4;
 
     private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(30); // 시도별 제한
-    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(70);    // 전체 제한(선택)
+    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(240);    // 전체 제한(선택)
 
     private static final long BASE_BACKOFF_MILLIS = 200;
-    private static final long MAX_BACKOFF_MILLIS = 2_000;
+    private static final long MAX_BACKOFF_MILLIS = 90_000;
 
     private static final ExecutorService executor =
             Executors.newFixedThreadPool(4, r -> {
@@ -152,11 +152,19 @@ public class GeminiClient {
     }
 
     private void sleepBackoff(int attempt, Throwable cause) {
-        long backoff = Math.min(MAX_BACKOFF_MILLIS, BASE_BACKOFF_MILLIS * (1L << (attempt - 1)));
-        long jitter = ThreadLocalRandom.current().nextLong(0, 150);
+        // attempt=1 실패 후 -> 2초, attempt=2 실패 후 -> 4초, attempt=3 -> 8초 ...
+        long exp = 1L << attempt; // 1=>2, 2=>4, 3=>8 ...
+        long backoff = BASE_BACKOFF_MILLIS * exp;
+
+        // cap
+        backoff = Math.min(backoff, MAX_BACKOFF_MILLIS);
+
+        // jitter: 0~10%
+        long jitter = ThreadLocalRandom.current().nextLong(0, Math.max(1, backoff / 10));
         long sleepMillis = backoff + jitter;
 
-        log.info("Gemini retry: attempt={} backoff={}ms cause={}", attempt, sleepMillis, cause.toString());
+        log.info("Gemini retry: attempt={} backoff={}ms (base={}ms cap={}ms) cause={}",
+                attempt, sleepMillis, BASE_BACKOFF_MILLIS, MAX_BACKOFF_MILLIS, cause.toString());
 
         try {
             Thread.sleep(sleepMillis);
