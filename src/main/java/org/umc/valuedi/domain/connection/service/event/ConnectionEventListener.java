@@ -19,13 +19,10 @@ public class ConnectionEventListener {
     @Async("assetFetchExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleConnectionSuccess(ConnectionSuccessEvent event) {
-        log.info("금융사 연동 성공 이벤트 수신 - Connection ID: {}, Organization: {}",
-                event.getConnection().getId(), event.getConnection().getOrganization());
-
         try {
             assetSyncService.syncAssets(event.getConnection());
         } catch (Exception e) {
-            log.error("자산 동기화 중 오류 발생", e);
+            log.error("[ConnectionEventListener] [handleConnectionSuccess] ERROR - 자산 동기화 중 오류 발생. Connection ID: {}", event.getConnection().getId(), e);
         }
     }
 }

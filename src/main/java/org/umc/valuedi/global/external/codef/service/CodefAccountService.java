@@ -8,9 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.member.entity.Member;
-import org.umc.valuedi.domain.member.exception.MemberException;
-import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
-import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
@@ -58,6 +55,7 @@ public class CodefAccountService {
             targetConnectedId = handleAddition(existingConnectedId, requestBody);
         }
         saveConnectionRecord(member, targetConnectedId, request.getOrganization(), request.getBusinessTypeEnum());
+        log.info("[CodefAccount] 연동 성공 - Member: {}, Org: {}", member.getId(), request.getOrganization());
     }
 
     /**
@@ -66,7 +64,7 @@ public class CodefAccountService {
     public void deleteAccount(String connectedId, String organization, BusinessType businessType) {
         Map<String, Object> accountMap = new HashMap<>();
         accountMap.put("organization", organization);
-        accountMap.put("businessType", businessType);
+        accountMap.put("businessType", businessType.toString());
         accountMap.put("countryCode", "KR");
         accountMap.put("clientType", "P");
         accountMap.put("loginType", "1");
@@ -81,8 +79,10 @@ public class CodefAccountService {
         CodefApiResponse<Object> response = codefApiClient.deleteAccount(requestBody);
 
         if (!response.isSuccess()) {
+            log.error("[CodefAccount] 삭제 실패 - Msg: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_DELETE_FAILED);
         }
+        log.info("[CodefAccount] 연동 해제 성공 - Org: {}", organization);
     }
 
     /**
@@ -91,7 +91,6 @@ public class CodefAccountService {
     private String handleFirstCreation(Map<String, Object> requestBody) {
         CodefApiResponse<Map<String, Object>> response = codefApiClient.createConnectedId(requestBody);
         if (!response.isSuccess()) {
-            log.error("CODEF 계정 생성 실패: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CREATE_FAILED);
         }
         Map<String, Object> data = response.getData();
@@ -103,15 +102,11 @@ public class CodefAccountService {
         return connectedId;
     }
 
-    /**
-     * 기존 ID에 기관 추가 처리
-     */
     private String handleAddition(String connectedId, Map<String, Object> requestBody) {
         requestBody.put("connectedId", connectedId); // 기존 ID를 바디에 주입
         CodefApiResponse<Map<String, Object>> response = codefApiClient.addAccountToConnectedId(requestBody);
 
         if (!response.isSuccess()) {
-            log.error("CODEF 계정 추가 실패: {}", response.getResult() != null ? response.getResult().getMessage() : "no result");
             throw new CodefException(CodefErrorCode.CODEF_API_ADD_FAILED);
         }
         // 추가 성공 시에도 기존 아이디를 그대로 반환
@@ -133,9 +128,6 @@ public class CodefAccountService {
                     .member(member)
                     .build();
             member.addCodefConnection(connection);
-            log.info("기관 [{}] 연동 정보 저장 완료", organization);
-
-            // 이벤트 발행
             eventPublisher.publishEvent(new ConnectionSuccessEvent(connection));
         }
     }

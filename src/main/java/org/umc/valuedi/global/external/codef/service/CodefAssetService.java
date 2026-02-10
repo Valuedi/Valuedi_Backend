@@ -24,8 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -43,7 +41,7 @@ public class CodefAssetService {
         CodefApiResponse<Object> response = codefApiClient.getBankAccounts(requestBody);
 
         if (!response.isSuccess()) {
-            log.error("CODEF 보유 계좌 목록 조회 실패: {}", response.getResult().getMessage());
+            log.error("[CodefAsset] 계좌 조회 실패 - Msg: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_BANK_ACCOUNT_LIST_FAILED);
         }
 
@@ -84,9 +82,9 @@ public class CodefAssetService {
 
             if (msg.contains("일치하는 정보가 없습니다") || msg.contains("존재하지 않습니다") || msg.contains("보유계좌")) {
                 // 경고 레벨로 낮춤 (정상적인 예외 상황)
-                log.warn("거래내역 조회 불가 계좌 (건너뜀) - 계좌명: {}, 메시지: {}", account.getAccountName(), msg);
+                log.warn("[CodefAssetService] [getBankTransactions] WARN - Message: {}, Account: {}", msg, account.getAccountDisplay());
             } else {
-                log.error("CODEF 계좌 거래 내역 조회 API 오류 - 계좌: {}, 에러: {}", account.getAccountDisplay(), msg);
+                log.error("[CodefAssetService] [getBankTransactions] ERROR - Message: {}, Account: {}", msg, account.getAccountDisplay());
             }
 
             return List.of();
@@ -101,32 +99,27 @@ public class CodefAssetService {
     }
 
     public List<Card> getCards(CodefConnection connection) {
-        log.info("[CodefAssetService] 카드 목록 조회 API 호출 시작. Connection ID: {}", connection.getId());
         Map<String, Object> requestBody = createAssetRequestBody(connection);
 
         CodefApiResponse<Object> response = codefApiClient.getCardList(requestBody);
 
         if (!response.isSuccess()) {
-            log.error("CODEF 보유 카드 목록 조회 실패: {}", response.getResult().getMessage());
+            log.error("[CodefAsset] 카드 조회 실패 - Msg: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
-        log.info("[CodefAssetService] 카드 목록 조회 API 호출 성공. Connection ID: {}", connection.getId());
 
         Object responseData = response.getData();
         List<CodefAssetResDTO.Card> cardList = new ArrayList<>();
-        
+
         if (responseData instanceof Map) {
-            CodefAssetResDTO.Card card = objectMapper.convertValue(responseData, CodefAssetResDTO.Card.class);
-            cardList.add(card);
+            cardList.add(objectMapper.convertValue(responseData, CodefAssetResDTO.Card.class));
         } else if (responseData instanceof List) {
-             List<CodefAssetResDTO.Card> cards = objectMapper.convertValue(responseData, new TypeReference<List<CodefAssetResDTO.Card>>() {});
-             cardList.addAll(cards);
+             cardList.addAll(objectMapper.convertValue(responseData, new TypeReference<>() {}));
         } else {
-            log.error("CODEF 보유 카드 목록 응답 형식이 예상과 다릅니다. Data: {}", responseData);
+            log.error("[CodefAsset] 카드 조회 응답 오류 - Data: {}", responseData);
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
         
-        log.info("[CodefAssetService] 조회된 카드 수: {}, Connection ID: {}", cardList.size(), connection.getId());
         return codefAssetConverter.toCardList(cardList, connection);
     }
 
@@ -141,14 +134,13 @@ public class CodefAssetService {
         // 이 메서드는 이제 connection 내부의 cardList를 사용하므로, 외부에서 cardList가 채워져 있어야 함.
         return getCardApprovals(connection, connection.getCardList(), startDate, endDate);
     }
-    
+
     // AssetFetchWorker가 사용할 새로운 오버로딩 메서드
     public List<CardApproval> getCardApprovals(CodefConnection connection, List<Card> cards, LocalDate startDate, LocalDate endDate) {
-        log.info("[CodefAssetService] 카드 승인 내역 조회 API 호출 시작. Connection ID: {}, 기간: {} ~ {}", connection.getId(), startDate, endDate);
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("connectedId", connection.getConnectedId());
         requestBody.put("organization", connection.getOrganization());
-        
+
         requestBody.put("startDate", startDate.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("endDate", endDate.format(DateTimeFormatter.BASIC_ISO_DATE));
         requestBody.put("orderBy", "0");
@@ -158,21 +150,17 @@ public class CodefAssetService {
         CodefApiResponse<Object> response = codefApiClient.getCardApprovals(requestBody);
 
         if (!response.isSuccess()) {
-            log.error("CODEF 카드 승인 내역 조회 실패: {}", response.getResult().getMessage());
+            log.error("[CodefAsset] 승인내역 조회 실패 - Msg: {}", response.getResult().getMessage());
             return List.of();
         }
-        log.info("[CodefAssetService] 카드 승인 내역 조회 API 호출 성공. Connection ID: {}", connection.getId());
 
         List<CodefAssetResDTO.CardApproval> approvalList;
         if (response.getData() instanceof List) {
              approvalList = objectMapper.convertValue(response.getData(), new TypeReference<List<CodefAssetResDTO.CardApproval>>() {});
         } else {
-             log.warn("[CodefAssetService] 카드 승인 내역 응답 데이터가 리스트 형식이 아닙니다. Connection ID: {}", connection.getId());
              return List.of();
         }
-        log.info("[CodefAssetService] 조회된 승인 내역 수: {}, Connection ID: {}", approvalList.size(), connection.getId());
 
-        // 승인 내역을 카드에 매핑하기 위해 명시적으로 전달받은 카드 목록을 사용
         return codefAssetConverter.toCardApprovalList(approvalList, cards);
     }
 

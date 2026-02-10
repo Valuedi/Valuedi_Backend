@@ -32,20 +32,23 @@ public class ConnectionCommandService {
      * 금융사 계정 연동
      */
     public void connect(Long memberId, ConnectionReqDTO.Connect request) {
+        log.info("[ConnectionCommandService] [connect] START - Member ID: {}, Org: {}", memberId, request.getOrganization());
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
         codefAccountService.connectAccount(member, request);
-        log.info("금융사 연동 완료 - memberId: {}, organization: {}", memberId, request.getOrganization());
+        log.info("[ConnectionCommandService] [connect] END - Member ID: {}", memberId);
     }
 
     /**
      * 금융사 연동 해제
      */
     public void disconnect(Long memberId, Long connectionId) {
+        log.info("[ConnectionCommandService] [disconnect] START - Member ID: {}, Connection ID: {}", memberId, connectionId);
         CodefConnection connection = codefConnectionRepository.findByIdWithMember(connectionId)
                 .orElseThrow(() -> new ConnectionException(ConnectionErrorCode.CONNECTION_NOT_FOUND));
 
         if (!connection.getMember().getId().equals(memberId)) {
+            log.error("[ConnectionCommandService] [disconnect] ERROR - Access Denied. Member ID {} tried to access Connection ID {}", memberId, connectionId);
             throw new ConnectionException(ConnectionErrorCode.CONNECTION_ACCESS_DENIED);
         }
 
@@ -60,7 +63,9 @@ public class ConnectionCommandService {
 
         if (connection.getBusinessType() == BusinessType.BK) {
             // 은행 계좌와 연결된 목표 Soft Delete 처리 (서브쿼리 사용)
+            log.debug("[ConnectionCommandService] [disconnect] Deactivating goals for bank connection");
             goalRepository.softDeleteGoalsByConnectionId(connection.getId());
         }
+        log.info("[ConnectionCommandService] [disconnect] END - Member ID: {}", memberId);
     }
 }
