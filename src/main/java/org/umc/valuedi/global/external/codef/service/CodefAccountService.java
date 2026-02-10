@@ -28,17 +28,13 @@ public class CodefAccountService {
 
     private final CodefApiClient codefApiClient;
     private final EncryptUtil encryptUtil;
-    private final MemberRepository memberRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 금융사 계정 연동 메인 로직
      */
     @Transactional
-    public void connectAccount(Long memberId, ConnectionReqDTO.Connect request) {
-
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+    public void connectAccount(Member member, ConnectionReqDTO.Connect request) {
 
         // 기존에 발급받은 Connected ID가 있는지 리스트에서 확인
         String existingConnectedId = member.getCodefConnectionList().stream()

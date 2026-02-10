@@ -15,6 +15,8 @@ public class FinanceMbtiScoringService {
 
     private final FinanceMbtiProvider typeInfoProvider;
 
+    private static final double BASE_SCORE = 5.0;
+
     public record ScoreResult(
             int anxietyScore,
             int stabilityScore,
@@ -28,38 +30,42 @@ public class FinanceMbtiScoringService {
     ) {}
 
     public ScoreResult score(List<MbtiQuestion> questions, Map<Long, Integer> answersByQuestionId) {
-        int anxiety = 0, stability = 0;
-        int impulse = 0, planning = 0;
-        int aggressive = 0, conservative = 0;
-        int avoidance = 0, rational = 0;
+        // 모든 점수를 BASE_SCORE(10.0)에서 시작하도록 변경
+        double anxiety = BASE_SCORE, stability = BASE_SCORE;
+        double impulse = BASE_SCORE, planning = BASE_SCORE;
+        double aggressive = BASE_SCORE, conservative = BASE_SCORE;
+        double avoidance = BASE_SCORE, rational = BASE_SCORE;
 
         for (MbtiQuestion q : questions) {
             Integer choice = answersByQuestionId.get(q.getId());
             if (choice == null) continue;
 
-            int w = 3 - choice; // 1~5 -> +2,+1,0,-1,-2
+            // DB에 추가한 가중치(weight) 적용 (없을 경우 1)
+            double weight = (q.getWeight() != null) ? q.getWeight() : 1.0;
+            double point = (3 - choice) * weight;
 
             MbtiQuestionCategory cat = q.getCategory();
             switch (cat) {
-                case ANXIETY_STABILITY -> { if (w >= 0) anxiety += w; else stability += -w; }
-                case IMPULSE_PLANNING -> { if (w >= 0) impulse += w; else planning += -w; }
-                case AGGRESSIVE_CONSERVATIVE -> { if (w >= 0) aggressive += w; else conservative += -w; }
-                case AVOIDANCE_RATIONAL -> { if (w >= 0) avoidance += w; else rational += -w; }
+                case ANXIETY_STABILITY -> { if (point >= 0) anxiety += point; else stability += -point; }
+                case IMPULSE_PLANNING -> { if (point >= 0) impulse += point; else planning += -point; }
+                case AGGRESSIVE_CONSERVATIVE -> { if (point >= 0) aggressive += point; else conservative += -point; }
+                case AVOIDANCE_RATIONAL -> { if (point >= 0) avoidance += point; else rational += -point; }
             }
         }
 
+        // 최종 결과 타입 결정 (실수를 정수로 캐스팅)
         MbtiType type = MbtiType.fromScores(
-                anxiety, stability,
-                impulse, planning,
-                aggressive, conservative,
-                avoidance, rational
+                (int)anxiety, (int)stability,
+                (int)impulse, (int)planning,
+                (int)aggressive, (int)conservative,
+                (int)avoidance, (int)rational
         );
 
         return new ScoreResult(
-                anxiety, stability,
-                impulse, planning,
-                aggressive, conservative,
-                avoidance, rational,
+                (int)anxiety, (int)stability,
+                (int)impulse, (int)planning,
+                (int)aggressive, (int)conservative,
+                (int)avoidance, (int)rational,
                 type
         );
     }

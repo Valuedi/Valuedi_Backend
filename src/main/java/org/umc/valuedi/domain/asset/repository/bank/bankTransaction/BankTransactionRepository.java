@@ -21,4 +21,11 @@ public interface BankTransactionRepository extends JpaRepository<BankTransaction
 
     // 특정 계좌의 가장 최신 거래내역 1건 조회
     Optional<BankTransaction> findTopByBankAccountOrderByTrDatetimeDesc(BankAccount bankAccount);
+
+    @Query("SELECT bt FROM BankTransaction bt " +
+            "LEFT JOIN LedgerEntry le ON le.bankTransaction = bt " +
+            "WHERE bt.bankAccount.codefConnection.member.id = :memberId " +
+            "AND bt.trDate BETWEEN :from AND :to " +
+            "AND le.id IS NULL")
+    List<BankTransaction> findUnsyncedBankTransactions(@Param("memberId") Long memberId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

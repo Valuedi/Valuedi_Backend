@@ -9,5 +9,6 @@ public class TrophyCalculationDto {
     private long totalAmount;
     private long maxAmount;
     private int transactionCount;
-    // 필요한 메트릭 추가
+    private int hour; // 결제 시간
+    private String categoryCode; // 카테고리
 }
