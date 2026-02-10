@@ -72,7 +72,7 @@ public interface LedgerControllerDocs {
             @Parameter(description = "조회 년월 (YYYY-MM)", required = true) @RequestParam YearMonth yearMonth
     );
 
-    @Operation(summary = "거래내역 동기화", description = "금융사로부터 거래내역을 가져와 동기화합니다.")
+    @Operation(summary = "[개발용] 거래내역 동기화", description = "금융사 연동 API로 통합되어 실제 서비스에서는 사용되지 않습니다. 추후 테스트 후 삭제 예정입니다.")
     @PostMapping("/api/transactions/sync")
     ApiResponse<String> syncTransactions(
             @CurrentMember Long memberId,
