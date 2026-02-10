@@ -120,6 +120,9 @@ public class BankResDTO {
         @Schema(description = "계좌명", example = "저축예금")
         private String accountName;
 
+        @Schema(description = "계좌번호(마스킹)", example = "123-456-789012")
+        private String accountNumber;
+
         @Schema(description = "잔액", example = "220732")
         private Long balanceAmount;
 

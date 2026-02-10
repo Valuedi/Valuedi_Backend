@@ -19,7 +19,7 @@ public class AssetConverter {
         BankResDTO.GoalInfo goalInfo = null;
         if (account.getGoal() != null) {
             Goal goal = account.getGoal();
-            
+
             goalInfo = BankResDTO.GoalInfo.builder()
                     .goalId(goal.getId())
                     .title(goal.getTitle())
@@ -80,7 +80,7 @@ public class AssetConverter {
                 .build();
     }
 
-    // 특정 은행의 자산 현황 응답 DTO 변환
+    // 특정 은행의 자산 현황 응답 DTO 변환 (계좌번호 추가 수정본)
     public static BankResDTO.BankAssetResponse toBankAssetResponse(String organizationCode, List<BankAccount> accounts) {
         String bankName = Organization.getNameByCode(organizationCode);
 
@@ -94,9 +94,11 @@ public class AssetConverter {
             Goal goal = account.getGoal();
             Long connectedGoalId = (goal != null) ? goal.getId() : null;
 
+            // accountNumber(마스킹된 계좌번호) 필드 추가 매핑
             accountList.add(BankResDTO.AccountInfo.builder()
                     .accountId(account.getId())
                     .accountName(account.getAccountName())
+                    .accountNumber(account.getAccountDisplay())
                     .balanceAmount(account.getBalanceAmount())
                     .connectedGoalId(connectedGoalId)
                     .build());
