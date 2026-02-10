@@ -58,27 +58,27 @@ VALUEDI는 사용자의 금융 데이터를 기반으로 **목표 중심 자산 
 
 ### 기술 스택
 #### Backend
-- Java, Spring Boot
-- Spring Data JPA (QueryDSL)
-- Gradle
+- Core: Java 17, Spring Boot 4.0.1, Gradle
+- Data: Spring Data JPA, QueryDSL 7.0, MySQL (RDS), Redis
+- Security: Spring Security, JWT
+- Network & Integration: OpenFeign, Spring Retry, WebClient
 
-#### Database / Infra
-- MySQL (AWS RDS)
-- AWS VPC (Public/Private Subnet)
-- AWS EC2, Nginx, Docker
-- Redis
+#### Infra & DevOps
+- Cloud: AWS (EC2, Route 53, VPC)
+- Server: Nginx (Reverse Proxy, HTTPS/SSL)
+- Database: MySQL (RDS), Redis
+- CI/CD: Docker, GitHub Actions
 
 #### CI/CD
 - GitHub Actions
 
 #### External APIs
-- CODEF(마이데이터/계좌·카드 연동)
-- FSS(금감원 OpenAPI/FinLife)
-- Gemini(GenAI)
+- AI: Google Gemini
+- Finance: CODEF (마이데이터), FSS (금감원 OpenAPI)
 
 #### Collaboration / Tools
-- GitHub
-- Swagger
+- Documentation: Swagger (SpringDoc OpenAPI 3.0)
+- Management: GitHub, Notion
 
 ---
 
