@@ -26,7 +26,7 @@ public class GeminiClient {
     private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(30);  // 시도별 제한
     private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(240);  // 전체 제한
 
-    private static final long BASE_BACKOFF_MILLIS = 200;
+    private static final long BASE_BACKOFF_MILLIS = 2_000;
     private static final long MAX_BACKOFF_MILLIS = 90_000;
 
     private static final ExecutorService executor =
@@ -153,7 +153,7 @@ public class GeminiClient {
 
     private void sleepBackoff(int attempt, Throwable cause) {
         // attempt=1 실패 후 -> 2초, attempt=2 실패 후 -> 4초, attempt=3 -> 8초 ...
-        long exp = 1L << attempt; // 1=>2, 2=>4, 3=>8 ...
+        long exp = 1L << (attempt - 1); // 1=>1, 2=>2, 3=>4 ...
         long backoff = BASE_BACKOFF_MILLIS * exp;
 
         // cap
