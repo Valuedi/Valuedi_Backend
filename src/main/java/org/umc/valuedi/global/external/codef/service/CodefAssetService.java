@@ -101,6 +101,7 @@ public class CodefAssetService {
     }
 
     public List<Card> getCards(CodefConnection connection) {
+        log.info("[CodefAssetService] 카드 목록 조회 API 호출 시작. Connection ID: {}", connection.getId());
         Map<String, Object> requestBody = createAssetRequestBody(connection);
 
         CodefApiResponse<Object> response = codefApiClient.getCardList(requestBody);
@@ -109,6 +110,7 @@ public class CodefAssetService {
             log.error("CODEF 보유 카드 목록 조회 실패: {}", response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
+        log.info("[CodefAssetService] 카드 목록 조회 API 호출 성공. Connection ID: {}", connection.getId());
 
         Object responseData = response.getData();
         List<CodefAssetResDTO.Card> cardList = new ArrayList<>();
@@ -124,6 +126,7 @@ public class CodefAssetService {
             throw new CodefException(CodefErrorCode.CODEF_API_CARD_LIST_FAILED);
         }
         
+        log.info("[CodefAssetService] 조회된 카드 수: {}, Connection ID: {}", cardList.size(), connection.getId());
         return codefAssetConverter.toCardList(cardList, connection);
     }
 
@@ -141,6 +144,7 @@ public class CodefAssetService {
     
     // AssetFetchWorker가 사용할 새로운 오버로딩 메서드
     public List<CardApproval> getCardApprovals(CodefConnection connection, List<Card> cards, LocalDate startDate, LocalDate endDate) {
+        log.info("[CodefAssetService] 카드 승인 내역 조회 API 호출 시작. Connection ID: {}, 기간: {} ~ {}", connection.getId(), startDate, endDate);
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("connectedId", connection.getConnectedId());
         requestBody.put("organization", connection.getOrganization());
@@ -157,13 +161,16 @@ public class CodefAssetService {
             log.error("CODEF 카드 승인 내역 조회 실패: {}", response.getResult().getMessage());
             return List.of();
         }
+        log.info("[CodefAssetService] 카드 승인 내역 조회 API 호출 성공. Connection ID: {}", connection.getId());
 
         List<CodefAssetResDTO.CardApproval> approvalList;
         if (response.getData() instanceof List) {
              approvalList = objectMapper.convertValue(response.getData(), new TypeReference<List<CodefAssetResDTO.CardApproval>>() {});
         } else {
+             log.warn("[CodefAssetService] 카드 승인 내역 응답 데이터가 리스트 형식이 아닙니다. Connection ID: {}", connection.getId());
              return List.of();
         }
+        log.info("[CodefAssetService] 조회된 승인 내역 수: {}, Connection ID: {}", approvalList.size(), connection.getId());
 
         // 승인 내역을 카드에 매핑하기 위해 명시적으로 전달받은 카드 목록을 사용
         return codefAssetConverter.toCardApprovalList(approvalList, cards);

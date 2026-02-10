@@ -95,12 +95,16 @@ public class AssetSyncService {
         log.info("카드사 자산 동기화 시작 - Connection ID: {}", connection.getId());
         
         // 보유 카드 목록 조회 및 저장
+        log.info("[SyncCardAssets] 보유 카드 목록 조회를 시작합니다. Connection ID: {}", connection.getId());
         List<Card> cards = codefAssetService.getCards(connection);
+        log.info("[SyncCardAssets] 보유 카드 목록을 조회했습니다. 카드 수: {}, Connection ID: {}", cards.size(), connection.getId());
         
         try {
+            log.info("[SyncCardAssets] 카드 정보 저장을 시작합니다. Connection ID: {}", connection.getId());
             cardRepository.saveAll(cards);
+            log.info("[SyncCardAssets] 카드 정보를 저장했습니다. Connection ID: {}", connection.getId());
         } catch (DataIntegrityViolationException e) {
-            log.warn("카드 저장 중 중복 발생 - 개별 저장 시도");
+            log.warn("[SyncCardAssets] 카드 저장 중 중복이 발생하여 개별 저장을 시도합니다. Connection ID: {}", connection.getId());
             for (Card card : cards) {
                 try {
                     cardRepository.save(card);
@@ -108,15 +112,19 @@ public class AssetSyncService {
                     // 이미 존재하는 카드는 무시
                 }
             }
+            log.info("[SyncCardAssets] 카드 정보 개별 저장을 완료했습니다. Connection ID: {}", connection.getId());
         }
-        log.info("보유 카드 목록 동기화 완료 - {}개 카드", cards.size());
+        log.info("보유 카드 목록 동기화를 완료했습니다. 총 {}개의 카드가 동기화되었습니다.", cards.size());
 
         // 전체 승인 내역 조회 및 카드 매칭 후 저장
+        log.info("[SyncCardAssets] 카드 승인 내역 동기화를 시작합니다. Connection ID: {}", connection.getId());
         if (syncCardApprovals(connection)) {
+            log.info("[SyncCardAssets] 가계부 동기화를 시작합니다. Connection ID: {}", connection.getId());
             syncLedger(connection.getMember());
+            log.info("[SyncCardAssets] 가계부 동기화를 완료했습니다. Connection ID: {}", connection.getId());
         }
         
-        log.info("카드사 자산 동기화 완료 - Connection ID: {}", connection.getId());
+        log.info("카드사 자산 동기화를 완료했습니다. Connection ID: {}", connection.getId());
     }
 
     /**
@@ -149,33 +157,40 @@ public class AssetSyncService {
      * 카드 승인 내역 동기화 (전체 조회 후 매칭)
      */
     private boolean syncCardApprovals(CodefConnection connection) {
-        log.info("카드 승인내역 동기화 시작 - Connection ID: {}", connection.getId());
+        log.info("카드 승인내역 동기화를 시작합니다. Connection ID: {}", connection.getId());
 
         // 해당 연동의 모든 카드 목록 조회 (DB)
+        log.info("[SyncCardApprovals] DB에서 카드 목록 조회를 시작합니다. Connection ID: {}", connection.getId());
         List<Card> cards = cardRepository.findByCodefConnection(connection);
+        log.info("[SyncCardApprovals] DB에서 카드 목록을 조회했습니다. 카드 수: {}, Connection ID: {}", cards.size(), connection.getId());
+
         if (cards.isEmpty()) {
-            log.warn("연동된 카드가 없어 승인내역 동기화를 건너뜁니다.");
+            log.warn("연동된 카드가 없어 승인내역 동기화를 건너뜁니다. Connection ID: {}", connection.getId());
             return false;
         }
         try {
-
              connection.getCardList().clear();
              connection.getCardList().addAll(cards);
         } catch (Exception e) {
-            log.warn("Connection 객체의 카드 리스트 갱신 중 오류 (무시하고 진행): {}", e.getMessage());
+            log.warn("Connection 객체의 카드 리스트 갱신 중 오류가 발생했지만, 진행합니다. 오류: {}, Connection ID: {}", e.getMessage(), connection.getId());
         }
 
         // 전체 승인 내역 조회 (API)
         // CodefAssetService 내부에서 CodefAssetConverter를 통해 매칭까지 완료된 리스트 반환
+        log.info("[SyncCardApprovals] Codef API를 통해 승인 내역 조회를 시작합니다. Connection ID: {}", connection.getId());
         List<CardApproval> approvals = codefAssetService.getCardApprovals(connection);
+        log.info("[SyncCardApprovals] Codef API를 통해 승인 내역을 조회했습니다. 승인 내역 수: {}, Connection ID: {}", approvals.size(), connection.getId());
+
         if (approvals.isEmpty()) {
-            log.info("조회된 승인내역이 없습니다.");
+            log.info("조회된 승인내역이 없습니다. Connection ID: {}", connection.getId());
             return false;
         }
 
         // 저장
+        log.info("[SyncCardApprovals] 승인 내역 저장을 시작합니다. Connection ID: {}", connection.getId());
         cardApprovalRepository.bulkInsert(approvals);
-        log.info("카드 승인내역 Bulk Insert 완료 - {}건", approvals.size());
+        log.info("[SyncCardApprovals] 승인 내역 저장을 완료했습니다. Connection ID: {}", connection.getId());
+        log.info("카드 승인내역 Bulk Insert를 완료했습니다. 총 {}건이 처리되었습니다.", approvals.size());
         return true;
     }
 }
