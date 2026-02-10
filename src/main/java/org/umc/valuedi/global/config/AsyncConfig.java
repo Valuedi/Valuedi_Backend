@@ -30,6 +30,8 @@ public class AsyncConfig {
         executor.setMaxPoolSize(10);   // 최대 스레드 수
         executor.setQueueCapacity(100); // 큐 용량
         executor.setThreadNamePrefix("AssetFetch-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(120);
         executor.initialize();
         return executor;
     }
