@@ -84,30 +84,16 @@ public class RecommendationService {
                 .toList();
 
         if (items.isEmpty()) {
-            return SavingsResponseDTO.SavingsListResponse.builder()
-                    .products(List.of())
-                    .status(RecommendationStatus.SUCCESS)
-                    .message("조건에 맞는 추천 상품을 찾지 못했습니다.")
-                    .build();
+            throw new SavingsException(SavingsErrorCode.RECOMMENDATION_FAILED);
         }
         SavingsResponseDTO.RecommendResponse savedResult = recommendationTxService.saveRecommendations(memberId, memberMbtiTest, parsed, items);
 
-        return SavingsResponseDTO.SavingsListResponse.builder()
-                .totalCount(savedResult.products().size())
-                .nowPageNo(1)
-                .maxPageNo(1)
-                .products(savedResult.products().stream()
-                        .map(p -> new SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct(
-                                p.korCoNm(),
-                                p.finPrdtCd(),
-                                p.finPrdtNm(),
-                                p.rsrvType(),
-                                p.rsrvTypeNm()
-                        ))
-                        .toList())
-                .status(RecommendationStatus.SUCCESS)
-                .message(parsed.rationale())
-                .build();
+        List<Savings> savingsList = items.stream()
+                .map(i -> savingsRepository.findByFinPrdtCd(i.finPrdtCd()).orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+
+        return SavingsConverter.toSavingsListResponseDTO(savingsList, savingsList.size(), 1, 1);
     }
 
     // 추천 상품 15개 조회
@@ -120,54 +106,25 @@ public class RecommendationService {
         Pageable pageable = PageRequest.of(0, RECOMMEND_COUNT);
         List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
+        if (recs.isEmpty()) {
+            throw new SavingsException(SavingsErrorCode.RECOMMENDATION_NOT_FOUND);
+        }
+
         String normalized = (rsrvType == null ? null : rsrvType.trim().toUpperCase()); // "S" or "F" or null
 
-        List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
+        List<Savings> filteredSavings = recs.stream()
                 .filter(r -> {
                     if (normalized == null || normalized.isBlank()) return true;
                     SavingsOption so = r.getSavingsOption();
                     return so != null && normalized.equals(so.getRsrvType());
                 })
-                .map(r -> {
-                    Savings s = r.getSavings();
-                    SavingsOption so = r.getSavingsOption();
-                    return new SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct(
-                            s.getKorCoNm(),
-                            s.getFinPrdtCd(),
-                            s.getFinPrdtNm(),
-                            so == null ? null : so.getRsrvType(),
-                            so == null ? null : so.getRsrvTypeNm()
-                    );
-                })
+                .map(Recommendation::getSavings)
                 .toList();
 
-        boolean hasAnyRecommendationRow = !recs.isEmpty();
-
-        if (products.isEmpty()) {
-            // 추천은 있는데 rsrvType 필터로 인해 0개인 경우
-            if (hasAnyRecommendationRow) {
-                return SavingsResponseDTO.SavingsListResponse.builder()
-                        .totalCount(0)
-                        .nowPageNo(1)
-                        .maxPageNo(1)
-                        .products(List.of())
-                        .status(RecommendationStatus.SUCCESS)
-                        .message("해당 적립 유형의 추천 결과가 없습니다.")
-                        .build();
-            }
-
-            // 추천 자체가 없는 경우
-            return emptyResponse("아직 추천받은 내역이 없습니다. 상품 추천을 먼저 진행해 주세요.");
+        if (filteredSavings.isEmpty()) {
+            throw new SavingsException(SavingsErrorCode.FILTERED_RECOMMENDATION_NOT_FOUND);
         }
-
-        return SavingsResponseDTO.SavingsListResponse.builder()
-                .totalCount(products.size())
-                .nowPageNo(1)
-                .maxPageNo(1)
-                .products(products)
-                .status(RecommendationStatus.SUCCESS)
-                .message(null)
-                .build();
+        return SavingsConverter.toSavingsListResponseDTO(filteredSavings, filteredSavings.size(), 1, 1);
     }
 
     // 추천 상품 Top3 조회
@@ -182,43 +139,17 @@ public class RecommendationService {
 
         if (recs.isEmpty()) {
             // 추천 자체가 없는 경우
-            return emptyResponse("아직 추천받은 내역이 없습니다.");
+            throw new SavingsException(SavingsErrorCode.RECOMMENDATION_NOT_FOUND);
         }
 
-        List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
-                .map(r -> {
-                    Savings s = r.getSavings();
-                    SavingsOption so = r.getSavingsOption();
-                    return new SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct(
-                            s.getKorCoNm(),
-                            s.getFinPrdtCd(),
-                            s.getFinPrdtNm(),
-                            so == null ? null : so.getRsrvType(),
-                            so == null ? null : so.getRsrvTypeNm()
-                    );
-                })
-                .toList();
+        List<Savings> top3Savings = recs.stream().map(Recommendation::getSavings).toList();
 
-        return SavingsResponseDTO.SavingsListResponse.builder()
-                .totalCount(products.size())
-                .nowPageNo(1)
-                .maxPageNo(1)
-                .products(products)
-                .status(RecommendationStatus.SUCCESS)
-                .message(null)
-                .build();
+        return SavingsConverter.toSavingsListResponseDTO(top3Savings, top3Savings.size(), 1, 1);
     }
 
     // 추천 결과가 없을 때 사용할 공통 응답
-    private SavingsResponseDTO.SavingsListResponse emptyResponse(String message) {
-        return SavingsResponseDTO.SavingsListResponse.builder()
-                .totalCount(0)
-                .nowPageNo(1)
-                .maxPageNo(1)
-                .products(List.of())
-                .status(RecommendationStatus.SUCCESS)
-                .message(message)
-                .build();
+    private SavingsResponseDTO.SavingsListResponse emptyResponse() {
+        return SavingsConverter.toSavingsListResponseDTO(Collections.emptyList(), 0, 1, 1);
     }
 
     private String buildPrompt(

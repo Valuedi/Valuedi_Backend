@@ -22,7 +22,6 @@ public interface RecommendationControllerDocs {
                     
                     - 로그인 사용자(JWT)의 현재 MBTI를 바탕으로 Gemini 추천을 생성하고 DB를 갱신합니다.
                     - 응답 속도는 Gemini API 호출을 포함하므로 약 3~7초 정도 소요될 수 있습니다
-                    - 개발 테스트 중 추천 데이터를 수동으로 만들 때 사용하세요.
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -52,9 +51,7 @@ public interface RecommendationControllerDocs {
                                                             "rsrvType": "S",
                                                             "rsrvTypeNm": "정액적립식"
                                                           }
-                                                        ],
-                                                        "status": "SUCCESS",
-                                                        "message": "사용자님의 MBTI 성향인 '도전적인 투자자'에 맞춰 높은 금리와 안정성을 동시에 잡을 수 있는 상품들을 추천해 드립니다..."
+                                                        ]
                                                       }
                                                     }
                                                     """
@@ -63,14 +60,22 @@ public interface RecommendationControllerDocs {
                             )
                     ),
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "MBTI404_3",
-                            description = "MBTI 검사 내역이 없어 추천을 생성할 수 없습니다.",
-                            content = @Content(mediaType = "application/json")
-                    ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "GEMINI502_2",
-                            description = "Gemini API 호출 실패 (타임아웃 등).",
-                            content = @Content(mediaType = "application/json")
+                            responseCode = "SAVINGS500_1",
+                            description = "AI 추천 생성 실패 (Gemini 호출 실패 등)",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(
+                                            name = "fail",
+                                            value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "SAVINGS500_1",
+                                              "message": "AI 추천 생성에 실패했습니다. 다시 시도해 주세요.",
+                                              "result": null
+                                            }
+                                            """
+                                    )
+                            )
                     )
             }
     )
@@ -83,8 +88,6 @@ public interface RecommendationControllerDocs {
             description = """
                     로그인 사용자(JWT)의 '현재 활성 MBTI 테스트' 기준으로
                     DB에 저장된 최신 추천 15개를 조회 (Gemini 호출 X)
-                    
-                    - 추천 내역이 없는 경우(검사 미실행 등) status: SUCCESS와 함께 비어있는 리스트가 반환됩니다.
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -114,47 +117,19 @@ public interface RecommendationControllerDocs {
                                                             "rsrvType": "S",
                                                             "rsrvTypeNm": "정액적립식"
                                                           }
-                                                        ],
-                                                        "status": "SUCCESS",
-                                                        "message": "사용자님의 성향에 맞춘 AI 추천 리스트입니다."
+                                                        ]
                                                       }
                                                     }
                                                     """
                                             ),
                                             @ExampleObject(
                                                     name = "noHistory",
-                                                    summary = "추천 내역 없음",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON200",
-                                                      "message": "요청이 성공적으로 처리되었습니다.",
-                                                      "result": {
-                                                        "totalCount": 0,
-                                                        "products": [],
-                                                        "status": "SUCCESS",
-                                                        "message": "아직 추천받은 내역이 없습니다. MBTI 검사를 먼저 진행해 주세요."
-                                                      }
-                                                    }
-                                                    """
-                                            )
-                                    }
-                            )
-                    ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "MBTI404_3",
-                            description = "해당 MBTI 유형 정보가 존재하지 않습니다.",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    examples = {
-                                            @ExampleObject(
-                                                    name = "typeInfoNotFound",
-                                                    summary = "MBTI 타입 정보 미존재",
+                                                    summary = "추천 내역 없음 (MBTI 검사 미실행 등)",
                                                     value = """
                                                     {
                                                       "isSuccess": false,
-                                                      "code": "MBTI404_3",
-                                                      "message": "해당 MBTI 유형 정보가 존재하지 않습니다.",
+                                                      "code": "SAVINGS404_2",
+                                                      "message": "아직 추천받은 내역이 없습니다. 먼저 상품 추천을 진행해 주세요.",
                                                       "result": null
                                                     }
                                                     """
@@ -207,10 +182,20 @@ public interface RecommendationControllerDocs {
                                                             "rsrvType": "S",
                                                             "rsrvTypeNm": "정액적립식"
                                                           }
-                                                        ],
-                                                        "status": "SUCCESS",
-                                                        "message": null
+                                                        ]
                                                       }
+                                                    }
+                                                    """
+                                            ),
+                                            @ExampleObject(
+                                                    name = "noHistory",
+                                                    summary = "추천 내역 없음 (SAVINGS404_2)",
+                                                    value = """
+                                                    {
+                                                      "isSuccess": false,
+                                                      "code": "SAVINGS404_2",
+                                                      "message": "아직 추천받은 내역이 없습니다. 먼저 상품 추천을 진행해 주세요.",
+                                                      "result": null
                                                     }
                                                     """
                                             )
@@ -283,7 +268,6 @@ public interface RecommendationControllerDocs {
                                     examples = {
                                             @ExampleObject(
                                                     name = "notFound",
-                                                    summary = "상품 미존재 예시",
                                                     value = """
                                                     {
                                                       "isSuccess": false,

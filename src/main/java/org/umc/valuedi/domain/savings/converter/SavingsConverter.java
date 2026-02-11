@@ -89,8 +89,8 @@ public class SavingsConverter {
 
         return SavingsResponseDTO.SavingsListResponse.builder()
                 .totalCount(totalCount)
-                .maxPageNo(maxPageNo)
                 .nowPageNo(nowPageNo)
+                .hasNext(nowPageNo < maxPageNo)
                 .products(products)
                 .build();
     }
@@ -109,22 +109,18 @@ public class SavingsConverter {
                 ))
                 .toList();
 
-        SavingsResponseDTO.SavingsDetailResponse.SavingProductDetail product = new SavingsResponseDTO.SavingsDetailResponse.SavingProductDetail(
-                savings.getKorCoNm(),
-                savings.getFinPrdtCd(),
-                savings.getFinPrdtNm(),
-                savings.getJoinWay(),
-                savings.getMtrtInt(),
-                savings.getSpclCnd(),
-                savings.getJoinDeny(),
-                savings.getJoinMember(),
-                savings.getEtcNote(),
-                savings.getMaxLimit() == null ? null : String.valueOf(savings.getMaxLimit()),
-                options
-        );
-
         return SavingsResponseDTO.SavingsDetailResponse.builder()
-                .product(product)
+                .korCoNm(savings.getKorCoNm())
+                .finPrdtCd(savings.getFinPrdtCd())
+                .finPrdtNm(savings.getFinPrdtNm())
+                .joinWay(savings.getJoinWay())
+                .mtrtInt(savings.getMtrtInt())
+                .spclCnd(savings.getSpclCnd())
+                .joinDeny(savings.getJoinDeny())
+                .joinMember(savings.getJoinMember())
+                .etcNote(savings.getEtcNote())
+                .maxLimit(savings.getMaxLimit() == null ? null : String.valueOf(savings.getMaxLimit()))
+                .options(options)
                 .build();
     }
 
