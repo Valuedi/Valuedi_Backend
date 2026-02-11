@@ -13,12 +13,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.auth.converter.AuthConverter;
 import org.umc.valuedi.domain.auth.dto.event.AuthMailEvent;
-import org.umc.valuedi.domain.auth.dto.kakao.KakaoResDTO;
+import org.umc.valuedi.global.external.kakao.converter.KakaoConverter;
+import org.umc.valuedi.global.external.kakao.dto.res.KakaoResDTO;
 import org.umc.valuedi.domain.auth.dto.req.AuthReqDTO;
 import org.umc.valuedi.domain.auth.dto.res.AuthResDTO;
 import org.umc.valuedi.domain.auth.exception.AuthException;
 import org.umc.valuedi.domain.auth.exception.code.AuthErrorCode;
-import org.umc.valuedi.domain.auth.service.external.KakaoService;
+import org.umc.valuedi.global.external.kakao.service.KakaoService;
 import org.umc.valuedi.domain.auth.service.query.AuthQueryService;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.entity.MemberAuthProvider;
@@ -36,7 +37,6 @@ import org.umc.valuedi.global.security.principal.CustomUserDetails;
 
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -91,24 +91,14 @@ public class AuthCommandService {
     // 카카오로 회원가입
     private Member registerKakao(KakaoResDTO.UserTokenInfo userTokenInfo) {
         try {
-            // 1. AuthConverter를 통해 엔티티로 변환
-            Member newMember = AuthConverter.toKakaoMember(userTokenInfo.userInfo());
-
-            // 2. username이 누락된 경우(소셜 가입) 고유 식별값 생성
-            if (newMember.getUsername() == null || newMember.getUsername().isBlank()) {
-                newMember.setUsername(generateUniqueUsername(newMember.getEmail()));
-            }
-
-            // 3. Member 저장
+            Member newMember = KakaoConverter.toKakaoMember(userTokenInfo.userInfo());
             Member savedMember = memberRepository.save(newMember);
 
-            // 약관 정보 저장
             memberTermsService.saveTermsForRegistration(
                     savedMember,
                     kakaoService.getKakaoServiceTerms(userTokenInfo.accessToken()));
 
-            // 제공자 정보 저장
-            MemberAuthProvider authProvider = AuthConverter.toMemberAuthProvider(savedMember, String.valueOf(userTokenInfo.userInfo().getId()));
+            MemberAuthProvider authProvider = KakaoConverter.toMemberAuthProvider(savedMember, String.valueOf(userTokenInfo.userInfo().getId()));
             memberAuthProviderRepository.save(authProvider);
 
             return savedMember;
@@ -117,29 +107,6 @@ public class AuthCommandService {
         } catch(DataIntegrityViolationException e) {
             throw new GeneralException(GeneralErrorCode.INVALID_DATA_REQUEST);
         }
-    }
-
-    // username 생성 로직 (이메일 + 랜덤 숫자)
-    private String generateUniqueUsername(String email) {
-        String prefix = (email != null && email.contains("@"))
-                ? email.split("@")[0]
-                : "user";
-
-        // 초기 후보 생성
-        String candidate = prefix + "_" + (sr.nextInt(9000) + 1000);
-
-        // 최대 5번까지 DB 중복 체크 후 재시도
-        int attempts = 0;
-        while (memberRepository.existsByUsername(candidate) && attempts < 5) {
-            candidate = prefix + "_" + (sr.nextInt(9000) + 1000);
-            attempts++;
-        }
-
-        if (attempts >= 5) {
-            candidate = prefix + "_" + (System.currentTimeMillis() % 10000);
-        }
-
-        return candidate;
     }
 
     // 이메일 인증번호 발송

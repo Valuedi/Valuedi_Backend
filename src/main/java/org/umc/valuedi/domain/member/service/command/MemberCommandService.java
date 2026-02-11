@@ -7,11 +7,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.auth.exception.AuthException;
 import org.umc.valuedi.domain.auth.exception.code.AuthErrorCode;
 import org.umc.valuedi.domain.member.entity.Member;
+import org.umc.valuedi.domain.member.enums.Provider;
 import org.umc.valuedi.domain.member.enums.WithdrawalReason;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
 import org.umc.valuedi.domain.member.repository.MemberAuthProviderRepository;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
+import org.umc.valuedi.global.external.kakao.service.KakaoService;
 import org.umc.valuedi.global.security.jwt.JwtUtil;
 
 import java.util.concurrent.TimeUnit;
@@ -21,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Transactional
 public class MemberCommandService {
     private final MemberAuthProviderRepository memberAuthProviderRepository;
+    private final KakaoService kakaoService;
     private final MemberRepository memberRepository;
     private final StringRedisTemplate redisTemplate;
     private final JwtUtil jwtUtil;
@@ -38,6 +41,10 @@ public class MemberCommandService {
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         memberAuthProviderRepository.findByMemberId(memberId).ifPresent(provider -> {
+            if(provider.getProvider() == Provider.KAKAO) {
+                kakaoService.unlinkKakao(Long.valueOf(provider.getProviderUserId()));
+            }
+
             provider.anonymize();
             memberAuthProviderRepository.saveAndFlush(provider);
             memberAuthProviderRepository.delete(provider);

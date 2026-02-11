@@ -1,4 +1,4 @@
-package org.umc.valuedi.domain.auth.config;
+package org.umc.valuedi.global.external.kakao.config;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,6 +12,7 @@ public class KakaoProperties {
     private String clientId;
     private String redirectUri;
     private String clientSecret;
+    private String adminKey;
 
     public String getKakaoAuthUrl(String state) {
         return UriComponentsBuilder
