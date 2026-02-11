@@ -97,7 +97,9 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://valuedi-web.vercel.app",
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "https://api.valuedi.site",
+                "http://localhost:8080"
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
