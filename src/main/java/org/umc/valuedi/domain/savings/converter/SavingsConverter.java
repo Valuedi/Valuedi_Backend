@@ -109,10 +109,23 @@ public class SavingsConverter {
                 ))
                 .toList();
 
+        SavingsOption representativeOption = savings.getSavingsOptionList().stream()
+                .filter(o -> Integer.valueOf(12).equals(o.getSaveTrm()))
+                .findFirst()
+                .orElseGet(() -> savings.getSavingsOptionList().stream()
+                        .filter(o -> o.getIntrRate2() != null)
+                        .max(java.util.Comparator.comparing(SavingsOption::getIntrRate2))
+                        .orElse(null));
+
+        Double basicRate = (representativeOption != null) ? representativeOption.getIntrRate() : null;
+        Double maxRate = (representativeOption != null) ? representativeOption.getIntrRate2() : null;
+
         return SavingsResponseDTO.SavingsDetailResponse.builder()
                 .korCoNm(savings.getKorCoNm())
                 .finPrdtCd(savings.getFinPrdtCd())
                 .finPrdtNm(savings.getFinPrdtNm())
+                .basicRate(basicRate)
+                .maxRate(maxRate)
                 .joinWay(savings.getJoinWay())
                 .mtrtInt(savings.getMtrtInt())
                 .spclCnd(savings.getSpclCnd())

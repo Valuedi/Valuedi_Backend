@@ -30,6 +30,8 @@ public class SavingsResponseDTO {
             String korCoNm,
             String finPrdtCd,
             String finPrdtNm,
+            Double basicRate,
+            Double maxRate,
             String joinWay,
             String mtrtInt,
             String spclCnd,
