@@ -16,68 +16,42 @@ import org.umc.valuedi.global.security.annotation.CurrentMember;
 public interface RecommendationControllerDocs {
 
     @Operation(
-            summary = "적금 추천 생성 트리거 API (비동기)",
+            summary = "[개발/수동 갱신용] 적금 추천 생성 API",
             description = """
-                    로그인 사용자(JWT)의 금융 MBTI 결과를 바탕으로, Gemini 추천 생성 작업을 비동기로 트리거
+                    **주의: 일반적인 서비스 흐름에서는 MBTI 검사 완료 시 서버 내부에서 자동 호출됩니다.**
                     
-                    - 최초 요청 시: recommendation_batch를 PENDING으로 생성하고 202(ACCEPTED) 반환
-                    - 이미 추천 생성 중(PENDING/PROCESSING)인 경우: 기존 batchId를 반환하며 재실행하지 않음
-                    - 이미 최신 추천이 존재(SUCCESS)하고 MBTI 테스트가 동일한 경우: 재생성하지 않고 안내 메시지 반환
-                    
-                    추천 결과는 조회 API(GET)로 확인
+                    - 로그인 사용자(JWT)의 현재 MBTI를 바탕으로 Gemini 추천을 생성하고 DB를 갱신합니다.
+                    - 응답 속도는 Gemini API 호출을 포함하므로 약 3~7초 정도 소요될 수 있습니다
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "COMMON202",
-                            description = "요청이 접수되었습니다.",
+                            responseCode = "COMMON200",
+                            description = "추천 상품 생성 및 저장 성공",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = ApiResponse.class),
                                     examples = {
                                             @ExampleObject(
-                                                    name = "pending",
-                                                    summary = "신규 트리거(PENDING)",
+                                                    name = "success",
+                                                    summary = "추천 생성 성공 예시",
                                                     value = """
                                                     {
                                                       "isSuccess": true,
-                                                      "code": "COMMON202",
-                                                      "message": "요청이 접수되었습니다.",
+                                                      "code": "COMMON200",
+                                                      "message": "요청이 성공적으로 처리되었습니다.",
                                                       "result": {
-                                                        "batchId": 12,
-                                                        "status": "PENDING",
-                                                        "message": "추천 상품을 생성 중입니다. 잠시 후 조회 API로 확인해 주세요."
-                                                      }
-                                                    }
-                                                    """
-                                            ),
-                                            @ExampleObject(
-                                                    name = "alreadyProcessing",
-                                                    summary = "이미 생성 중(PENDING/PROCESSING)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON202",
-                                                      "message": "요청이 접수되었습니다.",
-                                                      "result": {
-                                                        "batchId": 12,
-                                                        "status": "PROCESSING",
-                                                        "message": "추천을 생성 중입니다. 잠시 후 조회 API로 확인해 주세요."
-                                                      }
-                                                    }
-                                                    """
-                                            ),
-                                            @ExampleObject(
-                                                    name = "alreadySuccess",
-                                                    summary = "이미 최신 추천 존재(SUCCESS)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON202",
-                                                      "message": "요청이 접수되었습니다.",
-                                                      "result": {
-                                                        "batchId": 10,
-                                                        "status": "SUCCESS",
-                                                        "message": "이미 최신 추천이 존재합니다. 조회 API로 확인해 주세요."
+                                                        "totalCount": 15,
+                                                        "maxPageNo": 1,
+                                                        "nowPageNo": 1,
+                                                        "products": [
+                                                          {
+                                                            "korCoNm": "OO은행",
+                                                            "finPrdtCd": "ABC123",
+                                                            "finPrdtNm": "OO정기적금",
+                                                            "rsrvType": "S",
+                                                            "rsrvTypeNm": "정액적립식"
+                                                          }
+                                                        ]
                                                       }
                                                     }
                                                     """
@@ -86,50 +60,26 @@ public interface RecommendationControllerDocs {
                             )
                     ),
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "MBTI404_3",
-                            description = "해당 MBTI 유형 정보가 존재하지 않습니다.",
+                            responseCode = "SAVINGS500_1",
+                            description = "AI 추천 생성 실패 (Gemini 호출 실패 등)",
                             content = @Content(
                                     mediaType = "application/json",
-                                    examples = {
-                                            @ExampleObject(
-                                                    name = "typeInfoNotFound",
-                                                    summary = "MBTI 타입 정보 미존재",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": false,
-                                                      "code": "MBTI404_3",
-                                                      "message": "해당 MBTI 유형 정보가 존재하지 않습니다.",
-                                                      "result": null
-                                                    }
-                                                    """
-                                            )
-                                    }
-                            )
-                    ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "GEMINI502_2",
-                            description = "Gemini API 호출에 실패했습니다.",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    examples = {
-                                            @ExampleObject(
-                                                    name = "geminiFail",
-                                                    summary = "Gemini 호출 실패",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": false,
-                                                      "code": "GEMINI502_2",
-                                                      "message": "Gemini API 호출에 실패했습니다.",
-                                                      "result": null
-                                                    }
-                                                    """
-                                            )
-                                    }
+                                    examples = @ExampleObject(
+                                            name = "fail",
+                                            value = """
+                                            {
+                                              "isSuccess": false,
+                                              "code": "SAVINGS500_1",
+                                              "message": "AI 추천 생성에 실패했습니다. 다시 시도해 주세요.",
+                                              "result": null
+                                            }
+                                            """
+                                    )
                             )
                     )
             }
     )
-    ApiResponse<SavingsResponseDTO.TriggerResponse> recommend(
+    ApiResponse<SavingsResponseDTO.SavingsListResponse> recommend(
             @CurrentMember Long memberId
     );
 
@@ -138,9 +88,6 @@ public interface RecommendationControllerDocs {
             description = """
                     로그인 사용자(JWT)의 '현재 활성 MBTI 테스트' 기준으로
                     DB에 저장된 최신 추천 15개를 조회 (Gemini 호출 X)
-                    
-                    - 추천이 아직 생성되지 않았으면 status=PENDING, message에 안내 문구 포함
-                    - 추천 생성에 실패한 경우 status=FAILED, message에 실패 안내 포함
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -170,68 +117,19 @@ public interface RecommendationControllerDocs {
                                                             "rsrvType": "S",
                                                             "rsrvTypeNm": "정액적립식"
                                                           }
-                                                        ],
-                                                        "status": "SUCCESS",
-                                                        "message": null
+                                                        ]
                                                       }
                                                     }
                                                     """
                                             ),
                                             @ExampleObject(
-                                                    name = "pending",
-                                                    summary = "추천 생성 중(PENDING)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON200",
-                                                      "message": "요청이 성공적으로 처리되었습니다.",
-                                                      "result": {
-                                                        "totalCount": 0,
-                                                        "maxPageNo": 1,
-                                                        "nowPageNo": 1,
-                                                        "products": [],
-                                                        "status": "PENDING",
-                                                        "message": "추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요."
-                                                      }
-                                                    }
-                                                    """
-                                            ),
-                                            @ExampleObject(
-                                                    name = "noResultForType",
-                                                    summary = "해당 적립유형 결과 없음(필터로 인해 비어있음)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON200",
-                                                      "message": "요청이 성공적으로 처리되었습니다.",
-                                                      "result": {
-                                                        "totalCount": 0,
-                                                        "maxPageNo": 1,
-                                                        "nowPageNo": 1,
-                                                        "products": [],
-                                                        "status": "SUCCESS",
-                                                        "message": "조건에 맞는 추천 결과가 없습니다."
-                                                      }
-                                                    }
-                                                    """
-                                            )
-                                    }
-                            )
-                    ),
-                    @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "MBTI404_3",
-                            description = "해당 MBTI 유형 정보가 존재하지 않습니다.",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    examples = {
-                                            @ExampleObject(
-                                                    name = "typeInfoNotFound",
-                                                    summary = "MBTI 타입 정보 미존재",
+                                                    name = "noHistory",
+                                                    summary = "추천 내역 없음 (MBTI 검사 미실행 등)",
                                                     value = """
                                                     {
                                                       "isSuccess": false,
-                                                      "code": "MBTI404_3",
-                                                      "message": "해당 MBTI 유형 정보가 존재하지 않습니다.",
+                                                      "code": "SAVINGS404_2",
+                                                      "message": "아직 추천받은 내역이 없습니다. 먼저 상품 추천을 진행해 주세요.",
                                                       "result": null
                                                     }
                                                     """
@@ -255,9 +153,6 @@ public interface RecommendationControllerDocs {
             description = """
                     로그인 사용자(JWT)의 '현재 활성 MBTI 테스트' 기준으로
                     DB에 저장된 최신 추천 Top3를 조회 (Gemini 호출 X)
-                    
-                    - 추천이 아직 생성되지 않았으면 status=PENDING, message에 안내 문구 포함
-                    - 추천 생성에 실패한 경우 status=FAILED, message에 실패 안내 포함
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -287,29 +182,20 @@ public interface RecommendationControllerDocs {
                                                             "rsrvType": "S",
                                                             "rsrvTypeNm": "정액적립식"
                                                           }
-                                                        ],
-                                                        "status": "SUCCESS",
-                                                        "message": null
+                                                        ]
                                                       }
                                                     }
                                                     """
                                             ),
                                             @ExampleObject(
-                                                    name = "pending",
-                                                    summary = "추천 생성 중(PENDING)",
+                                                    name = "noHistory",
+                                                    summary = "추천 내역 없음 (SAVINGS404_2)",
                                                     value = """
                                                     {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON200",
-                                                      "message": "요청이 성공적으로 처리되었습니다.",
-                                                      "result": {
-                                                        "totalCount": 0,
-                                                        "maxPageNo": 1,
-                                                        "nowPageNo": 1,
-                                                        "products": [],
-                                                        "status": "PENDING",
-                                                        "message": "추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요."
-                                                      }
+                                                      "isSuccess": false,
+                                                      "code": "SAVINGS404_2",
+                                                      "message": "아직 추천받은 내역이 없습니다. 먼저 상품 추천을 진행해 주세요.",
+                                                      "result": null
                                                     }
                                                     """
                                             )
@@ -382,7 +268,6 @@ public interface RecommendationControllerDocs {
                                     examples = {
                                             @ExampleObject(
                                                     name = "notFound",
-                                                    summary = "상품 미존재 예시",
                                                     value = """
                                                     {
                                                       "isSuccess": false,

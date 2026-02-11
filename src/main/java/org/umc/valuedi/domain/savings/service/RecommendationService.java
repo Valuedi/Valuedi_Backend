@@ -16,7 +16,6 @@ import org.umc.valuedi.domain.mbti.service.FinanceMbtiProvider;
 import org.umc.valuedi.domain.savings.converter.SavingsConverter;
 import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
-import org.umc.valuedi.domain.savings.entity.RecommendationBatch;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.entity.SavingsOption;
 import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
@@ -55,28 +54,14 @@ public class RecommendationService {
     private final RecommendationTxService recommendationTxService;
 
     @Transactional
-    public void generateAndSaveRecommendations(Long memberId) {
+    public SavingsResponseDTO.SavingsListResponse generateAndSaveRecommendations(Long memberId) {
         // 금융 mbti 최신 결과 조회
         MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
 
-        Long memberMbtiTestId = memberMbtiTest.getId();
-
-        // 멱등성(중복 저장 방지)
-        boolean exists = recommendationRepository.existsByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTestId);
-        if (exists) {
-            log.info("[RecommendAsync] already exists. memberId={}, mbtiTestId={}", memberId, memberMbtiTestId);
-            return;
-        }
-
         // 추천 상품 후보 조회
         Pageable candidatePage = PageRequest.of(0, CANDIDATE_LIMIT);
         List<SavingsOption> candidates = savingsOptionRepository.findCandidates(candidatePage);
-
-        if (candidates.isEmpty()) {
-            log.warn("[RecommendAsync] no candidates. memberId={}", memberId);
-            return;
-        }
 
         // 제미나이 프롬프트 생성
         MbtiType mbtiType = memberMbtiTest.getResultType();
@@ -84,9 +69,9 @@ public class RecommendationService {
         String prompt = buildPrompt(mbtiType, financeMbtiTypeInfo, candidates, RECOMMEND_COUNT);
 
         // 제미나이 호출
-        log.info("[RecommendAsync] Gemini request. memberId={}, promptChars={}", memberId, prompt.length());
+        log.info("[Recommend] Gemini request. memberId={}, promptChars={}", memberId, prompt.length());
         String raw = geminiClient.generateText(prompt);
-        log.info("[RecommendAsync] Gemini response. memberId={}, rawChars={}", memberId, raw == null ? 0 : raw.length());
+        log.info("[Recommend] Gemini response. memberId={}, rawChars={}", memberId, raw == null ? 0 : raw.length());
 
         // JSON 파싱
         GeminiSavingsResponseDTO.Result parsed = parseGeminiJson(raw);
@@ -99,13 +84,16 @@ public class RecommendationService {
                 .toList();
 
         if (items.isEmpty()) {
-            log.warn("[RecommendAsync] parsed items empty. memberId={}", memberId);
-            return;
+            throw new SavingsException(SavingsErrorCode.RECOMMENDATION_FAILED);
         }
+        SavingsResponseDTO.RecommendResponse savedResult = recommendationTxService.saveRecommendations(memberId, memberMbtiTest, parsed, items);
 
-        // 추천 결과 저장
-        recommendationTxService.saveRecommendations(memberId, memberMbtiTest, parsed, items);
-        log.info("[RecommendAsync] saved. memberId={}, mbtiTestId={}", memberId, memberMbtiTestId);
+        List<Savings> savingsList = items.stream()
+                .map(i -> savingsRepository.findByFinPrdtCd(i.finPrdtCd()).orElse(null))
+                .filter(Objects::nonNull)
+                .toList();
+
+        return SavingsConverter.toSavingsListResponseDTO(savingsList, savingsList.size(), 1, 1);
     }
 
     // 추천 상품 15개 조회
@@ -118,54 +106,25 @@ public class RecommendationService {
         Pageable pageable = PageRequest.of(0, RECOMMEND_COUNT);
         List<Recommendation> recs = recommendationRepository.findLatestByMemberAndMemberMbtiTestId(memberId, mbtiTestId, pageable);
 
+        if (recs.isEmpty()) {
+            throw new SavingsException(SavingsErrorCode.RECOMMENDATION_NOT_FOUND);
+        }
+
         String normalized = (rsrvType == null ? null : rsrvType.trim().toUpperCase()); // "S" or "F" or null
 
-        List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
+        List<Savings> filteredSavings = recs.stream()
                 .filter(r -> {
                     if (normalized == null || normalized.isBlank()) return true;
                     SavingsOption so = r.getSavingsOption();
                     return so != null && normalized.equals(so.getRsrvType());
                 })
-                .map(r -> {
-                    Savings s = r.getSavings();
-                    SavingsOption so = r.getSavingsOption();
-                    return new SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct(
-                            s.getKorCoNm(),
-                            s.getFinPrdtCd(),
-                            s.getFinPrdtNm(),
-                            so == null ? null : so.getRsrvType(),
-                            so == null ? null : so.getRsrvTypeNm()
-                    );
-                })
+                .map(Recommendation::getSavings)
                 .toList();
 
-        boolean hasAnyRecommendationRow = !recs.isEmpty();
-
-        if (products.isEmpty()) {
-            // 추천은 있는데 rsrvType 필터로 인해 0개인 경우
-            if (hasAnyRecommendationRow) {
-                return SavingsResponseDTO.SavingsListResponse.builder()
-                        .totalCount(0)
-                        .nowPageNo(1)
-                        .maxPageNo(1)
-                        .products(List.of())
-                        .status(RecommendationStatus.SUCCESS)
-                        .message("해당 적립 유형의 추천 결과가 없습니다.")
-                        .build();
-            }
-
-            // 추천 자체가 없는 경우
-            return getRecommendationState(memberId);
+        if (filteredSavings.isEmpty()) {
+            throw new SavingsException(SavingsErrorCode.FILTERED_RECOMMENDATION_NOT_FOUND);
         }
-
-        return SavingsResponseDTO.SavingsListResponse.builder()
-                .totalCount(products.size())
-                .nowPageNo(1)
-                .maxPageNo(1)
-                .products(products)
-                .status(RecommendationStatus.SUCCESS)
-                .message(null)
-                .build();
+        return SavingsConverter.toSavingsListResponseDTO(filteredSavings, filteredSavings.size(), 1, 1);
     }
 
     // 추천 상품 Top3 조회
@@ -180,63 +139,17 @@ public class RecommendationService {
 
         if (recs.isEmpty()) {
             // 추천 자체가 없는 경우
-            return getRecommendationState(memberId);
+            throw new SavingsException(SavingsErrorCode.RECOMMENDATION_NOT_FOUND);
         }
 
-        List<SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct> products = recs.stream()
-                .map(r -> {
-                    Savings s = r.getSavings();
-                    SavingsOption so = r.getSavingsOption();
-                    return new SavingsResponseDTO.SavingsListResponse.RecommendedSavingProduct(
-                            s.getKorCoNm(),
-                            s.getFinPrdtCd(),
-                            s.getFinPrdtNm(),
-                            so == null ? null : so.getRsrvType(),
-                            so == null ? null : so.getRsrvTypeNm()
-                    );
-                })
-                .toList();
+        List<Savings> top3Savings = recs.stream().map(Recommendation::getSavings).toList();
 
-        return SavingsResponseDTO.SavingsListResponse.builder()
-                .totalCount(products.size())
-                .nowPageNo(1)
-                .maxPageNo(1)
-                .products(products)
-                .status(RecommendationStatus.SUCCESS)
-                .message(null)
-                .build();
+        return SavingsConverter.toSavingsListResponseDTO(top3Savings, top3Savings.size(), 1, 1);
     }
 
-    private SavingsResponseDTO.SavingsListResponse getRecommendationState(Long memberId) {
-        RecommendationStatus status = RecommendationStatus.PENDING;
-        String message = "추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요.";
-
-        Optional<RecommendationBatch> latestBatch = recommendationTxService.findLatestBatch(memberId);
-
-        if (latestBatch.isPresent()) {
-            RecommendationStatus batchStatus = latestBatch.get().getStatus();
-
-            if (batchStatus == RecommendationStatus.FAILED) {
-                status = RecommendationStatus.FAILED;
-                message = "추천 생성에 실패했습니다. 다시 시도해 주세요.";
-            } else if (batchStatus == RecommendationStatus.SUCCESS) {
-                status = RecommendationStatus.SUCCESS;
-                message = "조건에 맞는 추천 결과가 없습니다.";
-            } else {
-                // PENDING/PROCESSING이면 기본값 유지
-            }
-        } else {
-            // 배치 없음이면 기본값 유지
-        }
-
-        return SavingsResponseDTO.SavingsListResponse.builder()
-                .totalCount(0)
-                .nowPageNo(1)
-                .maxPageNo(1)
-                .products(List.of())
-                .status(status)
-                .message(message)
-                .build();
+    // 추천 결과가 없을 때 사용할 공통 응답
+    private SavingsResponseDTO.SavingsListResponse emptyResponse() {
+        return SavingsConverter.toSavingsListResponseDTO(Collections.emptyList(), 0, 1, 1);
     }
 
     private String buildPrompt(

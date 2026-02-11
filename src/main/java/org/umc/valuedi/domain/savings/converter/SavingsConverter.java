@@ -89,8 +89,8 @@ public class SavingsConverter {
 
         return SavingsResponseDTO.SavingsListResponse.builder()
                 .totalCount(totalCount)
-                .maxPageNo(maxPageNo)
                 .nowPageNo(nowPageNo)
+                .hasNext(nowPageNo < maxPageNo)
                 .products(products)
                 .build();
     }
@@ -109,22 +109,31 @@ public class SavingsConverter {
                 ))
                 .toList();
 
-        SavingsResponseDTO.SavingsDetailResponse.SavingProductDetail product = new SavingsResponseDTO.SavingsDetailResponse.SavingProductDetail(
-                savings.getKorCoNm(),
-                savings.getFinPrdtCd(),
-                savings.getFinPrdtNm(),
-                savings.getJoinWay(),
-                savings.getMtrtInt(),
-                savings.getSpclCnd(),
-                savings.getJoinDeny(),
-                savings.getJoinMember(),
-                savings.getEtcNote(),
-                savings.getMaxLimit() == null ? null : String.valueOf(savings.getMaxLimit()),
-                options
-        );
+        SavingsOption representativeOption = savings.getSavingsOptionList().stream()
+                .filter(o -> Integer.valueOf(12).equals(o.getSaveTrm()))
+                .findFirst()
+                .orElseGet(() -> savings.getSavingsOptionList().stream()
+                        .filter(o -> o.getIntrRate2() != null)
+                        .max(java.util.Comparator.comparing(SavingsOption::getIntrRate2))
+                        .orElse(null));
+
+        Double basicRate = (representativeOption != null) ? representativeOption.getIntrRate() : null;
+        Double maxRate = (representativeOption != null) ? representativeOption.getIntrRate2() : null;
 
         return SavingsResponseDTO.SavingsDetailResponse.builder()
-                .product(product)
+                .korCoNm(savings.getKorCoNm())
+                .finPrdtCd(savings.getFinPrdtCd())
+                .finPrdtNm(savings.getFinPrdtNm())
+                .basicRate(basicRate)
+                .maxRate(maxRate)
+                .joinWay(savings.getJoinWay())
+                .mtrtInt(savings.getMtrtInt())
+                .spclCnd(savings.getSpclCnd())
+                .joinDeny(savings.getJoinDeny())
+                .joinMember(savings.getJoinMember())
+                .etcNote(savings.getEtcNote())
+                .maxLimit(savings.getMaxLimit() == null ? null : String.valueOf(savings.getMaxLimit()))
+                .options(options)
                 .build();
     }
 
