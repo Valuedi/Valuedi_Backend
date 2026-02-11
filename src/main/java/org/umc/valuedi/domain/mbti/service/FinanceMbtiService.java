@@ -1,6 +1,7 @@
 package org.umc.valuedi.domain.mbti.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.mbti.converter.FinanceMbtiTestConverter;
@@ -12,11 +13,13 @@ import org.umc.valuedi.domain.mbti.repository.MbtiQuestionRepository;
 import org.umc.valuedi.domain.mbti.validator.FinanceMbtiTestValidator;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.repository.MemberRepository;
+import org.umc.valuedi.domain.savings.service.RecommendationService;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,6 +31,7 @@ public class FinanceMbtiService {
     private final FinanceMbtiScoringService scoringService;
     private final FinanceMbtiTestValidator financeMbtiTestValidator;
     private final FinanceMbtiTestConverter financeMbtiTestConverter;
+    private final RecommendationService recommendationService;
 
     public MemberMbtiTest submitTest(Long memberId, FinanceMbtiTestRequestDto req) {
 
@@ -46,9 +50,17 @@ public class FinanceMbtiService {
                 ));
 
         FinanceMbtiScoringService.ScoreResult score = scoringService.score(activeQuestions, answersByQuestionId);
-
         MemberMbtiTest test = financeMbtiTestConverter.toEntity(member, req, score, activeQuestionMap);
 
-        return memberMbtiTestRepository.save(test);
+        MemberMbtiTest savedTest = memberMbtiTestRepository.save(test);
+
+        try {
+            recommendationService.generateAndSaveRecommendations(memberId);
+            log.info("[Recommend] MBTI 검사 후 자동 추천 생성 성공. memberId={}", memberId);
+        } catch (Exception e) {
+            // 제미나이 호출이 실패해도 MBTI 저장은 유지되도록 예외를 삼키고 로그만 남김
+            log.error("[Recommend] MBTI 저장에는 성공했으나, 자동 추천 생성 중 오류 발생. memberId={}: {}", memberId, e.getMessage());
+        }
+        return savedTest;
     }
 }

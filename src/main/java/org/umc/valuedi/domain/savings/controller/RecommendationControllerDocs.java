@@ -16,12 +16,13 @@ import org.umc.valuedi.global.security.annotation.CurrentMember;
 public interface RecommendationControllerDocs {
 
     @Operation(
-            summary = "적금 추천 생성 API",
+            summary = "[개발/수동 갱신용] 적금 추천 생성 API",
             description = """
-                    로그인 사용자(JWT)의 금융 MBTI 결과를 바탕으로 Gemini가 즉시 추천 상품을 생성하고 저장합니다
+                    **주의: 일반적인 서비스 흐름에서는 MBTI 검사 완료 시 서버 내부에서 자동 호출됩니다.**
                     
+                    - 로그인 사용자(JWT)의 현재 MBTI를 바탕으로 Gemini 추천을 생성하고 DB를 갱신합니다.
                     - 응답 속도는 Gemini API 호출을 포함하므로 약 3~7초 정도 소요될 수 있습니다
-                    - 성공 시 추천된 상품 리스트와 Gemini의 추천 사유(rationale)가 반환됩니다.
+                    - 개발 테스트 중 추천 데이터를 수동으로 만들 때 사용하세요.
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -63,45 +64,13 @@ public interface RecommendationControllerDocs {
                     ),
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
                             responseCode = "MBTI404_3",
-                            description = "해당 MBTI 유형 정보가 존재하지 않습니다.",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    examples = {
-                                            @ExampleObject(
-                                                    name = "typeInfoNotFound",
-                                                    summary = "MBTI 타입 정보 미존재",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": false,
-                                                      "code": "MBTI404_3",
-                                                      "message": "해당 MBTI 유형 정보가 존재하지 않습니다.",
-                                                      "result": null
-                                                    }
-                                                    """
-                                            )
-                                    }
-                            )
+                            description = "MBTI 검사 내역이 없어 추천을 생성할 수 없습니다.",
+                            content = @Content(mediaType = "application/json")
                     ),
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
                             responseCode = "GEMINI502_2",
-                            description = "Gemini API 호출에 실패했습니다.",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    examples = {
-                                            @ExampleObject(
-                                                    name = "geminiFail",
-                                                    summary = "Gemini 호출 실패",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": false,
-                                                      "code": "GEMINI502_2",
-                                                      "message": "Gemini API 호출에 실패했습니다.",
-                                                      "result": null
-                                                    }
-                                                    """
-                                            )
-                                    }
-                            )
+                            description = "Gemini API 호출 실패 (타임아웃 등).",
+                            content = @Content(mediaType = "application/json")
                     )
             }
     )
@@ -115,8 +84,7 @@ public interface RecommendationControllerDocs {
                     로그인 사용자(JWT)의 '현재 활성 MBTI 테스트' 기준으로
                     DB에 저장된 최신 추천 15개를 조회 (Gemini 호출 X)
                     
-                    - 추천이 아직 생성되지 않았으면 status=PENDING, message에 안내 문구 포함
-                    - 추천 생성에 실패한 경우 status=FAILED, message에 실패 안내 포함
+                    - 추천 내역이 없는 경우(검사 미실행 등) status: SUCCESS와 함께 비어있는 리스트가 반환됩니다.
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -148,14 +116,14 @@ public interface RecommendationControllerDocs {
                                                           }
                                                         ],
                                                         "status": "SUCCESS",
-                                                        "message": null
+                                                        "message": "사용자님의 성향에 맞춘 AI 추천 리스트입니다."
                                                       }
                                                     }
                                                     """
                                             ),
                                             @ExampleObject(
-                                                    name = "pending",
-                                                    summary = "추천 생성 중(PENDING)",
+                                                    name = "noHistory",
+                                                    summary = "추천 내역 없음",
                                                     value = """
                                                     {
                                                       "isSuccess": true,
@@ -163,30 +131,9 @@ public interface RecommendationControllerDocs {
                                                       "message": "요청이 성공적으로 처리되었습니다.",
                                                       "result": {
                                                         "totalCount": 0,
-                                                        "maxPageNo": 1,
-                                                        "nowPageNo": 1,
-                                                        "products": [],
-                                                        "status": "PENDING",
-                                                        "message": "추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요."
-                                                      }
-                                                    }
-                                                    """
-                                            ),
-                                            @ExampleObject(
-                                                    name = "noResultForType",
-                                                    summary = "해당 적립유형 결과 없음(필터로 인해 비어있음)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON200",
-                                                      "message": "요청이 성공적으로 처리되었습니다.",
-                                                      "result": {
-                                                        "totalCount": 0,
-                                                        "maxPageNo": 1,
-                                                        "nowPageNo": 1,
                                                         "products": [],
                                                         "status": "SUCCESS",
-                                                        "message": "조건에 맞는 추천 결과가 없습니다."
+                                                        "message": "아직 추천받은 내역이 없습니다. MBTI 검사를 먼저 진행해 주세요."
                                                       }
                                                     }
                                                     """
@@ -231,9 +178,6 @@ public interface RecommendationControllerDocs {
             description = """
                     로그인 사용자(JWT)의 '현재 활성 MBTI 테스트' 기준으로
                     DB에 저장된 최신 추천 Top3를 조회 (Gemini 호출 X)
-                    
-                    - 추천이 아직 생성되지 않았으면 status=PENDING, message에 안내 문구 포함
-                    - 추천 생성에 실패한 경우 status=FAILED, message에 실패 안내 포함
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -266,25 +210,6 @@ public interface RecommendationControllerDocs {
                                                         ],
                                                         "status": "SUCCESS",
                                                         "message": null
-                                                      }
-                                                    }
-                                                    """
-                                            ),
-                                            @ExampleObject(
-                                                    name = "pending",
-                                                    summary = "추천 생성 중(PENDING)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON200",
-                                                      "message": "요청이 성공적으로 처리되었습니다.",
-                                                      "result": {
-                                                        "totalCount": 0,
-                                                        "maxPageNo": 1,
-                                                        "nowPageNo": 1,
-                                                        "products": [],
-                                                        "status": "PENDING",
-                                                        "message": "추천 상품을 추천 중입니다. 잠시 후 다시 조회해 주세요."
                                                       }
                                                     }
                                                     """
