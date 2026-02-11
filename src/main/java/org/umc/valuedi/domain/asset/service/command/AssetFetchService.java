@@ -21,11 +21,7 @@ import org.umc.valuedi.domain.member.entity.Member;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -59,15 +55,13 @@ public class AssetFetchService {
                 .map(CompletableFuture::join)
                 .toList();
 
-        // 모든 거래내역을 한번에 조회하기 위한 준비
         List<BankTransaction> allFetchedBankTransactions = new ArrayList<>();
         List<CardApproval> allFetchedCardApprovals = new ArrayList<>();
-        
+
         List<String> successOrganizations = new ArrayList<>();
         List<String> failureOrganizations = new ArrayList<>();
         LocalDate overallMinDate = today;
 
-        // 취합된 결과를 바탕으로 DB 저장 및 중복 제거 로직 실행
         for (AssetFetchWorker.FetchResult result : fetchResults) {
             if (result.isSuccess()) {
                 successOrganizations.add(result.connection().getOrganization());
@@ -82,6 +76,8 @@ public class AssetFetchService {
             }
         }
 
+        Map<Long, Long> realTimeBalances = new HashMap<>();
+
         // 새로운 데이터 필터링 및 저장
         int totalNewBankTransactions = 0;
         if (!allFetchedBankTransactions.isEmpty()) {
@@ -90,9 +86,19 @@ public class AssetFetchService {
                 bankTransactionRepository.bulkInsert(newBankTransactions);
                 totalNewBankTransactions = newBankTransactions.size();
 
-                // 계좌 잔액 업데이트 로직 추가
+                // 계좌 잔액 업데이트 (기존 엔티티 반영)
                 updateAccountBalances(newBankTransactions);
             }
+
+            // 수집된 모든 거래내역 중 계좌별 가장 최신 잔액을 추출하여 실시간 데이터 맵에 저장
+            allFetchedBankTransactions.stream()
+                    .collect(Collectors.groupingBy(tx -> tx.getBankAccount().getId(),
+                            Collectors.maxBy(Comparator.comparing(BankTransaction::getTrDatetime))))
+                    .forEach((accountId, optTx) -> optTx.ifPresent(tx -> {
+                        if (tx.getAfterBalance() != null) {
+                            realTimeBalances.put(accountId, tx.getAfterBalance());
+                        }
+                    }));
         }
 
         int totalNewCardApprovals = 0;
@@ -115,20 +121,20 @@ public class AssetFetchService {
                 .failureOrganizations(failureOrganizations)
                 .fromDate(overallMinDate)
                 .toDate(today)
+                .latestBalances(realTimeBalances) // 실시간 잔액 데이터 전달
                 .build();
     }
 
     private void updateAccountBalances(List<BankTransaction> transactions) {
-        // 계좌별로 가장 최신 거래내역을 찾아서 잔액 업데이트
         Map<BankAccount, BankTransaction> latestTransactions = transactions.stream()
-                .collect(Collectors.groupingBy(BankTransaction::getBankAccount, 
+                .collect(Collectors.groupingBy(BankTransaction::getBankAccount,
                         Collectors.collectingAndThen(
-                                Collectors.maxBy((t1, t2) -> t1.getTrDatetime().compareTo(t2.getTrDatetime())),
-                                java.util.Optional::get
+                                Collectors.maxBy(Comparator.comparing(BankTransaction::getTrDatetime)),
+                                Optional::get
                         )));
 
         List<BankAccount> updatedAccounts = new ArrayList<>();
-        
+
         latestTransactions.forEach((account, latestTransaction) -> {
             if (latestTransaction.getAfterBalance() != null) {
                 account.updateBalance(latestTransaction.getAfterBalance());
@@ -145,8 +151,8 @@ public class AssetFetchService {
         if (allFetched.isEmpty()) return List.of();
 
         LocalDate minDate = allFetched.stream().map(BankTransaction::getTrDate).min(LocalDate::compareTo).orElse(LocalDate.now());
-        List<BankAccount> accounts = allFetched.stream().map(BankTransaction::getBankAccount).distinct().collect(Collectors.toList());
-        
+        List<BankAccount> accounts = allFetched.stream().map(BankTransaction::getBankAccount).distinct().toList();
+
         List<BankTransaction> existingTransactions = bankTransactionRepository.findByBankAccountInAndTrDatetimeAfter(accounts, minDate.atStartOfDay());
 
         Set<BankTransactionKey> existingKeys = existingTransactions.stream()
@@ -155,14 +161,14 @@ public class AssetFetchService {
 
         return allFetched.stream()
                 .filter(tx -> !existingKeys.contains(new BankTransactionKey(tx.getTrDatetime(), tx.getInAmount(), tx.getOutAmount(), Objects.toString(tx.getDesc3(), ""))))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<CardApproval> filterNewCardApprovals(List<CardApproval> allFetched) {
         if (allFetched.isEmpty()) return List.of();
 
-        List<Card> cards = allFetched.stream().map(CardApproval::getCard).distinct().collect(Collectors.toList());
-        List<String> approvalNos = allFetched.stream().map(CardApproval::getApprovalNo).distinct().collect(Collectors.toList());
+        List<Card> cards = allFetched.stream().map(CardApproval::getCard).distinct().toList();
+        List<String> approvalNos = allFetched.stream().map(CardApproval::getApprovalNo).distinct().toList();
 
         List<CardApproval> existingApprovals = cardApprovalRepository.findByCardInAndApprovalNoIn(cards, approvalNos);
 
@@ -172,6 +178,6 @@ public class AssetFetchService {
 
         return allFetched.stream()
                 .filter(ca -> !existingKeys.contains(new CardApprovalKey(ca.getCard(), ca.getApprovalNo())))
-                .collect(Collectors.toList());
+                .toList();
     }
 }

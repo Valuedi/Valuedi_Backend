@@ -28,31 +28,28 @@ public class AssetBalanceService {
     private final BankAccountRepository bankAccountRepository;
     private final BankTransactionRepository bankTransactionRepository;
 
-    /**
-     * 자산 동기화를 수행하고, 특정 계좌의 최신 잔액을 반환합니다.
-     * 동기화 실패 시 기존 잔액을 반환합니다.
-     */
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Long syncAndGetLatestBalance(Long memberId, Long accountId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
 
-        // 자산 동기화 시도
         try {
             AssetResDTO.AssetSyncResult result = assetFetchService.fetchAndSaveLatestData(member);
-            log.info("[AssetBalanceService] 자산 동기화 완료. MemberID: {}, NewTransactions: {}, SuccessOrgs: {}, FailedOrgs: {}",
-                    memberId, result.getNewBankTransactionCount(), result.getSuccessOrganizations(), result.getFailureOrganizations());
 
+            // 1. 동기화 결과 DTO에 방금 수집한 실시간 잔액이 있다면 DB 조회 없이 즉시 반환 (레이스 컨디션 방지)
+            if (result.hasLatestBalanceFor(accountId)) {
+                log.info("[AssetBalanceService] 실시간 동기화 데이터 사용. AccountID: {}, Balance: {}", accountId, result.getLatestBalanceFor(accountId));
+                return result.getLatestBalanceFor(accountId);
+            }
 
         } catch (Exception e) {
-            log.warn("잔액 조회 중 자산 동기화 실패 (기존 잔액 사용): {}", e.getMessage());
+            log.warn("[AssetBalanceService] 잔액 조회 중 자산 동기화 실패 (기존 DB 잔액 사용): {}", e.getMessage());
         }
 
-        // 계좌 조회 (영속성 컨텍스트 초기화 가능성 고려하여 재조회 권장)
+        // 2. Fallback: 실시간 데이터가 없거나 동기화 실패 시 DB에서 최신 데이터 조회
         BankAccount account = bankAccountRepository.findByIdAndMemberId(accountId, memberId)
                 .orElseThrow(() -> new GoalException(GoalErrorCode.ACCOUNT_NOT_FOUND));
 
-        // 최신 거래내역 기반 잔액 조회
         return bankTransactionRepository.findTopByBankAccountOrderByTrDatetimeDesc(account)
                 .map(BankTransaction::getAfterBalance)
                 .orElse(account.getBalanceAmount());
