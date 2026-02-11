@@ -12,11 +12,6 @@ import java.time.LocalDate;
 
 public class AuthConverter {
 
-    // 카카오 로그인 URL과 state 값을 하나의 DTO로 변환
-    public static AuthResDTO.LoginUrlDTO toLoginUrlDTO(String loginUrl, String state) {
-        return new AuthResDTO.LoginUrlDTO(loginUrl, state);
-    }
-
     // 로컬 회원가입 정보 바탕으로 Member 엔티티 생성
     public static Member toGeneralMember(AuthReqDTO.RegisterReqDTO dto, String encodedPassword) {
         return Member.builder()
