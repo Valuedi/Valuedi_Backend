@@ -16,68 +16,44 @@ import org.umc.valuedi.global.security.annotation.CurrentMember;
 public interface RecommendationControllerDocs {
 
     @Operation(
-            summary = "적금 추천 생성 트리거 API (비동기)",
+            summary = "적금 추천 생성 API",
             description = """
-                    로그인 사용자(JWT)의 금융 MBTI 결과를 바탕으로, Gemini 추천 생성 작업을 비동기로 트리거
+                    로그인 사용자(JWT)의 금융 MBTI 결과를 바탕으로 Gemini가 즉시 추천 상품을 생성하고 저장합니다
                     
-                    - 최초 요청 시: recommendation_batch를 PENDING으로 생성하고 202(ACCEPTED) 반환
-                    - 이미 추천 생성 중(PENDING/PROCESSING)인 경우: 기존 batchId를 반환하며 재실행하지 않음
-                    - 이미 최신 추천이 존재(SUCCESS)하고 MBTI 테스트가 동일한 경우: 재생성하지 않고 안내 메시지 반환
-                    
-                    추천 결과는 조회 API(GET)로 확인
+                    - 응답 속도는 Gemini API 호출을 포함하므로 약 3~7초 정도 소요될 수 있습니다
+                    - 성공 시 추천된 상품 리스트와 Gemini의 추천 사유(rationale)가 반환됩니다.
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                            responseCode = "COMMON202",
-                            description = "요청이 접수되었습니다.",
+                            responseCode = "COMMON200",
+                            description = "추천 상품 생성 및 저장 성공",
                             content = @Content(
                                     mediaType = "application/json",
                                     schema = @Schema(implementation = ApiResponse.class),
                                     examples = {
                                             @ExampleObject(
-                                                    name = "pending",
-                                                    summary = "신규 트리거(PENDING)",
+                                                    name = "success",
+                                                    summary = "추천 생성 성공 예시",
                                                     value = """
                                                     {
                                                       "isSuccess": true,
-                                                      "code": "COMMON202",
-                                                      "message": "요청이 접수되었습니다.",
+                                                      "code": "COMMON200",
+                                                      "message": "요청이 성공적으로 처리되었습니다.",
                                                       "result": {
-                                                        "batchId": 12,
-                                                        "status": "PENDING",
-                                                        "message": "추천 상품을 생성 중입니다. 잠시 후 조회 API로 확인해 주세요."
-                                                      }
-                                                    }
-                                                    """
-                                            ),
-                                            @ExampleObject(
-                                                    name = "alreadyProcessing",
-                                                    summary = "이미 생성 중(PENDING/PROCESSING)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON202",
-                                                      "message": "요청이 접수되었습니다.",
-                                                      "result": {
-                                                        "batchId": 12,
-                                                        "status": "PROCESSING",
-                                                        "message": "추천을 생성 중입니다. 잠시 후 조회 API로 확인해 주세요."
-                                                      }
-                                                    }
-                                                    """
-                                            ),
-                                            @ExampleObject(
-                                                    name = "alreadySuccess",
-                                                    summary = "이미 최신 추천 존재(SUCCESS)",
-                                                    value = """
-                                                    {
-                                                      "isSuccess": true,
-                                                      "code": "COMMON202",
-                                                      "message": "요청이 접수되었습니다.",
-                                                      "result": {
-                                                        "batchId": 10,
+                                                        "totalCount": 15,
+                                                        "maxPageNo": 1,
+                                                        "nowPageNo": 1,
+                                                        "products": [
+                                                          {
+                                                            "korCoNm": "OO은행",
+                                                            "finPrdtCd": "ABC123",
+                                                            "finPrdtNm": "OO정기적금",
+                                                            "rsrvType": "S",
+                                                            "rsrvTypeNm": "정액적립식"
+                                                          }
+                                                        ],
                                                         "status": "SUCCESS",
-                                                        "message": "이미 최신 추천이 존재합니다. 조회 API로 확인해 주세요."
+                                                        "message": "사용자님의 MBTI 성향인 '도전적인 투자자'에 맞춰 높은 금리와 안정성을 동시에 잡을 수 있는 상품들을 추천해 드립니다..."
                                                       }
                                                     }
                                                     """
@@ -129,7 +105,7 @@ public interface RecommendationControllerDocs {
                     )
             }
     )
-    ApiResponse<SavingsResponseDTO.TriggerResponse> recommend(
+    ApiResponse<SavingsResponseDTO.SavingsListResponse> recommend(
             @CurrentMember Long memberId
     );
 
