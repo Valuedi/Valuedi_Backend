@@ -38,7 +38,7 @@ public class AssetBalanceService {
 
             // 1. 동기화 결과 DTO에 방금 수집한 실시간 잔액이 있다면 DB 조회 없이 즉시 반환 (레이스 컨디션 방지)
             if (result.hasLatestBalanceFor(accountId)) {
-                log.info("[AssetBalanceService] 실시간 동기화 데이터 사용. AccountID: {}, Balance: {}", accountId, result.getLatestBalanceFor(accountId));
+                log.info("[AssetBalanceService] 실시간 동기화 데이터 사용. AccountID: {}", accountId);
                 return result.getLatestBalanceFor(accountId);
             }
 
