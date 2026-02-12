@@ -68,39 +68,44 @@ public class LedgerQueryRepository {
 
     public List<CategoryStatResponse> findCategoryStats(Long memberId, YearMonth yearMonth) {
         // 카드 금액 계산 (취소 상계)
-        NumberExpression<Long> cardAmount = getCardAmountExpression();
+        NumberExpression<Long> expenseAmount = getExpenseAmountExpression();
 
         return queryFactory
                 .select(Projections.constructor(CategoryStatResponse.class,
                         category.code,
                         category.name,
-                        cardAmount.sumLong().coalesce(0L)
+                        expenseAmount.sumLong().coalesce(0L)
                 )).from(ledgerEntry)
                 .join(ledgerEntry.category, category)
+                .leftJoin(ledgerEntry.bankTransaction, bankTransaction)
                 .leftJoin(ledgerEntry.cardApproval, cardApproval)
                 .where(
                         ledgerEntry.member.id.eq(memberId),
                         yearMonthEq(yearMonth),
+                        ledgerEntry.transactionType.eq(TransactionType.EXPENSE),
                         category.code.notIn("INCOME", "TRANSFER") // 지출만
                 )
                 .groupBy(category.code, category.name)
-                .orderBy(cardAmount.sumLong().desc())
+                .orderBy(expenseAmount.sumLong().desc())
                 .fetch();
 
     }
 
     // 3. 월 총 지출액 (비율 계산용)
     public Long findTotalExpense(Long memberId, YearMonth yearMonth) {
-        NumberExpression<Long> cardAmount = getCardAmountExpression();
+        NumberExpression<Long> expenseAmount = getExpenseAmountExpression();
 
         return queryFactory
-                .select(cardAmount.sumLong().coalesce(0L))
+                .select(expenseAmount.sumLong().coalesce(0L))
                 .from(ledgerEntry)
+                .join(ledgerEntry.category, category)
+                .leftJoin(ledgerEntry.bankTransaction, bankTransaction)
                 .leftJoin(ledgerEntry.cardApproval, cardApproval)
                 .where(
                         ledgerEntry.member.id.eq(memberId),
                         yearMonthEq(yearMonth),
-                        ledgerEntry.category.code.notIn("INCOME", "TRANSFER")
+                        ledgerEntry.transactionType.eq(TransactionType.EXPENSE),
+                        category.code.notIn("INCOME", "TRANSFER")
                 )
                 .fetchOne();
     }
@@ -219,14 +224,6 @@ public class LedgerQueryRepository {
                 .collect(Collectors.toList());
     }
 
-    // 카드 금액 계산 로직 (승인 +, 취소 -)
-    private NumberExpression<Long> getCardAmountExpression() {
-        return new CaseBuilder()
-                .when(ledgerEntry.transactionType.eq(TransactionType.EXPENSE)).then(cardApproval.usedAmount)
-                .when(ledgerEntry.transactionType.eq(TransactionType.REFUND)).then(cardApproval.usedAmount.negate()) // REFUND는 차감
-                .otherwise(0L);
-    }
-
     private OrderSpecifier<?> getOrderSpecifier(LedgerSortType sort) {
         if (sort == null) return ledgerEntry.transactionAt.desc();
 
@@ -284,6 +281,14 @@ public class LedgerQueryRepository {
     private BooleanExpression periodBetween(LocalDateTime from, LocalDateTime to) {
         if (from == null || to == null) return null;
         return ledgerEntry.transactionAt.between(from, to);
+    }
+
+    // 지출 금액 계산 로직 (카드 사용액 + 은행 출금액)
+    private NumberExpression<Long> getExpenseAmountExpression() {
+        return new CaseBuilder()
+                .when(ledgerEntry.cardApproval.isNotNull()).then(cardApproval.usedAmount)
+                .when(ledgerEntry.bankTransaction.isNotNull()).then(bankTransaction.outAmount)
+                .otherwise(0L);
     }
 
 }
