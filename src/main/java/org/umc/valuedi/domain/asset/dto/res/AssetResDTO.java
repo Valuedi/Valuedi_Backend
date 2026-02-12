@@ -1,13 +1,12 @@
 package org.umc.valuedi.domain.asset.dto.res;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Schema(description = "자산 통합 응답 DTO")
 public class AssetResDTO {
@@ -30,6 +29,7 @@ public class AssetResDTO {
 
     @Getter
     @AllArgsConstructor
+    @NoArgsConstructor // Map 초기화를 위해 기본 생성자 추가
     @Builder
     @Schema(description = "AssetFetchService의 내부 처리 결과 DTO (API 응답으로 직접 사용되지 않음)")
     public static class AssetSyncResult {
@@ -50,5 +50,21 @@ public class AssetResDTO {
 
         @Schema(description = "가계부 동기화에 사용될 조회 종료일")
         private LocalDate toDate;
+
+        @Builder.Default
+        @Schema(description = "계좌 ID별 최신 잔액 맵")
+        private Map<Long, Long> latestBalances = new HashMap<>();
+
+        public boolean hasLatestBalanceFor(Long accountId) {
+            return latestBalances != null && latestBalances.containsKey(accountId);
+        }
+
+        public Long getLatestBalanceFor(Long accountId) {
+            return latestBalances.get(accountId);
+        }
+
+        public void addLatestBalance(Long accountId, Long balance) {
+            this.latestBalances.put(accountId, balance);
+        }
     }
 }
