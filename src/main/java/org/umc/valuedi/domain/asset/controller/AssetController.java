@@ -2,19 +2,19 @@ package org.umc.valuedi.domain.asset.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
+import org.umc.valuedi.domain.asset.exception.code.AssetSuccessCode;
 import org.umc.valuedi.domain.asset.service.query.AssetQueryService;
 import org.umc.valuedi.domain.connection.service.query.ConnectionQueryService;
 import org.umc.valuedi.global.apiPayload.ApiResponse;
 import org.umc.valuedi.global.apiPayload.code.GeneralSuccessCode;
 import org.umc.valuedi.global.security.annotation.CurrentMember;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 @RestController
@@ -77,5 +77,37 @@ public class AssetController implements AssetControllerDocs {
             @CurrentMember Long memberId
     ) {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, assetQueryService.getAssetSummaryCount(memberId));
+    }
+
+    @Override
+    @GetMapping("/accounts/{accountId}/transactions")
+    public ApiResponse<AssetResDTO.AssetTransactionResponse> getAccountTransactions(
+            @PathVariable Long accountId,
+            @CurrentMember Long memberId,
+            @RequestParam(required = false) YearMonth yearMonth,
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.onSuccess(
+                AssetSuccessCode.ACCOUNT_TRANSACTIONS_FETCHED,
+                assetQueryService.getAccountTransactions(memberId, accountId, yearMonth, date, page, size)
+        );
+    }
+
+    @Override
+    @GetMapping("/cards/{cardId}/transactions")
+    public ApiResponse<AssetResDTO.AssetTransactionResponse> getCardTransactions(
+            @PathVariable Long cardId,
+            @CurrentMember Long memberId,
+            @RequestParam(required = false) YearMonth yearMonth,
+            @RequestParam(required = false) LocalDate date,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ApiResponse.onSuccess(
+                AssetSuccessCode.CARD_TRANSACTIONS_FETCHED,
+                assetQueryService.getCardTransactions(memberId, cardId, yearMonth, date, page, size)
+        );
     }
 }

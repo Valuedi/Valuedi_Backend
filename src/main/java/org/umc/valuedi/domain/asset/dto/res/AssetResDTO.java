@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,5 +67,67 @@ public class AssetResDTO {
         public void addLatestBalance(Long accountId, Long balance) {
             this.latestBalances.put(accountId, balance);
         }
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "개별 거래/승인 내역")
+    public static class AssetTransactionDetail {
+        @Schema(description = "거래 일시", example = "2026-02-10T14:30:00")
+        private LocalDateTime transactionAt;
+
+        @Schema(description = "거래내역명", example = "초밥")
+        private String title;
+
+        @Schema(description = "금액", example = "16500")
+        private Long amount;
+
+        @Schema(description = "거래유형 (INCOME | EXPENSE)", example = "EXPENSE")
+        private String transactionType;
+
+        @Schema(description = "카테고리 코드", example = "FOOD")
+        private String categoryCode;
+
+        @Schema(description = "카테고리명", example = "식비")
+        private String categoryName;
+
+        @Schema(description = "거래 후 잔액 (카드는 null)", example = "93500")
+        private Long afterBalance;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "자산 거래내역 페이지 응답")
+    public static class AssetTransactionResponse {
+        @Schema(description = "전체 항목 수", example = "42")
+        private long totalElements;
+
+        @Schema(description = "현재 페이지", example = "0")
+        private int page;
+
+        @Schema(description = "페이지 크기", example = "20")
+        private int size;
+
+        @Schema(description = "전체 페이지 수", example = "3")
+        private int totalPages;
+
+        @Schema(description = "기관 코드", example = "0004")
+        private String organizationCode;
+
+        @Schema(description = "계좌명 또는 카드명", example = "KB나라사랑우대통장")
+        private String assetName;
+
+        @Schema(description = "카드번호 또는 계좌번호", example = "123-456-789012")
+        private String assetNumber;
+
+        @Schema(description = "현재 잔액 (카드는 null)", example = "150000")
+        private Long currentBalance;
+
+        @Schema(description = "거래내역 목록")
+        private List<AssetTransactionDetail> content;
     }
 }

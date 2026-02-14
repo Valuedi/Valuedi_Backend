@@ -1,16 +1,24 @@
 package org.umc.valuedi.domain.asset.converter;
 
+import org.springframework.data.domain.Page;
 import org.umc.valuedi.domain.asset.dto.res.AssetResDTO;
 import org.umc.valuedi.domain.asset.dto.res.BankResDTO;
 import org.umc.valuedi.domain.asset.dto.res.CardResDTO;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
+import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.Card;
+import org.umc.valuedi.domain.asset.entity.CardApproval;
+import org.umc.valuedi.domain.asset.enums.CancelStatus;
+import org.umc.valuedi.domain.asset.enums.TransactionDirection;
 import org.umc.valuedi.domain.connection.enums.Organization;
 import org.umc.valuedi.domain.goal.entity.Goal;
+import org.umc.valuedi.domain.ledger.entity.Category;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class AssetConverter {
 
@@ -117,6 +125,75 @@ public class AssetConverter {
                 .totalBalance(totalBalance)
                 .accountList(accountList)
                 .goalList(goalList)
+                .build();
+    }
+
+    public static AssetResDTO.AssetTransactionDetail toBankTransactionDetail(BankTransaction bt, Category category) {
+        boolean isIncome = bt.getDirection() == TransactionDirection.IN;
+        long amount = isIncome ? bt.getInAmount() : bt.getOutAmount();
+
+        String title = Stream.of(bt.getDesc2(), bt.getDesc3(), bt.getDesc4())
+                .filter(Objects::nonNull)
+                .collect(Collectors.joining(" ")).strip();
+        if (title.isBlank()) title = "은행 거래";
+        if (title.length() > 50) title = title.substring(0, 50);
+
+        return AssetResDTO.AssetTransactionDetail.builder()
+                .transactionAt(bt.getTrDatetime())
+                .title(title)
+                .amount(amount)
+                .transactionType(isIncome ? "INCOME" : "EXPENSE")
+                .categoryCode(category != null ? category.getCode() : "ETC")
+                .categoryName(category != null ? category.getName() : "기타")
+                .afterBalance(bt.getAfterBalance())
+                .build();
+    }
+
+    public static AssetResDTO.AssetTransactionDetail toCardTransactionDetail(CardApproval ca, Category category) {
+        boolean isExpense = ca.getCancelYn() == CancelStatus.NORMAL;
+        String merchantName = ca.getMerchantName();
+        String title = (merchantName == null || merchantName.isBlank()) ? "카드 승인" : merchantName;
+
+        return AssetResDTO.AssetTransactionDetail.builder()
+                .transactionAt(ca.getUsedDatetime())
+                .title(title)
+                .amount(ca.getUsedAmount())
+                .transactionType(isExpense ? "EXPENSE" : "INCOME")
+                .categoryCode(category != null ? category.getCode() : "ETC")
+                .categoryName(category != null ? category.getName() : "기타")
+                .afterBalance(null)
+                .build();
+    }
+
+    public static AssetResDTO.AssetTransactionResponse toAccountTransactionResponse(
+            BankAccount account, Page<BankTransaction> page, List<AssetResDTO.AssetTransactionDetail> content) {
+        String orgCode = account.getCodefConnection().getOrganization();
+        return AssetResDTO.AssetTransactionResponse.builder()
+                .totalElements(page.getTotalElements())
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalPages(page.getTotalPages())
+                .organizationCode(orgCode)
+                .assetName(account.getAccountName())
+                .assetNumber(account.getAccountDisplay())
+                .currentBalance(account.getBalanceAmount())
+                .content(content)
+                .build();
+    }
+
+    public static AssetResDTO.AssetTransactionResponse toCardTransactionResponse(
+            Card cardEntity, Page<CardApproval> page, List<AssetResDTO.AssetTransactionDetail> content) {
+        String orgCode = cardEntity.getCodefConnection().getOrganization();
+        return AssetResDTO.AssetTransactionResponse.builder()
+                .totalElements(page.getTotalElements())
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalPages(page.getTotalPages())
+                .organizationCode(orgCode)
+                .assetName(cardEntity.getCardName())
+                .assetNumber(cardEntity.getCardNoMasked())
+                .currentBalance(null)
+                .content(content)
                 .build();
     }
 }
