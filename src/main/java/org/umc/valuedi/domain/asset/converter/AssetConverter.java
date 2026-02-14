@@ -59,6 +59,7 @@ public class AssetConverter {
     // Card 엔티티 -> CardInfo 변환
     public static CardResDTO.CardInfo toCardInfo(Card card) {
         return CardResDTO.CardInfo.builder()
+                .cardId(card.getId())
                 .cardName(card.getCardName())
                 .cardNoMasked(card.getCardNoMasked())
                 .cardType(card.getCardType())
