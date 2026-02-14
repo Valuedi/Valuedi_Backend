@@ -19,6 +19,9 @@ import static org.umc.valuedi.domain.asset.enums.TransactionDirection.OUT;
 @Getter
 @Table(
         name = "bank_transaction",
+        indexes = {
+                @Index(name = "idx_bank_tx_account_datetime", columnList = "bank_account_id, tr_datetime DESC")
+        },
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_bank_transaction_identity",

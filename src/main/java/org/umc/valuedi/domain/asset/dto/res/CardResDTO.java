@@ -63,6 +63,9 @@ public class CardResDTO {
     @AllArgsConstructor
     @Schema(description = "카드 정보")
     public static class CardInfo {
+        @Schema(description = "카드 ID", example = "1")
+        private Long cardId;
+
         @Schema(description = "카드명", example = "KB국민 나라사랑카드")
         private String cardName;
 

@@ -1,6 +1,5 @@
 package org.umc.valuedi.domain.ledger.service.command;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,14 +13,13 @@ import org.umc.valuedi.domain.asset.repository.bank.bankTransaction.BankTransact
 import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRepository;
 import org.umc.valuedi.domain.ledger.dto.request.LedgerSyncRequest;
 import org.umc.valuedi.domain.ledger.entity.Category;
-import org.umc.valuedi.domain.ledger.entity.CategoryKeyword;
 import org.umc.valuedi.domain.ledger.entity.LedgerEntry;
 import org.umc.valuedi.domain.ledger.enums.TransactionType;
 import org.umc.valuedi.domain.ledger.exception.LedgerException;
 import org.umc.valuedi.domain.ledger.exception.code.LedgerErrorCode;
-import org.umc.valuedi.domain.ledger.repository.CategoryKeywordRepository;
 import org.umc.valuedi.domain.ledger.repository.CategoryRepository;
 import org.umc.valuedi.domain.ledger.repository.LedgerEntryRepository;
+import org.umc.valuedi.domain.ledger.service.query.CategoryMatchingService;
 import org.umc.valuedi.domain.ledger.utill.LedgerCanonicalKeyUtil;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
@@ -43,7 +41,7 @@ public class LedgerSyncService {
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
     private final CategoryRepository categoryRepository;
-    private final CategoryKeywordRepository categoryKeywordRepository;
+    private final CategoryMatchingService categoryMatchingService;
     private final MemberRepository memberRepository;
 
     // --- 키워드 상수 정의 ---
@@ -53,23 +51,6 @@ public class LedgerSyncService {
             "BC카드", "신한카드", "국민카드", "삼성카드", "현대카드", "NH카드",
             "CARD", "DEBIT", "체크", "카드"
     );
-
-    private static final List<String> CARD_SETTLEMENT_KEYWORDS = List.of(
-            "카드대금", "신용카드대금", "카드청구", "카드자동이체"
-    );
-
-    // 메모리 캐시 (키워드 -> 카테고리)
-    private volatile Map<String, Category> keywordCache;
-
-    @PostConstruct
-    public void init() {
-        refreshKeywordCache();
-    }
-
-    public void refreshKeywordCache() {
-        List<CategoryKeyword> keywords = categoryKeywordRepository.findAllWithCategory();
-        this.keywordCache = keywords.stream().collect(Collectors.toMap(CategoryKeyword::getKeyword, CategoryKeyword::getCategory, (e, r) -> e));
-    }
 
     /**
      * 기간 내 가계부 데이터를 완전히 재생성(Rebuild)합니다.
@@ -132,8 +113,8 @@ public class LedgerSyncService {
 
     private LedgerEntry createFromCard(Member member, CardApproval ca, Category defaultCategory, String key) {
         String merchantName = ca.getMerchantName();
-        Category category = mapCategoryByKeyword(ca.getMerchantType(), null);
-        if (category == null) category = mapCategoryByKeyword(merchantName, defaultCategory);
+        Category category = categoryMatchingService.mapCategoryByKeyword(ca.getMerchantType(), null);
+        if (category == null) category = categoryMatchingService.mapCategoryByKeyword(merchantName, defaultCategory);
         if (category == null) category = defaultCategory;
 
         TransactionType type = ca.getCancelYn() == CancelStatus.NORMAL ? TransactionType.EXPENSE : TransactionType.INCOME;
@@ -157,11 +138,11 @@ public class LedgerSyncService {
         Category category;
         TransactionType type;
 
-        if (isCardSettlement(combinedDesc)) {
+        if (categoryMatchingService.isCardSettlement(combinedDesc)) {
             category = transferCategory;
             type = TransactionType.EXPENSE;
         } else {
-            category = mapCategoryByKeyword(combinedDesc, defaultCategory);
+            category = categoryMatchingService.mapCategoryByKeyword(combinedDesc, defaultCategory);
             type = bt.getDirection() == TransactionDirection.IN ? TransactionType.INCOME : TransactionType.EXPENSE;
         }
 
@@ -242,7 +223,7 @@ public class LedgerSyncService {
         List<LedgerEntry> entries = ledgerEntryRepository.findAllByMemberAndTransactionAtBetween(member, startDateTime, endDateTime);
 
         // 키워드 캐시 갱신 (최신 로직 적용)
-        refreshKeywordCache();
+        categoryMatchingService.refreshKeywordCache();
         Category defaultCategory = categoryRepository.findByCode("ETC").orElseThrow();
 
         int updatedCount = 0;
@@ -262,7 +243,7 @@ public class LedgerSyncService {
             }
 
             if (textToMatch != null && !textToMatch.isBlank()) {
-                Category newCategory = mapCategoryByKeyword(textToMatch, defaultCategory);
+                Category newCategory = categoryMatchingService.mapCategoryByKeyword(textToMatch, defaultCategory);
 
                 // 카테고리가 변경되었을 경우에만 업데이트
                 if (!entry.getCategory().equals(newCategory)) {
@@ -284,8 +265,8 @@ public class LedgerSyncService {
             if (ca.getUsedDatetime() == null) continue;
 
             String merchantName = ca.getMerchantName();
-            Category category = mapCategoryByKeyword(ca.getMerchantType(), null);
-            if (category == null) category = mapCategoryByKeyword(merchantName, defaultCategory);
+            Category category = categoryMatchingService.mapCategoryByKeyword(ca.getMerchantType(), null);
+            if (category == null) category = categoryMatchingService.mapCategoryByKeyword(merchantName, defaultCategory);
             if (category == null) category = defaultCategory;
 
             TransactionType transactionType = ca.getCancelYn() == CancelStatus.NORMAL ? TransactionType.EXPENSE : TransactionType.INCOME;
@@ -318,11 +299,11 @@ public class LedgerSyncService {
             String title = combinedDesc.isEmpty() ? "은행 거래" : combinedDesc;
             if (title.length() > 50) title = title.substring(0, 50);
 
-            if (isCardSettlement(combinedDesc)) {
+            if (categoryMatchingService.isCardSettlement(combinedDesc)) {
                 category = transferCategory;
                 transactionType = TransactionType.EXPENSE;
             } else {
-                category = mapCategoryByKeyword(combinedDesc, defaultCategory);
+                category = categoryMatchingService.mapCategoryByKeyword(combinedDesc, defaultCategory);
                 transactionType = bt.getDirection() == TransactionDirection.IN ? TransactionType.INCOME : TransactionType.EXPENSE;
             }
 
@@ -337,20 +318,8 @@ public class LedgerSyncService {
         }
     }
 
-    private boolean isCardSettlement(String text) {
-        return text != null && CARD_SETTLEMENT_KEYWORDS.stream().anyMatch(text::contains);
-    }
-
-    private Category mapCategoryByKeyword(String text, Category defaultCategory) {
-        if (text == null || text.isEmpty()) return defaultCategory;
-        for (Map.Entry<String, Category> entry : keywordCache.entrySet()) {
-            if (text.contains(entry.getKey())) return entry.getValue();
-        }
-        return defaultCategory;
-    }
-
     private boolean isDuplicateOfCardApproval(BankTransaction bt, String combinedDesc, List<CardApproval> cards) {
-        if (bt.getDirection() != TransactionDirection.OUT || isCardSettlement(combinedDesc) || !hasCardPaymentKeyword(combinedDesc)) return false;
+        if (bt.getDirection() != TransactionDirection.OUT || categoryMatchingService.isCardSettlement(combinedDesc) || !hasCardPaymentKeyword(combinedDesc)) return false;
         return cards.stream().anyMatch(ca -> isMatch(bt, combinedDesc, ca));
     }
 

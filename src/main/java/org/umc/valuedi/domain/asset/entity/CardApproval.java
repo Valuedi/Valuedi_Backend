@@ -22,6 +22,9 @@ import java.time.LocalTime;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Table(
         name = "card_approval",
+        indexes = {
+                @Index(name = "idx_card_approval_card_datetime", columnList = "card_id, used_datetime DESC")
+        },
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_card_approval_identity",
