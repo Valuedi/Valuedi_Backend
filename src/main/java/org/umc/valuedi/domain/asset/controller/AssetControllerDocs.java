@@ -404,8 +404,6 @@ public interface AssetControllerDocs {
             description = """
                     카드의 승인내역을 최신순으로 페이징 조회합니다.
                     - yearMonth, date 미입력 시 전체 내역을 조회합니다.
-                    - yearMonth만 입력 시 해당 월 내역을 조회합니다.
-                    - date 입력 시 해당 일자 내역만 조회합니다.
                     - transactionType: EXPENSE(일반 결제), INCOME(취소/환불)
                     - currentBalance, afterBalance는 항상 null입니다.
                     """
