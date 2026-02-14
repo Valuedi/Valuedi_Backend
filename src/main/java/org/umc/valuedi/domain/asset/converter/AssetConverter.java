@@ -22,6 +22,8 @@ import java.util.stream.Stream;
 
 public class AssetConverter {
 
+    private static final int MAX_TITLE_LENGTH = 50;
+
     // 개별 BankAccount 엔티티 -> BankAccountInfo 변환
     public static BankResDTO.BankAccountInfo toBankAccountInfo(BankAccount account) {
         BankResDTO.GoalInfo goalInfo = null;
@@ -137,7 +139,7 @@ public class AssetConverter {
                 .filter(Objects::nonNull)
                 .collect(Collectors.joining(" ")).strip();
         if (title.isBlank()) title = "은행 거래";
-        if (title.length() > 50) title = title.substring(0, 50);
+        if (title.length() > MAX_TITLE_LENGTH) title = title.substring(0, MAX_TITLE_LENGTH);
 
         return AssetResDTO.AssetTransactionDetail.builder()
                 .transactionAt(bt.getTrDatetime())

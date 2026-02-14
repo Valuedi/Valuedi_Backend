@@ -96,8 +96,9 @@ public class AssetQueryService {
                 .findAccountWithConnection(accountId, memberId)
                 .orElseThrow(() -> new AssetException(AssetErrorCode.ACCOUNT_NOT_FOUND));
 
+        YearMonth queryYearMonth = (date != null) ? null : yearMonth;
         Page<BankTransaction> txPage = assetTransactionQueryRepository
-                .findBankTransactions(accountId, yearMonth, date, PageRequest.of(page, size));
+                .findBankTransactions(accountId, queryYearMonth, date, PageRequest.of(page, size));
 
         List<Long> ids = txPage.getContent().stream()
                 .map(BankTransaction::getId).toList();
@@ -111,8 +112,8 @@ public class AssetQueryService {
                         (a, b) -> a
                 ));
 
-        Category defaultCategory = categoryRepository.findByCode("ETC").orElse(null);
-        Category transferCategory = categoryRepository.findByCode("TRANSFER").orElse(defaultCategory);
+        Category defaultCategory = getCategoryOrThrow("ETC");
+        Category transferCategory = getCategoryOrThrow("TRANSFER");
 
         List<AssetResDTO.AssetTransactionDetail> content = txPage.getContent().stream()
                 .map(bt -> {
@@ -144,8 +145,9 @@ public class AssetQueryService {
                 .findCardWithConnection(cardId, memberId)
                 .orElseThrow(() -> new AssetException(AssetErrorCode.CARD_NOT_FOUND));
 
+        YearMonth queryYearMonth = (date != null) ? null : yearMonth;
         Page<CardApproval> approvalPage = assetTransactionQueryRepository
-                .findCardApprovals(cardId, yearMonth, date, PageRequest.of(page, size));
+                .findCardApprovals(cardId, queryYearMonth, date, PageRequest.of(page, size));
 
         List<Long> ids = approvalPage.getContent().stream()
                 .map(CardApproval::getId).toList();
@@ -159,7 +161,7 @@ public class AssetQueryService {
                         (a, b) -> a
                 ));
 
-        Category defaultCategory = categoryRepository.findByCode("ETC").orElse(null);
+        Category defaultCategory = getCategoryOrThrow("ETC");
 
         List<AssetResDTO.AssetTransactionDetail> content = approvalPage.getContent().stream()
                 .map(ca -> {
@@ -174,5 +176,10 @@ public class AssetQueryService {
                 .toList();
 
         return AssetConverter.toCardTransactionResponse(cardEntity, approvalPage, content);
+    }
+
+    private Category getCategoryOrThrow(String code) {
+        return categoryRepository.findByCode(code)
+                .orElseThrow(() -> new AssetException(AssetErrorCode.ASSET_CATEGORY_NOT_FOUND));
     }
 }
