@@ -7,10 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
+import org.umc.valuedi.domain.connection.enums.ConnectionStatus;
 import org.umc.valuedi.domain.member.entity.Member;
-import org.umc.valuedi.domain.member.exception.MemberException;
-import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
-import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
@@ -38,6 +36,7 @@ public class CodefAccountService {
 
         // 기존에 발급받은 Connected ID가 있는지 리스트에서 확인
         String existingConnectedId = member.getCodefConnectionList().stream()
+                .filter(c -> c.getStatus() != ConnectionStatus.DELETED) // 활성 연동만
                 .map(CodefConnection::getConnectedId)
                 .filter(Objects::nonNull)
                 .distinct()
@@ -91,7 +90,7 @@ public class CodefAccountService {
     private String handleFirstCreation(Map<String, Object> requestBody) {
         CodefApiResponse<Map<String, Object>> response = codefApiClient.createConnectedId(requestBody);
         if (!response.isSuccess()) {
-            log.error("CODEF 계정 생성 실패: {}", response.getResult().getMessage());
+            log.error("CODEF 계정 생성 실패 - code: {}, message: {}", response.getResult().getCode(), response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CREATE_FAILED);
         }
         Map<String, Object> data = response.getData();

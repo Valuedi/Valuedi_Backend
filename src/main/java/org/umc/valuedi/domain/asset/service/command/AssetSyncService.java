@@ -126,6 +126,7 @@ public class AssetSyncService {
         // 기존 syncTransactions 대신 rebuildLedger 호출
         // 범위: 최근 3개월 (기존 정책 유지)
         ledgerSyncService.rebuildLedger(member, LocalDate.now().minusMonths(DEFAULT_SYNC_PERIOD_MONTHS), LocalDate.now());
+        member.updateLastSyncedAt();
     }
 
     /**
