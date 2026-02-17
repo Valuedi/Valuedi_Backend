@@ -16,7 +16,7 @@ public class ConnectionEventListener {
 
     private final AssetSyncService assetSyncService;
 
-    @Async("assetFetchExecutor")
+    @Async("assetSyncExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleConnectionSuccess(ConnectionSuccessEvent event) {
         log.info("금융사 연동 성공 이벤트 수신 - Connection ID: {}, Organization: {}",

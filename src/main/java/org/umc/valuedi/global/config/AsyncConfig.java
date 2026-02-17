@@ -23,12 +23,23 @@ public class AsyncConfig {
         return executor;
     }
 
+    @Bean(name = "assetSyncExecutor")
+    public Executor assetSyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("AssetSync-");
+        executor.initialize();
+        return executor;
+    }
+
     @Bean(name = "assetFetchExecutor")
     public Executor assetFetchExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);   // 기본 스레드 수 - 동시에 처리할 작업 수 (CPU 코어 수에 맞게 조절)
-        executor.setMaxPoolSize(10);   // 최대 스레드 수
-        executor.setQueueCapacity(100); // 큐 용량
+        executor.setCorePoolSize(3);
+        executor.setMaxPoolSize(3);
+        executor.setQueueCapacity(50);
         executor.setThreadNamePrefix("AssetFetch-");
         executor.initialize();
         return executor;

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.Card;
@@ -13,6 +14,9 @@ import org.umc.valuedi.domain.asset.repository.card.card.CardRepository;
 import org.umc.valuedi.domain.asset.repository.card.cardApproval.CardApprovalRepository;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
+import org.umc.valuedi.domain.connection.exception.ConnectionException;
+import org.umc.valuedi.domain.connection.exception.code.ConnectionErrorCode;
+import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.global.external.codef.service.CodefAssetService;
 
@@ -33,6 +37,8 @@ public class AssetFetchWorker {
     private final BankTransactionRepository bankTransactionRepository;
     private final CardApprovalRepository cardApprovalRepository;
     private final CardRepository cardRepository;
+    private final CodefConnectionRepository codefConnectionRepository;
+    private final TransactionTemplate transactionTemplate;
 
     public record FetchResult(
             CodefConnection connection,
@@ -43,10 +49,14 @@ public class AssetFetchWorker {
     ) {}
 
     @Async("assetFetchExecutor")
-    public CompletableFuture<FetchResult> fetchAndConvertData(CodefConnection connection, Member member) {
+    public CompletableFuture<FetchResult> fetchAndConvertData(Long connectionId, Member member) {
         LocalDate today = LocalDate.now();
         LocalDate defaultStartDate = today.minusMonths(DEFAULT_SYNC_PERIOD_MONTHS); // 기본 시작일을 3개월 전으로 설정
         LocalDate overallStartDate = today; // 전체 기관의 시작일 기록용
+
+        // 비동기 스레드에서 새로운 트랜잭션으로 엔티티 조회
+        CodefConnection connection = codefConnectionRepository.findByIdWithAccountsAndMember(connectionId)
+                .orElseThrow(() -> new ConnectionException(ConnectionErrorCode.CONNECTION_NOT_FOUND));
 
         try {
             if (connection.getBusinessType() == BusinessType.BK) {
@@ -79,18 +89,27 @@ public class AssetFetchWorker {
                 List<Card> fetchedCards = codefAssetService.getCards(connection);
                 List<Card> savedCards = Collections.emptyList();
                 if (!fetchedCards.isEmpty()) {
-                    List<Card> existingCards = cardRepository.findAllByCodefConnection(connection);
+                    // 2. 카드 저장 로직만 트랜잭션으로 감싸서 처리
+                    savedCards = transactionTemplate.execute(status -> {
+                        // 트랜잭션 내부에서 Connection을 다시 조회하여 영속 상태로 만듦
+                        CodefConnection managedConnection = codefConnectionRepository.findById(connectionId)
+                                .orElseThrow(() -> new IllegalStateException("Connection not found during save"));
+                        
+                        List<Card> existingCards = cardRepository.findAllByCodefConnection(managedConnection);
 
-                    List<Card> cardsToSave = fetchedCards.stream().map(newCard -> {
-                        return existingCards.stream()
-                                .filter(oldCard -> oldCard.getCardNoMasked().equals(newCard.getCardNoMasked()))
-                                .findFirst()
-                                .map(oldCard -> oldCard) // 정보 갱신 필요 시 여기서 수행
-                                .orElse(newCard);
-                    }).toList();
+                        List<Card> cardsToSave = fetchedCards.stream().map(newCard -> {
+                            // 새 카드 객체에 영속 상태의 Connection 할당 (Detached 엔티티 참조 문제 방지)
+                            newCard.assignConnection(managedConnection);
+                            
+                            return existingCards.stream()
+                                    .filter(oldCard -> oldCard.getCardNoMasked().equals(newCard.getCardNoMasked()))
+                                    .findFirst()
+                                    .map(oldCard -> oldCard) // 정보 갱신 필요 시 여기서 수행
+                                    .orElse(newCard);
+                        }).toList();
 
-                    // saveAll의 결과(영속화된 객체들) 저장
-                    savedCards = cardRepository.saveAll(cardsToSave);
+                        return cardRepository.saveAll(cardsToSave);
+                    });
                 }
 
                 LocalDate cardStartDate = cardApprovalRepository.findLatestApprovalDateByMember(member)

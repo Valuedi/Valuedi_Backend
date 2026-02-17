@@ -14,6 +14,9 @@ public interface CodefConnectionRepository extends JpaRepository<CodefConnection
     @Query("SELECT c FROM CodefConnection c JOIN FETCH c.member WHERE c.id = :id")
     Optional<CodefConnection> findByIdWithMember(@Param("id") Long id);
 
+    @Query("SELECT c FROM CodefConnection c JOIN FETCH c.member LEFT JOIN FETCH c.bankAccountList WHERE c.id = :id")
+    Optional<CodefConnection> findByIdWithAccountsAndMember(@Param("id") Long id);
+
     @Query("SELECT c FROM CodefConnection c JOIN FETCH c.member WHERE c.member.id = :memberId")
     List<CodefConnection> findByMemberIdWithMember(@Param("memberId") Long memberId);
 

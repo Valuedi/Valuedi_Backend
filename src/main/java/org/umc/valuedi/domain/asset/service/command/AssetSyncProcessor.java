@@ -27,7 +27,7 @@ public class AssetSyncProcessor {
     /**
      * 실제 동기화 로직을 수행하는 비동기 메서드
      */
-    @Async("assetFetchExecutor")
+    @Async("assetSyncExecutor")
     public void runSyncProcess(Long memberId, Long logId) {
         log.info("자산 동기화 백그라운드 작업을 시작합니다. 회원 ID: {}", memberId);
         try {
