@@ -8,7 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.connection.enums.ConnectionStatus;
+import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.domain.member.entity.Member;
+import org.umc.valuedi.domain.member.exception.MemberException;
+import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
+import org.umc.valuedi.domain.member.repository.MemberRepository;
 import org.umc.valuedi.global.external.codef.client.CodefApiClient;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.global.external.codef.dto.CodefApiResponse;
@@ -27,36 +31,44 @@ public class CodefAccountService {
     private final CodefApiClient codefApiClient;
     private final EncryptUtil encryptUtil;
     private final ApplicationEventPublisher eventPublisher;
+    private final CodefConnectionRepository codefConnectionRepository;
+    private final MemberRepository memberRepository;
 
     /**
-     * 금융사 계정 연동 메인 로직
+     * 기존 connectedId 조회
      */
-    @Transactional
-    public void connectAccount(Member member, ConnectionReqDTO.Connect request) {
-
-        // 기존에 발급받은 Connected ID가 있는지 리스트에서 확인
-        String existingConnectedId = member.getCodefConnectionList().stream()
-                .filter(c -> c.getStatus() != ConnectionStatus.DELETED) // 활성 연동만
+    public String findExistingConnectedId(Long memberId) {
+        return codefConnectionRepository.findByMemberId(memberId).stream()
+                .filter(c -> c.getStatus() != ConnectionStatus.DELETED)
                 .map(CodefConnection::getConnectedId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .findFirst()
                 .orElse(null);
+    }
 
-        // 비밀번호 암호화
+    /**
+     * CODEF 외부 API 호출 (트랜잭션 밖에서 실행)
+     */
+    public String callCodefConnectApi(String existingConnectedId, ConnectionReqDTO.Connect request) {
         String encryptedPassword = encryptUtil.encryptRSA(request.getLoginPassword());
         Map<String, Object> requestBody = createRequestBody(request, encryptedPassword);
 
-        String targetConnectedId;
-
         if (existingConnectedId == null) {
-            // 최초 등록 (Create)
-            targetConnectedId = handleFirstCreation(requestBody);
+            return handleFirstCreation(requestBody);
         } else {
-            // 계정 추가 (Add)
-            targetConnectedId = handleAddition(existingConnectedId, requestBody);
+            return handleAddition(existingConnectedId, requestBody);
         }
-        saveConnectionRecord(member, targetConnectedId, request.getOrganization(), request.getBusinessTypeEnum());
+    }
+
+    /**
+     * 연동 결과를 DB에 저장
+     */
+    @Transactional
+    public void saveConnection(Long memberId, String connectedId, String organization, BusinessType businessType) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+        saveConnectionRecord(member, connectedId, organization, businessType);
     }
 
     /**

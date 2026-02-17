@@ -3,9 +3,9 @@ package org.umc.valuedi.domain.connection.service.command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.connection.dto.req.ConnectionReqDTO;
 import org.umc.valuedi.domain.connection.entity.CodefConnection;
+import org.umc.valuedi.domain.connection.enums.BusinessType;
 import org.umc.valuedi.domain.connection.exception.ConnectionException;
 import org.umc.valuedi.domain.connection.exception.code.ConnectionErrorCode;
 import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
@@ -28,11 +28,11 @@ public class ConnectionCommandService {
     /**
      * 금융사 계정 연동
      */
-    @Transactional
     public void connect(Long memberId, ConnectionReqDTO.Connect request) {
-        Member member = memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
-        codefAccountService.connectAccount(member, request);
+        String existingConnectedId = codefAccountService.findExistingConnectedId(memberId);
+        String targetConnectedId = codefAccountService.callCodefConnectApi(existingConnectedId, request);
+
+        codefAccountService.saveConnection(memberId, targetConnectedId, request.getOrganization(), request.getBusinessTypeEnum());
         log.info("금융사 연동 완료 - memberId: {}, organization: {}", memberId, request.getOrganization());
     }
 
