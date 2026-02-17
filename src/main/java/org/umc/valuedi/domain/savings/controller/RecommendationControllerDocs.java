@@ -16,11 +16,11 @@ import org.umc.valuedi.global.security.annotation.CurrentMember;
 public interface RecommendationControllerDocs {
 
     @Operation(
-            summary = "[개발/수동 갱신용] 적금 추천 생성 API",
+            summary = "적금 추천 생성 API",
             description = """
-                    **주의: 일반적인 서비스 흐름에서는 MBTI 검사 완료 시 서버 내부에서 자동 호출됩니다.**
-                    
-                    - 로그인 사용자(JWT)의 현재 MBTI를 바탕으로 Gemini 추천을 생성하고 DB를 갱신합니다.
+                    로그인 사용자(JWT)의 현재 MBTI를 바탕으로 Gemini 추천을 생성하고 DB를 갱신합니다.
+                    MBTI 검사 완료 후 이 API를 호출하여 맞춤 추천을 받을 수 있습니다.
+
                     - 응답 속도는 Gemini API 호출을 포함하므로 약 3~7초 정도 소요될 수 있습니다
                     """,
             responses = {
