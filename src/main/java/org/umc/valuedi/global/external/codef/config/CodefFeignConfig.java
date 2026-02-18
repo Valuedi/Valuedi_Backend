@@ -30,7 +30,7 @@ public class CodefFeignConfig {
     public Request.Options options() {
         return new Request.Options(
                 10, TimeUnit.SECONDS,
-                5, TimeUnit.MINUTES,
+                3, TimeUnit.MINUTES,
                 true
         );
     }

@@ -104,7 +104,6 @@ public class AssetFetchWorker {
                             return existingCards.stream()
                                     .filter(oldCard -> oldCard.getCardNoMasked().equals(newCard.getCardNoMasked()))
                                     .findFirst()
-                                    .map(oldCard -> oldCard) // 정보 갱신 필요 시 여기서 수행
                                     .orElse(newCard);
                         }).toList();
 

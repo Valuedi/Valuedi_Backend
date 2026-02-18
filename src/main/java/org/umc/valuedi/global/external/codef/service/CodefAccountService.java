@@ -39,7 +39,6 @@ public class CodefAccountService {
      */
     public String findExistingConnectedId(Long memberId) {
         return codefConnectionRepository.findByMemberId(memberId).stream()
-                .filter(c -> c.getStatus() != ConnectionStatus.DELETED)
                 .map(CodefConnection::getConnectedId)
                 .filter(Objects::nonNull)
                 .distinct()
