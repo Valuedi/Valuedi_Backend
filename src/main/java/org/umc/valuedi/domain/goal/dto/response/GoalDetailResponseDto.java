@@ -14,8 +14,8 @@ public record GoalDetailResponseDto(
         @Schema(description = "목표 제목", example = "여행 자금 모으기")
         String title,
 
-        @Schema(description = "현재까지 모은 금액", example = "300000")
-        Long savedAmount,
+        @Schema(description = "현재 계좌 잔액", example = "300000")
+        Long currentBalance,
 
         @Schema(description = "목표 금액", example = "1000000")
         Long targetAmount,

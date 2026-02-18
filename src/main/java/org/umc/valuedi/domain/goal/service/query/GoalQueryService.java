@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
-import org.umc.valuedi.domain.asset.service.AssetBalanceService;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.response.GoalActiveCountResponseDto;
 import org.umc.valuedi.domain.goal.dto.response.GoalDetailResponseDto;
@@ -30,7 +29,6 @@ public class GoalQueryService {
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
     private final GoalAchievementRateService achievementRateService;
-    private final AssetBalanceService assetBalanceService;
     private final GoalStatusChangeService goalStatusChangeService;
 
     // 목표 상세 조회
@@ -41,27 +39,19 @@ public class GoalQueryService {
 
         BankAccount account = goal.getBankAccount();
 
-        if (!account.getIsActive()) {
+        if (account == null || !account.getIsActive()) {
             throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
         }
 
-        // 동기화 후 최신 잔액 가져오기
-        Long currentBalance = assetBalanceService.syncAndGetLatestBalance(memberId, account.getId());
+        // DB에 저장된 현재 계좌 잔액 사용
+        Long currentBalance = account.getBalanceAmount();
 
-        // 현재 잔액 - 시작 잔액
-        long savedAmount = currentBalance - goal.getStartAmount();
+        // 목표 달성 여부 체크 및 상태 업데이트
+        goalStatusChangeService.checkAndUpdateStatus(goal, currentBalance);
 
-        // 음수일 경우 0으로 처리
-        if (savedAmount < 0) {
-            savedAmount = 0;
-        }
+        int rate = achievementRateService.calculateRate(currentBalance, goal.getTargetAmount());
 
-        // 목표 달성 여부 체크 및 상태 업데이트 (공통 로직 사용)
-        goalStatusChangeService.checkAndUpdateStatus(goal, savedAmount);
-
-        int rate = achievementRateService.calculateRate(savedAmount, goal.getTargetAmount());
-
-        return GoalConverter.toDetailDto(goal, savedAmount, rate);
+        return GoalConverter.toDetailDto(goal, currentBalance, rate);
     }
 
     // 목표 개수 조회
