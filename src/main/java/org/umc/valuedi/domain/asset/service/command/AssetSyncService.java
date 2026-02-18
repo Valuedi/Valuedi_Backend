@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
 import org.umc.valuedi.domain.asset.entity.BankTransaction;
 import org.umc.valuedi.domain.asset.entity.Card;
@@ -26,7 +25,6 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AssetSyncService {
 
     private static final int DEFAULT_SYNC_PERIOD_MONTHS = 3;
@@ -126,6 +124,7 @@ public class AssetSyncService {
         // 기존 syncTransactions 대신 rebuildLedger 호출
         // 범위: 최근 3개월 (기존 정책 유지)
         ledgerSyncService.rebuildLedger(member, LocalDate.now().minusMonths(DEFAULT_SYNC_PERIOD_MONTHS), LocalDate.now());
+        ledgerSyncService.updateMemberLastSyncedAt(member.getId());
     }
 
     /**

@@ -107,8 +107,6 @@ public class LedgerSyncService {
             ledgerEntryRepository.bulkInsert(entries);
             log.info("Ledger Rebuild Complete: Member {}, {} entries created.", member.getId(), entries.size());
         }
-
-        member.updateLastSyncedAt();
     }
 
     private LedgerEntry createFromCard(Member member, CardApproval ca, Category defaultCategory, String key) {

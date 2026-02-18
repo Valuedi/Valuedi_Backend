@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.connection.dto.event.ConnectionSuccessEvent;
 import org.umc.valuedi.domain.connection.enums.BusinessType;
+import org.umc.valuedi.domain.connection.enums.ConnectionStatus;
+import org.umc.valuedi.domain.connection.repository.CodefConnectionRepository;
 import org.umc.valuedi.domain.member.entity.Member;
 import org.umc.valuedi.domain.member.exception.MemberException;
 import org.umc.valuedi.domain.member.exception.code.MemberErrorCode;
@@ -29,35 +31,43 @@ public class CodefAccountService {
     private final CodefApiClient codefApiClient;
     private final EncryptUtil encryptUtil;
     private final ApplicationEventPublisher eventPublisher;
+    private final CodefConnectionRepository codefConnectionRepository;
+    private final MemberRepository memberRepository;
 
     /**
-     * 금융사 계정 연동 메인 로직
+     * 기존 connectedId 조회
      */
-    @Transactional
-    public void connectAccount(Member member, ConnectionReqDTO.Connect request) {
-
-        // 기존에 발급받은 Connected ID가 있는지 리스트에서 확인
-        String existingConnectedId = member.getCodefConnectionList().stream()
+    public String findExistingConnectedId(Long memberId) {
+        return codefConnectionRepository.findByMemberId(memberId).stream()
                 .map(CodefConnection::getConnectedId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .findFirst()
                 .orElse(null);
+    }
 
-        // 비밀번호 암호화
+    /**
+     * CODEF 외부 API 호출 (트랜잭션 밖에서 실행)
+     */
+    public String callCodefConnectApi(String existingConnectedId, ConnectionReqDTO.Connect request) {
         String encryptedPassword = encryptUtil.encryptRSA(request.getLoginPassword());
         Map<String, Object> requestBody = createRequestBody(request, encryptedPassword);
 
-        String targetConnectedId;
-
         if (existingConnectedId == null) {
-            // 최초 등록 (Create)
-            targetConnectedId = handleFirstCreation(requestBody);
+            return handleFirstCreation(requestBody);
         } else {
-            // 계정 추가 (Add)
-            targetConnectedId = handleAddition(existingConnectedId, requestBody);
+            return handleAddition(existingConnectedId, requestBody);
         }
-        saveConnectionRecord(member, targetConnectedId, request.getOrganization(), request.getBusinessTypeEnum());
+    }
+
+    /**
+     * 연동 결과를 DB에 저장
+     */
+    @Transactional
+    public void saveConnection(Long memberId, String connectedId, String organization, BusinessType businessType) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberException(MemberErrorCode.MEMBER_NOT_FOUND));
+        saveConnectionRecord(member, connectedId, organization, businessType);
     }
 
     /**
@@ -91,7 +101,7 @@ public class CodefAccountService {
     private String handleFirstCreation(Map<String, Object> requestBody) {
         CodefApiResponse<Map<String, Object>> response = codefApiClient.createConnectedId(requestBody);
         if (!response.isSuccess()) {
-            log.error("CODEF 계정 생성 실패: {}", response.getResult().getMessage());
+            log.error("CODEF 계정 생성 실패 - code: {}, message: {}", response.getResult().getCode(), response.getResult().getMessage());
             throw new CodefException(CodefErrorCode.CODEF_API_CREATE_FAILED);
         }
         Map<String, Object> data = response.getData();

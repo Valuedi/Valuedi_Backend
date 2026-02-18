@@ -18,7 +18,6 @@ import org.umc.valuedi.domain.savings.dto.response.SavingsResponseDTO;
 import org.umc.valuedi.domain.savings.entity.Recommendation;
 import org.umc.valuedi.domain.savings.entity.Savings;
 import org.umc.valuedi.domain.savings.entity.SavingsOption;
-import org.umc.valuedi.domain.savings.enums.RecommendationStatus;
 import org.umc.valuedi.domain.savings.exception.SavingsException;
 import org.umc.valuedi.domain.savings.exception.code.SavingsErrorCode;
 import org.umc.valuedi.domain.savings.repository.RecommendationRepository;
@@ -53,7 +52,6 @@ public class RecommendationService {
 
     private final RecommendationTxService recommendationTxService;
 
-    @Transactional
     public SavingsResponseDTO.SavingsListResponse generateAndSaveRecommendations(Long memberId) {
         // 금융 mbti 최신 결과 조회
         MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
