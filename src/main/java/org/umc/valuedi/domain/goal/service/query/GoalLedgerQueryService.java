@@ -34,7 +34,7 @@ public class GoalLedgerQueryService {
         }
 
         // 시작 시간: 목표의 시작일(startDate)
-        LocalDateTime from = goal.getStartDate().atStartOfDay();
+        LocalDateTime from = goal.getStartDate().atTime(LocalTime.MAX);
         
         // 종료 시간: 목표의 종료일(endDate)
         LocalDateTime to = goal.getEndDate().atTime(LocalTime.MAX);
