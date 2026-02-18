@@ -24,7 +24,7 @@ public class RecommendationController implements RecommendationControllerDocs {
         return ApiResponse.onSuccess(GeneralSuccessCode.OK, result);
     }
 
-    // 최신 추천 15개 조회
+    // 최신 추천 10개 조회
     @GetMapping
     public ApiResponse<SavingsResponseDTO.SavingsListResponse> latest15(
             @RequestParam(required = false) String rsrvType,

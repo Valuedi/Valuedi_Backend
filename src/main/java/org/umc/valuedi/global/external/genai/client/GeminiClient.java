@@ -21,13 +21,13 @@ public class GeminiClient {
     private final Client genaiClient;
     private final GeminiProperties geminiProperties;
 
-    private static final int MAX_ATTEMPTS = 4;
+    private static final int MAX_ATTEMPTS = 2;
 
-    private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(30);  // 시도별 제한
-    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(240);  // 전체 제한
+    private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(90);  // 시도별 제한
+    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(130);  // 전체 제한
 
     private static final long BASE_BACKOFF_MILLIS = 2_000;
-    private static final long MAX_BACKOFF_MILLIS = 90_000;
+    private static final long MAX_BACKOFF_MILLIS = 8_000;
 
     private static final ExecutorService executor =
             Executors.newFixedThreadPool(4, r -> {

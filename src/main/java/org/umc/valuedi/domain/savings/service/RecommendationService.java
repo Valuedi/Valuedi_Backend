@@ -36,10 +36,10 @@ import java.util.*;
 @RequiredArgsConstructor
 public class RecommendationService {
 
-    private static final int RECOMMEND_COUNT = 15;
+    private static final int RECOMMEND_COUNT = 10;
     private static final int TOP3_COUNT = 3;
 
-    private static final int CANDIDATE_LIMIT = 40;
+    private static final int CANDIDATE_LIMIT = 25;
 
     private final MemberMbtiTestRepository memberMbtiTestRepository;
     private final FinanceMbtiProvider financeMbtiProvider;
@@ -96,7 +96,7 @@ public class RecommendationService {
         return SavingsConverter.toSavingsListResponseDTO(savingsList, savingsList.size(), 1, 1);
     }
 
-    // 추천 상품 15개 조회
+    // 추천 상품 10개 조회
     @Transactional(readOnly = true)
     public SavingsResponseDTO.SavingsListResponse getRecommendation(Long memberId, String rsrvType) {
         Long mbtiTestId = memberMbtiTestRepository.findCurrentActiveTest(memberId)
