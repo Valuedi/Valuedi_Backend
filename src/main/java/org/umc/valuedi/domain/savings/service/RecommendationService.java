@@ -6,8 +6,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.umc.valuedi.domain.mbti.dto.FinanceMbtiTypeInfoDto;
 import org.umc.valuedi.domain.mbti.entity.MemberMbtiTest;
+import org.umc.valuedi.domain.mbti.enums.MbtiTraits;
 import org.umc.valuedi.domain.mbti.enums.MbtiType;
 import org.umc.valuedi.domain.mbti.exception.MbtiException;
 import org.umc.valuedi.domain.mbti.exception.code.MbtiErrorCode;
@@ -64,8 +64,7 @@ public class RecommendationService {
 
         // 제미나이 프롬프트 생성
         MbtiType mbtiType = memberMbtiTest.getResultType();
-        FinanceMbtiTypeInfoDto financeMbtiTypeInfo = financeMbtiProvider.get(mbtiType);
-        String prompt = buildPrompt(mbtiType, financeMbtiTypeInfo, candidates, RECOMMEND_COUNT);
+        String prompt = buildPrompt(mbtiType, candidates, RECOMMEND_COUNT);
 
         // 제미나이 호출
         log.info("[Recommend] Gemini request. memberId={}, promptChars={}", memberId, prompt.length());
@@ -153,7 +152,6 @@ public class RecommendationService {
 
     private String buildPrompt(
             MbtiType mbtiType,
-            FinanceMbtiTypeInfoDto typeInfo,
             List<SavingsOption> candidates,
             int recommendCount
     ) {
@@ -182,18 +180,22 @@ public class RecommendationService {
             candidateText = "[]";
         }
 
-        // JSON만 출력 강제 + 키 이름 DTO와 일치(GeminiSavingsResponseDTO.Result가 recommendations를 가지도록)
+        List<String> traits = MbtiTraits.of(mbtiType); // enum에서 가져오기
+        String traitsText;
+        try {
+            traitsText = objectMapper.writeValueAsString(traits); // ["...", "..."]
+        } catch (Exception e) {
+            traitsText = "[]";
+        }
+
+        // JSON만 출력 강제
         return """
                 당신은 금융 추천 엔진입니다.
-                아래 "사용자 금융 MBTI"와 "후보 적금 옵션 목록"을 기반으로, 사용자에게 가장 적합한 적금 옵션 %d개를 추천하세요.
+                아래 "사용자 성향(traits)"과 "후보 적금 옵션 목록"을 기반으로, 가장 적합한 적금 옵션 %d개를 추천하세요.
 
-                [사용자 금융 MBTI]
-                - type: %s
-                - title: %s
-                - tagline: %s
-                - detail: %s
-                - warning: %s
-                - recommend: %s
+                [사용자]
+                - mbtiType: %s
+                - traits: %s
 
                 [후보 적금 옵션 목록]
                 %s
@@ -203,11 +205,11 @@ public class RecommendationService {
                 - 반드시 아래 스키마를 정확히 지키세요.
                 - optionId는 후보 목록에 있는 값만 사용하세요.
                 - score는 0~1 사이 숫자(소수)로, 높을수록 추천 우선순위입니다.
-                - reasons는 1~3개. reasonCode는 대문자 스네이크로 작성하세요(예: HIGH_RATE, MATCH_TERM, MBTI_FIT).
+                - reasons는 1~3개. reasonCode는 대문자 스네이크로 작성하세요(예: HIGH_RATE, MATCH_TERM).
 
                 [JSON 스키마]
                 {
-                  "rationale": "전체 추천 요약(한 문단)",
+                  "rationale": "전체 추천 요약(한 문장)",
                   "recommendations": [
                     {
                       "finPrdtCd": "string",
@@ -222,11 +224,7 @@ public class RecommendationService {
                 """.formatted(
                 recommendCount,
                 mbtiType.name(),
-                safeStr(typeInfo.title()),
-                safeStr(typeInfo.tagline()),
-                safeStr(typeInfo.detail()),
-                safeStr(String.join(" / ", safeList(typeInfo.cautions()))),
-                safeStr(String.join(" / ", safeList(typeInfo.recommendedActions()))),
+                traitsText,
                 candidateText
         );
     }
@@ -260,10 +258,6 @@ public class RecommendationService {
     // NullPointerException 방지
     private static <T> List<T> safeList(List<T> list) {
         return list == null ? List.of() : list;
-    }
-
-    private static String safeStr(String s) {
-        return s == null ? "" : s;
     }
 
     private static BigDecimal nullSafe(BigDecimal bd) {
