@@ -9,7 +9,4 @@ import java.util.Optional;
 public interface SavingsRepository extends JpaRepository<Savings, Long> {
 
     Optional<Savings> findByFinPrdtCd(String finPrdtCd);
-
-    // 여러 finPrdtCd를 한 번에 조회)
-    List<Savings> findAllByFinPrdtCdIn(List<String> finPrdtCds);
 }
