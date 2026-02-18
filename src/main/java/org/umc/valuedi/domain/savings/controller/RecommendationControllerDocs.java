@@ -139,7 +139,7 @@ public interface RecommendationControllerDocs {
                     )
             }
     )
-    ApiResponse<SavingsResponseDTO.SavingsListResponse> latest15(
+    ApiResponse<SavingsResponseDTO.SavingsListResponse> latest10(
             @Parameter(
                     description = "적립유형 필터 (S=정기적금, F=자유적금). 미입력 시 전체",
                     schema = @Schema(allowableValues = {"S", "F"}, example = "S")
