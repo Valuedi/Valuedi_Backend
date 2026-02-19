@@ -46,4 +46,12 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
             @Param("memberId") Long memberId,
             @Param("memberMbtiTestId") Long memberMbtiTestId
     );
+
+    @Query("""
+        select r
+        from Recommendation r
+        left join fetch r.recommendationReasonList
+        where r.member.id = :memberId
+    """)
+    List<Recommendation> findAllWithReasonsByMemberId(@Param("memberId") Long memberId);
 }

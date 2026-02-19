@@ -53,8 +53,8 @@ public class RecommendationTxService {
         Map<Long, SavingsOption> optionById = pickedOptions.stream()
                 .collect(Collectors.toMap(SavingsOption::getId, Function.identity()));
 
-        // 기존 추천 삭제 (중복 방지)
-        List<Recommendation> existing = recommendationRepository.findAllByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTest.getId());
+        // 기존 추천 전체 삭제 - mbtiTestId가 달라져도 이전 추천이 누적되지 않도록 memberId 기준으로 삭제
+        List<Recommendation> existing = recommendationRepository.findAllWithReasonsByMemberId(memberId);
         if (!existing.isEmpty()) {
             recommendationRepository.deleteAll(existing);
         }

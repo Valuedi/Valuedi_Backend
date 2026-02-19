@@ -57,12 +57,22 @@ public class RecommendationService {
         MemberMbtiTest memberMbtiTest = memberMbtiTestRepository.findCurrentActiveTest(memberId)
                 .orElseThrow(() -> new MbtiException(MbtiErrorCode.TYPE_INFO_NOT_FOUND));
 
-        // 추천 상품 후보 조회
-        Pageable candidatePage = PageRequest.of(0, CANDIDATE_LIMIT);
-        List<SavingsOption> candidates = savingsOptionRepository.findCandidates(candidatePage);
-
-        // 제미나이 프롬프트 생성
+        // 추천 상품 후보 조회: MBTI 타입 기반 필터링
         MbtiType mbtiType = memberMbtiTest.getResultType();
+        MbtiCandidateFilter filter = MbtiCandidateFilter.from(mbtiType);
+        Pageable candidatePage = PageRequest.of(0, CANDIDATE_LIMIT);
+
+        List<SavingsOption> candidates = filter.orderByRate2First()
+                ? savingsOptionRepository.findCandidatesOrderByRate2(
+                        filter.rsrvType(), filter.minTrm(), filter.maxTrm(), candidatePage)
+                : savingsOptionRepository.findCandidatesOrderByRate(
+                        filter.rsrvType(), filter.minTrm(), filter.maxTrm(), candidatePage);
+
+        // Fallback: 필터 결과가 부족하면 기본 후보로 대체
+        if (candidates.size() < RECOMMEND_COUNT) {
+            log.warn("[Recommend] 필터 후보 부족 (size={}), 기본 후보로 대체. mbtiType={}", candidates.size(), mbtiType);
+            candidates = savingsOptionRepository.findCandidates(candidatePage);
+        }
         String prompt = buildPrompt(mbtiType, candidates, RECOMMEND_COUNT);
 
         // 제미나이 호출
