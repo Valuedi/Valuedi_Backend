@@ -46,9 +46,6 @@ public class Goal extends BaseEntity {
     @Column(name = "target_amount", nullable = false)
     private Long targetAmount;
 
-    @Column(name = "start_amount", nullable = false)
-    private Long startAmount;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private GoalStatus status;
@@ -80,7 +77,6 @@ public class Goal extends BaseEntity {
     public void changeTargetAmount(Long targetAmount) {
         this.targetAmount = targetAmount;
     }
-    public void changeStartAmount(Long startAmount) { this.startAmount = startAmount; }
 
     public void changeColor(String color) { this.color = color; }
 

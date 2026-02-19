@@ -7,7 +7,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.umc.valuedi.domain.asset.entity.BankAccount;
-import org.umc.valuedi.domain.asset.service.AssetBalanceService;
 import org.umc.valuedi.domain.goal.converter.GoalConverter;
 import org.umc.valuedi.domain.goal.dto.response.GoalListResponseDto;
 import org.umc.valuedi.domain.goal.entity.Goal;
@@ -24,6 +23,7 @@ import org.umc.valuedi.domain.member.repository.MemberRepository;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +33,6 @@ public class GoalListQueryService {
     private final GoalRepository goalRepository;
     private final MemberRepository memberRepository;
     private final GoalAchievementRateService achievementRateService;
-    private final AssetBalanceService assetBalanceService;
     private final GoalStatusChangeService goalStatusChangeService;
 
     private void validateListStatus(GoalStatus status) {
@@ -46,77 +45,63 @@ public class GoalListQueryService {
     private List<Goal> findGoals(Long memberId, GoalStatus status, Pageable pageable) {
         validateListStatus(status);
 
-        return switch (status) {
-            case ACTIVE ->
-                    goalRepository.findAllByMember_IdAndStatus(memberId, GoalStatus.ACTIVE, pageable);
-            case COMPLETE ->
-                    goalRepository.findAllByMember_IdAndStatusIn(
-                            memberId,
-                            List.of(GoalStatus.COMPLETE, GoalStatus.FAILED),
-                            pageable
-                    );
-            default -> throw new GoalException(GoalErrorCode.INVALID_GOAL_LIST_STATUS);
-        };
+        if (status == GoalStatus.ACTIVE) {
+            return goalRepository.findAllByMember_IdAndStatus(memberId, GoalStatus.ACTIVE, pageable);
+        } else {
+            // COMPLETE
+            return goalRepository.findAllByMember_IdAndStatusIn(
+                    memberId,
+                    List.of(GoalStatus.COMPLETE, GoalStatus.FAILED),
+                    pageable
+            );
+        }
     }
 
     // limit 없을 때
     private List<Goal> findGoals(Long memberId, GoalStatus status) {
         validateListStatus(status);
 
-        return switch (status) {
-            case ACTIVE ->
-                    goalRepository.findAllByMember_IdAndStatus(memberId, GoalStatus.ACTIVE);
-            case COMPLETE ->
-                    goalRepository.findAllByMember_IdAndStatusIn(
-                            memberId,
-                            List.of(GoalStatus.COMPLETE, GoalStatus.FAILED)
-                    );
-            default -> throw new GoalException(GoalErrorCode.INVALID_GOAL_LIST_STATUS);
-        };
+        if (status == GoalStatus.ACTIVE) {
+            return goalRepository.findAllByMember_IdAndStatus(memberId, GoalStatus.ACTIVE);
+        } else {
+            // COMPLETE
+            return goalRepository.findAllByMember_IdAndStatusIn(
+                    memberId,
+                    List.of(GoalStatus.COMPLETE, GoalStatus.FAILED)
+            );
+        }
     }
 
     private List<GoalListResponseDto.GoalSummaryDto> toSummaryDtos(List<Goal> goals, Long memberId) {
 
         return goals.stream()
                 .map(g -> {
-                    BankAccount account = g.getBankAccount();
-                    long savedAmount = 0L;
+                    long currentBalance = 0L;
 
-                    // ACTIVE 상태일 때만 계좌가 연결되어 있고, 잔액 계산 및 상태 갱신이 필요함
                     if (g.getStatus() == GoalStatus.ACTIVE) {
+                        BankAccount account = g.getBankAccount();
                         if (account == null || !account.getIsActive()) {
                             throw new GoalException(GoalErrorCode.GOAL_ACCOUNT_INACTIVE);
                         }
 
-                        // 동기화 후 최신 잔액 가져오기
-                        Long currentBalance = assetBalanceService.syncAndGetLatestBalance(memberId, account.getId());
-
-                        // 현재 잔액 - 시작 잔액
-                        savedAmount = currentBalance - g.getStartAmount();
-
-                        // 음수일 경우 0으로 처리
-                        if (savedAmount < 0) {
-                            savedAmount = 0;
-                        }
+                        // DB에 저장된 현재 계좌 잔액 사용
+                        currentBalance = account.getBalanceAmount();
 
                         // 목표 달성 여부 체크 및 상태 업데이트 (공통 로직 사용)
-                        goalStatusChangeService.checkAndUpdateStatus(g, savedAmount);
+                        goalStatusChangeService.checkAndUpdateStatus(g, currentBalance);
 
+                    } else if (g.getStatus() == GoalStatus.COMPLETE) {
+                        currentBalance = g.getTargetAmount(); // 성공했으므로 목표 달성으로 간주
                     } else {
-                        
-                        if (g.getStatus() == GoalStatus.COMPLETE) {
-                            savedAmount = g.getTargetAmount(); // 성공했으므로 목표 달성으로 간주
-                        } else {
-                            // FAILED인 경우 달성률을 저장하지 않으므로 그냥 0으로 설정
-                            savedAmount = 0L; 
-                        }
+                        // FAILED인 경우 달성률을 저장하지 않으므로 그냥 0으로 설정
+                        currentBalance = 0L;
                     }
                     
-                    int rate = achievementRateService.calculateRate(savedAmount, g.getTargetAmount());
+                    int rate = achievementRateService.calculateRate(currentBalance, g.getTargetAmount());
 
-                    return GoalConverter.toSummaryDto(g, savedAmount, rate);
+                    return GoalConverter.toSummaryDto(g, currentBalance, rate);
                 })
-                .toList();
+                .collect(Collectors.toList());
     }
 
     private String resolveTimeSortField(GoalStatus status) {
@@ -143,20 +128,22 @@ public class GoalListQueryService {
         }
 
         GoalStatus listStatus = (status == null) ? GoalStatus.ACTIVE : status;
-        validateListStatus(listStatus);
-
+        
+        // sort가 null이면 기본값 설정
         GoalSort sortType = (sort == null) ? GoalSort.TIME_DESC : sort;
+        
         Integer size = (limit == null) ? null : Math.max(3, limit);
 
         // COMPLETE + PROGRESS_DESC => 성공한 목표만 + 달성(완료)된 순
         if (listStatus == GoalStatus.COMPLETE && sortType == GoalSort.PROGRESS_DESC) {
+            // COMPLETE 상태인 것만 가져와서 정렬
             List<Goal> goals = goalRepository.findAllByMember_IdAndStatus(memberId, GoalStatus.COMPLETE).stream()
                     .sorted(Comparator.comparing(
                                     Goal::getCompletedAt,
                                     Comparator.nullsLast(Comparator.naturalOrder())
                             )
                             .reversed())
-                    .toList();
+                    .collect(Collectors.toList());
 
             if (size != null && goals.size() > size) {
                 goals = goals.subList(0, size);
@@ -176,7 +163,7 @@ public class GoalListQueryService {
             } else {
                 goals = findGoals(memberId, listStatus).stream()
                         .sorted(resolveTimeComparator(listStatus))
-                        .toList();
+                        .collect(Collectors.toList());
             }
 
             return new GoalListResponseDto(toSummaryDtos(goals, memberId));
@@ -184,13 +171,16 @@ public class GoalListQueryService {
 
         // ACTIVE + PROGRESS_DESC => 달성률 높은 진행 중인 목표만
         List<Goal> goals = findGoals(memberId, listStatus);
-        var dtos = toSummaryDtos(goals, memberId).stream()
-                .sorted(Comparator.comparingInt(GoalListResponseDto.GoalSummaryDto::achievementRate).reversed());
+        
+        // DTO 변환 후 정렬
+        List<GoalListResponseDto.GoalSummaryDto> dtos = toSummaryDtos(goals, memberId).stream()
+                .sorted(Comparator.comparingInt(GoalListResponseDto.GoalSummaryDto::achievementRate).reversed())
+                .collect(Collectors.toList());
 
-        if (size != null) {
-            dtos = dtos.limit(size);
+        if (size != null && dtos.size() > size) {
+            dtos = dtos.subList(0, size);
         }
 
-        return new GoalListResponseDto(dtos.toList());
+        return new GoalListResponseDto(dtos);
     }
 }

@@ -18,7 +18,7 @@ import java.util.List;
 
 public class GoalConverter {
 
-    public static Goal toEntity(Member member,BankAccount bankAccount, GoalCreateRequestDto req, Long startAmount) {
+    public static Goal toEntity(Member member,BankAccount bankAccount, GoalCreateRequestDto req) {
         return Goal.builder()
                 .member(member)
                 .bankAccount(bankAccount)
@@ -26,7 +26,6 @@ public class GoalConverter {
                 .startDate(req.startDate())
                 .endDate(req.endDate())
                 .targetAmount(req.targetAmount())
-                .startAmount(startAmount)
                 .status(GoalStatus.ACTIVE)
                 .completedAt(null)
                 .color(GoalStyleCatalog.normalizeColor(req.colorCode()))
@@ -82,7 +81,6 @@ public class GoalConverter {
                 goal.getId(),
                 goal.getTitle(),
                 goal.getTargetAmount(),
-                goal.getStartAmount(),
                 goal.getStartDate(),
                 goal.getEndDate(),
                 remainingDays,
@@ -93,7 +91,7 @@ public class GoalConverter {
 
     public static GoalListResponseDto.GoalSummaryDto toSummaryDto(
             Goal goal,
-            Long savedAmount,
+            Long currentBalance,
             int achievementRate
     ) {
         Long remainingDays = calcRemainingDays(goal.getEndDate());
@@ -101,7 +99,7 @@ public class GoalConverter {
         return new GoalListResponseDto.GoalSummaryDto(
                 goal.getId(),
                 goal.getTitle(),
-                savedAmount,
+                currentBalance,
                 remainingDays,
                 achievementRate,
                 goal.getStatus(),
@@ -110,7 +108,7 @@ public class GoalConverter {
         );
     }
 
-    public static GoalDetailResponseDto toDetailDto(Goal goal, Long savedAmount, int achievementRate) {
+    public static GoalDetailResponseDto toDetailDto(Goal goal, Long currentBalance, int achievementRate) {
         long remainingDays = calcRemainingDays(goal.getEndDate());
 
         GoalDetailResponseDto.AccountDto accountDto = null;
@@ -122,7 +120,7 @@ public class GoalConverter {
         return new GoalDetailResponseDto(
                 goal.getId(),
                 goal.getTitle(),
-                savedAmount,
+                currentBalance,
                 goal.getTargetAmount(),
                 goal.getStartDate(),
                 goal.getEndDate(),

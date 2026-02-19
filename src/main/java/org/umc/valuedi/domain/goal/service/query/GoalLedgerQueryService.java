@@ -33,12 +33,10 @@ public class GoalLedgerQueryService {
             throw new GoalException(GoalErrorCode.GOAL_FORBIDDEN);
         }
 
-        // 시작 시간: 목표 생성 시각 (createdAt)
-        LocalDateTime from = goal.getCreatedAt();
-        if (goal.getStartDate().atStartOfDay().isAfter(from)) {
-            from = goal.getStartDate().atStartOfDay();
-        }
-
+        // 시작 시간: 목표의 시작일(startDate)
+        LocalDateTime from = goal.getStartDate().atStartOfDay();
+        
+        // 종료 시간: 목표의 종료일(endDate)
         LocalDateTime to = goal.getEndDate().atTime(LocalTime.MAX);
 
         Page<LedgerEntry> result = ledgerQueryRepository.searchByPeriodLatest(
