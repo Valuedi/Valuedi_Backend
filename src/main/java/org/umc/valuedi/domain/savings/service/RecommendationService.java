@@ -89,6 +89,7 @@ public class RecommendationService {
         List<Savings> savingsList = items.stream()
                 .map(i -> savingsRepository.findByFinPrdtCd(i.finPrdtCd()).orElse(null))
                 .filter(Objects::nonNull)
+                .filter(new LinkedHashSet<>()::add)
                 .toList();
 
         return SavingsConverter.toSavingsListResponseDTO(savingsList, savingsList.size(), 1, 1);
@@ -204,6 +205,7 @@ public class RecommendationService {
                 - 반드시 JSON만 출력하세요. (설명 문장, 마크다운 금지)
                 - 반드시 아래 스키마를 정확히 지키세요.
                 - optionId는 후보 목록에 있는 값만 사용하세요.
+                - 동일한 finPrdtCd를 가진 옵션은 하나만 선택하세요. (같은 상품의 중복 추천 금지)
                 - score는 0~1 사이 숫자(소수)로, 높을수록 추천 우선순위입니다.
                 - reasons는 1~3개. reasonCode는 대문자 스네이크로 작성하세요(예: HIGH_RATE, MATCH_TERM).
 

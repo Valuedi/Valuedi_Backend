@@ -1,7 +1,9 @@
 package org.umc.valuedi.global.external.genai.client;
 
 import com.google.genai.Client;
+import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.ThinkingConfig;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -109,9 +111,13 @@ public class GeminiClient {
         throw new GeminiException(GeminiErrorCode.GEMINI_CALL_FAILED, lastCause);
     }
 
+    private static final GenerateContentConfig NO_THINKING_CONFIG = GenerateContentConfig.builder()
+            .thinkingConfig(ThinkingConfig.builder().thinkingBudget(0).build())
+            .build();
+
     private String callWithTimeout(String prompt, Duration timeout) throws TimeoutException, ExecutionException, InterruptedException {
         Future<String> future = executor.submit(() -> {
-            GenerateContentResponse response = genaiClient.models.generateContent(geminiProperties.getModel(), prompt, null);
+            GenerateContentResponse response = genaiClient.models.generateContent(geminiProperties.getModel(), prompt, NO_THINKING_CONFIG);
             return response.text();
         });
 
