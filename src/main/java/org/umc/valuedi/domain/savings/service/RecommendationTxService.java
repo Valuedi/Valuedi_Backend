@@ -53,6 +53,12 @@ public class RecommendationTxService {
         Map<Long, SavingsOption> optionById = pickedOptions.stream()
                 .collect(Collectors.toMap(SavingsOption::getId, Function.identity()));
 
+        // 기존 추천 삭제 (중복 방지)
+        List<Recommendation> existing = recommendationRepository.findAllByMemberIdAndMemberMbtiTestId(memberId, memberMbtiTest.getId());
+        if (!existing.isEmpty()) {
+            recommendationRepository.deleteAll(existing);
+        }
+
         // 추천 상품 저장
         LocalDateTime now = LocalDateTime.now();
         List<Recommendation> toSave = new ArrayList<>();

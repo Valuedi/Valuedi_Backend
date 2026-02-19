@@ -1,7 +1,9 @@
 package org.umc.valuedi.global.external.genai.client;
 
 import com.google.genai.Client;
+import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.ThinkingConfig;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +23,13 @@ public class GeminiClient {
     private final Client genaiClient;
     private final GeminiProperties geminiProperties;
 
-    private static final int MAX_ATTEMPTS = 4;
+    private static final int MAX_ATTEMPTS = 2;
 
-    private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(30);  // 시도별 제한
-    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(240);  // 전체 제한
+    private static final Duration PER_ATTEMPT_TIMEOUT = Duration.ofSeconds(90);  // 시도별 제한
+    private static final Duration OVERALL_DEADLINE = Duration.ofSeconds(190);  // 전체 제한
 
     private static final long BASE_BACKOFF_MILLIS = 2_000;
-    private static final long MAX_BACKOFF_MILLIS = 90_000;
+    private static final long MAX_BACKOFF_MILLIS = 8_000;
 
     private static final ExecutorService executor =
             Executors.newFixedThreadPool(4, r -> {
@@ -109,9 +111,13 @@ public class GeminiClient {
         throw new GeminiException(GeminiErrorCode.GEMINI_CALL_FAILED, lastCause);
     }
 
+    private static final GenerateContentConfig NO_THINKING_CONFIG = GenerateContentConfig.builder()
+            .thinkingConfig(ThinkingConfig.builder().thinkingBudget(0).build())
+            .build();
+
     private String callWithTimeout(String prompt, Duration timeout) throws TimeoutException, ExecutionException, InterruptedException {
         Future<String> future = executor.submit(() -> {
-            GenerateContentResponse response = genaiClient.models.generateContent(geminiProperties.getModel(), prompt, null);
+            GenerateContentResponse response = genaiClient.models.generateContent(geminiProperties.getModel(), prompt, NO_THINKING_CONFIG);
             return response.text();
         });
 
