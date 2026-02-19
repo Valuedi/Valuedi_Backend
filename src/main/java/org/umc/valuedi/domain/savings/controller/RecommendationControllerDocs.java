@@ -21,7 +21,7 @@ public interface RecommendationControllerDocs {
                     로그인 사용자(JWT)의 현재 MBTI를 바탕으로 Gemini 추천을 생성하고 DB를 갱신합니다.
                     MBTI 검사 완료 후 이 API를 호출하여 맞춤 추천을 받을 수 있습니다.
 
-                    - 응답 속도는 Gemini API 호출을 포함하므로 약 10~20초 정도 소요될 수 있습니다
+                    - 응답 속도는 Gemini API 호출을 포함하므로 약 10초 정도 소요될 수 있습니다
                     """,
             responses = {
                     @io.swagger.v3.oas.annotations.responses.ApiResponse(
